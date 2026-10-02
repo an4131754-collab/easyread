@@ -34,7 +34,7 @@ class Meter:
             if cost_usd is not None:
                 d["cost_usd"] = round(d.get("cost_usd", 0) + float(cost_usd), 4)
             if limits:
-                d["limits"] = limits  # 整個賬號的額度（同時在用 Claude Code 幹別的也算在裡面），只記最新的
+                d["limits"] = limits  # 整個帳號的額度（同時在用 Claude Code 幹別的也算在裡面），只記最新的
         if limits:
             remember(limits)
 

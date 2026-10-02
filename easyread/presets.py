@@ -33,7 +33,7 @@ PRESETS = [
     {"id": "modelscope", "region": "cn", "name": "魔搭 ModelScope", "base_url": "https://api-inference.modelscope.cn/v1", "model": "Qwen/Qwen3.8-27B", "key": True, "free": True,
      "models": [_m("Qwen/Qwen3.8-27B", "Qwen3.8 27B"), _m("Qwen/Qwen3.5-122B-A10B", "Qwen3.5 122B"),
                 _m("deepseek-ai/DeepSeek-V4.1-Flash", "DeepSeek V4.1 Flash"), _m("ZhipuAI/GLM-5.2", "GLM-5.2")],
-     "key_url": "https://modelscope.cn/my/myaccesstoken", "note": "阿里的開源模型社群，每天有免費呼叫次數（要繫結阿里雲賬號）。"},
+     "key_url": "https://modelscope.cn/my/myaccesstoken", "note": "阿里的開源模型社群，每天有免費呼叫次數（要繫結阿里雲帳號）。"},
     # ---- 海外（國內要開梯子） ----
     {"id": "openai", "region": "intl", "name": "OpenAI", "base_url": "https://api.openai.com/v1", "model": "gpt-6-luna", "key": True, "free": False, "api": "responses",
      "models": [_m("gpt-6-luna", "GPT-6 Luna", "最便宜", True), _m("gpt-6.1-sol", "GPT-6.1 Sol", "均衡", True), _m("gpt-6-astra", "GPT-6 Astra", "最強", True)],

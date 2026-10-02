@@ -27,7 +27,7 @@ window.PR = window.PR || {};
   }
 
   /* 額度進度條（Claude 訂閱才有），排版學 Claude 桌面端：名字在左，“幾小時後重置 + 百分比”在右，下面一根細條。
-     額度是整個賬號共用的，同時用 Claude Code 幹別的也算在裡面，所以不拿前後相減去算翻譯用了多少 */
+     額度是整個帳號共用的，同時用 Claude Code 幹別的也算在裡面，所以不拿前後相減去算翻譯用了多少 */
   PR.usageBars = function (limits, title) {
     const rows = WINDOWS.filter(([k]) => limits && limits[k] && limits[k].used != null).map(([k, name]) => {
       const w = limits[k];
@@ -64,7 +64,7 @@ window.PR = window.PR || {};
     if (!u || !u.calls) return "";
     return '<div class="us-card">' + PR.usageTokens("上次翻譯", u) +
       (total && total.calls > u.calls ? PR.usageTokens("這篇累計", total) : "") +
-      PR.usageBars(u.limits, "Claude 訂閱用量（譯完時，整個賬號共用）") + "</div>";
+      PR.usageBars(u.limits, "Claude 訂閱用量（譯完時，整個帳號共用）") + "</div>";
   };
 
   /* 問 AI：整個對話的合計 */
@@ -112,6 +112,6 @@ window.PR = window.PR || {};
   PR.usagePop = function (latest, msgs) {
     const bars = latest && latest.limits ? PR.usageBars(latest.limits, "Claude 訂閱用量") : "";
     return '<div class="us-pop">' + contextHtml(msgs) + bars +
-      (bars ? '<div class="us-foot">整個賬號共用，含其他用途 · 更新於 ' + ago(latest.at) + "</div>" : "") + "</div>";
+      (bars ? '<div class="us-foot">整個帳號共用，含其他用途 · 更新於 ' + ago(latest.at) + "</div>" : "") + "</div>";
   };
 })(window.PR);

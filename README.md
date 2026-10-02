@@ -41,7 +41,7 @@
 | 引擎 | 要什麼 | 說明 |
 |---|---|---|
 | **Claude Code**（推薦） | 裝好並登入 [Claude Code](https://docs.claude.com/en/docs/claude-code/setup) | 不用 Key，用你訂閱的額度；會自己看原頁圖核對公式，譯文最好 |
-| **Codex CLI** | 裝好並登入 [Codex](https://github.com/openai/codex) | 不用 Key，用 ChatGPT 賬號 |
+| **Codex CLI** | 裝好並登入 [Codex](https://github.com/openai/codex) | 不用 Key，用 ChatGPT 帳號 |
 | **API 介面 · 國內直連**：DeepSeek / 智譜 / 阿里雲百鍊 / Kimi / 矽基流動 / 魔搭 | API Key | 智譜 GLM-4.7-Flash、矽基流動小模型免費；DeepSeek 一篇 20 頁論文幾毛錢 |
 | **API 介面 · 海外（要梯子）**：OpenAI / Anthropic / Gemini / OpenRouter / Groq / Cerebras | API Key | Gemini、OpenRouter、Groq、Cerebras 有免費額度 |
 | **API 介面 · 本機**：Ollama / LM Studio | 本機裝 [Ollama](https://ollama.com) 或 [LM Studio](https://lmstudio.ai) | 完全離線、免費，推薦 qwen3.5:9b（顯示卡小用 4b） |
