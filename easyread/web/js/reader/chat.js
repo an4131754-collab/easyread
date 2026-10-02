@@ -1,10 +1,10 @@
-/* 右侧“问 AI”面板：边读边和模型实时对话，回答逐字流出来。
-   - 多个对话：顶部点标题展开对话列表，可以新建、切换、改名、删除（存在论文目录的 chat.json）。
-   - 模型：输入框左下角切换，名单在“设置 → 模型”里配（默认 Claude Opus 5.5 / Sonnet 5.5 / GPT）。
-   - 上下文：默认带上你正在读的段落；可以引用多段——选中文字点“问 AI”、段落操作条的“问 AI”，
-     或者把选中的文字直接拖进输入框，每段一个小标签，可以逐个去掉。
-   - 你的划线、笔记、问题不会每次都带；问到“标红的”“划线”“我的笔记”时，后台才把对应颜色的标记找出来。
-   - 页边笔记里的问题也从这里回答，答案同时写成那条笔记的回复。 */
+/* 右側“問 AI”面板：邊讀邊和模型即時對話，回答逐字流出來。
+   - 多個對話：頂部點標題展開對話列表，可以新建、切換、改名、刪除（存在論文目錄的 chat.json）。
+   - 模型：輸入框左下角切換，名單在“設定 → 模型”裡配（預設 Claude Opus 5.5 / Sonnet 5.5 / GPT）。
+   - 上下文：預設帶上你正在讀的段落；可以引用多段——選中文字點“問 AI”、段落操作條的“問 AI”，
+     或者把選中的文字直接拖進輸入框，每段一個小標籤，可以逐個去掉。
+   - 你的劃線、筆記、問題不會每次都帶；問到“標紅的”“劃線”“我的筆記”時，背景才把對應顏色的標記找出來。
+   - 頁邊筆記裡的問題也從這裡回答，答案同時寫成那條筆記的回覆。 */
 (function (PR) {
   "use strict";
   const S = PR.state;
@@ -12,7 +12,7 @@
   const st = { loaded: false, threads: [], cur: null, models: [], def: "", model: "", listOpen: false, menuOpen: false, usageOpen: false, limits: null, refs: [], auto: null, noAuto: false, streaming: null, draft: "" };
 
   PR.canChat = () => PR.store.mode === "server";
-  /* 在线演示 / 离线版：带着对话记录时可以看，不能问 */
+  /* 線上演示 / 離線版：帶著對話記錄時可以看，不能問 */
   PR.chatView = () => PR.canChat() || !!(S.chat && (S.chat.threads || []).length);
   PR.chatOpen = () => PR.side === "chat";
   PR.toggleChat = function (force) {
@@ -30,13 +30,13 @@
     if (!PR.blockById[anchor]) return false;
     quote = (quote || "").trim();
     if (st.refs.some((r) => r.anchor === anchor && r.quote === quote)) return false;
-    st.refs = st.refs.filter((r) => !(r.anchor === anchor && !r.quote && quote)).concat({ anchor, quote });  // 同段先引整段、再选一句：换成那句
+    st.refs = st.refs.filter((r) => !(r.anchor === anchor && !r.quote && quote)).concat({ anchor, quote });  // 同段先引整段、再選一句：換成那句
     return true;
   }
-  /* 这次提问带哪几段：手动引用的；没有就用正在读的那段 */
+  /* 這次提問帶哪幾段：手動引用的；沒有就用正在讀的那段 */
   const sendRefs = () => (st.refs.length ? st.refs.slice() : st.auto && !st.noAuto ? [st.auto] : []);
 
-  /* 外部入口：段落操作条、选中文字（都是“加一段引用”），笔记卡片（直接问这一条） */
+  /* 外部入口：段落操作條、選中文字（都是“加一段引用”），筆記卡片（直接問這一條） */
   PR.chatAsk = function (opts) {
     if (PR.side !== "chat") { PR.openSide("chat"); autoContext(); }
     load().then(() => {
@@ -60,7 +60,7 @@
       if (!st.model || !st.models.some((m) => m.id === st.model)) st.model = st.def;
       if (st.cur && !st.threads.some((t) => t.id === st.cur)) st.cur = null;
       st.loaded = true;
-    } catch (e) { PR.toast("读不到对话记录：" + PR.esc(e.message)); }
+    } catch (e) { PR.toast("讀不到對話記錄：" + PR.esc(e.message)); }
   }
   PR.on("settings-saved", () => { if (st.loaded) load(true).then(render); });
 
@@ -73,16 +73,16 @@
   function ctxLabel(c) {
     if (!c || !PR.blockById[c.anchor]) return "";
     const b = PR.blockById[c.anchor];
-    if (b.type === "math" && !c.quote) return (PR.sectionOf ? PR.sectionOf(c.anchor) + " · " : "") + (b.tag ? "公式 (" + b.tag + ")" : "一个公式");
-    const text = plainTex(c.quote || PR.textFor(PR.blockKeys(b)[0] || b.id) || b.caption_zh || b.tex || "").replace(/\*\*|`/g, "");  // 先去公式记号再去粗体，不然 $ 已被 PR.plain 去掉、TeX 原样露出来
+    if (b.type === "math" && !c.quote) return (PR.sectionOf ? PR.sectionOf(c.anchor) + " · " : "") + (b.tag ? "公式 (" + b.tag + ")" : "一個公式");
+    const text = plainTex(c.quote || PR.textFor(PR.blockKeys(b)[0] || b.id) || b.caption_zh || b.tex || "").replace(/\*\*|`/g, "");  // 先去公式記號再去粗體，不然 $ 已被 PR.plain 去掉、TeX 原樣露出來
     const sec = PR.sectionOf ? PR.sectionOf(c.anchor) : "";
     return (sec ? sec + " · " : "") + "「" + text.slice(0, 18) + (text.length > 18 ? "…" : "") + "」";
   }
   function refChip(r, i, auto) {
     const label = ctxLabel(r);
-    const tip = (auto ? "会带上你正在读的这段：" : "引用：") + label + "\n想一起问几段：把正文里选中的文字拖进来，或点段落上的“问 AI”";
+    const tip = (auto ? "會帶上你正在讀的這段：" : "引用：") + label + "\n想一起問幾段：把正文裡選中的文字拖進來，或點段落上的“問 AI”";
     return '<span class="chip-ctx' + (auto ? " auto" : "") + '" title="' + PR.esc(tip) + '">' + PR.icon(auto ? "book" : "link", "sm") + "<span>" + PR.esc(label) +
-      '</span><button data-c="' + (auto ? "noauto" : "unref") + '" data-i="' + i + '" title="不带这段">×</button></span>';
+      '</span><button data-c="' + (auto ? "noauto" : "unref") + '" data-i="' + i + '" title="不帶這段">×</button></span>';
   }
   function markCounts() {
     const out = {};
@@ -92,18 +92,18 @@
   const colorName = (c) => (PR.HL_COLORS.find(([k]) => k === c) || [c, c])[1];
   const when = (iso) => (iso ? PR.shortTime(iso) : "");
 
-  /* ---------- 画面 ---------- */
+  /* ---------- 畫面 ---------- */
   function headHtml() {
     const t = thread();
-    return '<div class="ch-head"><button class="ch-title" data-c="list" title="全部对话">' + PR.icon("menu", "sm") + "<span>" + PR.esc(t ? t.title : "新对话") + "</span>" + PR.icon("chevron", "sm") + "</button>" +
-      '<span class="grow"></span><button class="btn icon" data-c="new" title="新对话">' + PR.icon("plus", "sm") + '</button><button class="btn icon" data-c="close" title="关闭">×</button></div>' +
+    return '<div class="ch-head"><button class="ch-title" data-c="list" title="全部對話">' + PR.icon("menu", "sm") + "<span>" + PR.esc(t ? t.title : "新對話") + "</span>" + PR.icon("chevron", "sm") + "</button>" +
+      '<span class="grow"></span><button class="btn icon" data-c="new" title="新對話">' + PR.icon("plus", "sm") + '</button><button class="btn icon" data-c="close" title="關閉">×</button></div>' +
       (st.listOpen ? listHtml() : "");
   }
   function listHtml() {
     const rows = st.threads.map((t) => '<div class="ch-thread' + (t.id === st.cur ? " on" : "") + '" data-t="' + PR.esc(t.id) + '"><div class="tt">' + PR.esc(t.title) + "</div>" +
-      '<div class="tm">' + Math.round((t.messages || []).length / 2) + " 问 · " + PR.esc(when(t.updated)) + "</div>" +
-      '<button class="tx" data-c="rename" title="改名">' + PR.icon("edit", "sm") + '</button><button class="tx" data-c="del" title="删除">' + PR.icon("trash", "sm") + "</button></div>").join("");
-    return '<div class="ch-list"><button class="ch-thread newt" data-c="new">' + PR.icon("plus", "sm") + "新对话</button>" + (rows || '<div class="hint" style="padding:10px 12px">还没有对话。</div>') + "</div>";
+      '<div class="tm">' + Math.round((t.messages || []).length / 2) + " 問 · " + PR.esc(when(t.updated)) + "</div>" +
+      '<button class="tx" data-c="rename" title="改名">' + PR.icon("edit", "sm") + '</button><button class="tx" data-c="del" title="刪除">' + PR.icon("trash", "sm") + "</button></div>").join("");
+    return '<div class="ch-list"><button class="ch-thread newt" data-c="new">' + PR.icon("plus", "sm") + "新對話</button>" + (rows || '<div class="hint" style="padding:10px 12px">還沒有對話。</div>') + "</div>";
   }
   function msgHtml(m) {
     if (m.role === "user") {
@@ -114,34 +114,34 @@
     const live = st.streaming && st.streaming.msg === m;
     return '<div class="cm ai' + (m.error ? " err" : "") + '" data-id="' + PR.esc(m.id || "") + '"><div class="who"><span class="av">' + PR.icon("sparkle", "sm") + "</span>" + PR.esc(m.model || "AI") + (live ? ' <span class="spin"></span>' : "") + "</div>" +
       '<div class="body">' + (m.error ? PR.esc(m.error) : m.content ? PR.mdBlocks(m.content) : '<p class="thinking"><i></i><i></i><i></i></p>') + "</div>" +
-      (!live && !m.error && m.id ? '<div class="acts"><button data-c="copy">' + PR.icon("copy", "sm") + "复制</button>" + (PR.canChat() ? '<button data-c="pin" title="作为 AI 讨论放到这段旁边">' + PR.icon("note", "sm") + "放到页边</button>" : "") +
-        (m.usage && m.usage.calls ? '<span class="cm-usage" title="输入 ' + PR.fmtTokens(m.usage.input) + "（缓存命中 " + PR.fmtTokens(m.usage.cached) + "），输出 " + PR.fmtTokens(m.usage.output) + '">' + PR.fmtTokens(m.usage.input + m.usage.output) + " token</span>" : "") + "</div>" : "") + "</div>";
+      (!live && !m.error && m.id ? '<div class="acts"><button data-c="copy">' + PR.icon("copy", "sm") + "複製</button>" + (PR.canChat() ? '<button data-c="pin" title="作為 AI 討論放到這段旁邊">' + PR.icon("note", "sm") + "放到頁邊</button>" : "") +
+        (m.usage && m.usage.calls ? '<span class="cm-usage" title="輸入 ' + PR.fmtTokens(m.usage.input) + "（快取命中 " + PR.fmtTokens(m.usage.cached) + "），輸出 " + PR.fmtTokens(m.usage.output) + '">' + PR.fmtTokens(m.usage.input + m.usage.output) + " token</span>" : "") + "</div>" : "") + "</div>";
   }
   function emptyHtml() {
     const counts = markCounts();
     const colors = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
-    const sug = ["这段在说什么？用大白话讲一遍", "这个公式每一项是什么意思？怎么推出来的？", "这里的结论靠得住吗？有什么前提？"];
-    if (colors.length) sug.unshift("我标" + colorName(colors[0]) + "的那些地方，彼此有什么联系？", "把我划过线的内容串成一条主线讲讲");
-    return '<div class="ch-empty">' + PR.logo("hero") + "<b>边读边问</b><p>默认带上你正在读的段落；把正文里选中的文字拖到输入框，可以引用多段一起问。" + (colors.length ? "问到“标" + colorName(colors[0]) + "的”“划线”时，会自动找出你的 " + Object.values(counts).reduce((a, b) => a + b, 0) + " 处标记。" : "") + "</p>" +
+    const sug = ["這段在說什麼？用大白話講一遍", "這個公式每一項是什麼意思？怎麼推出來的？", "這裡的結論靠得住嗎？有什麼前提？"];
+    if (colors.length) sug.unshift("我標" + colorName(colors[0]) + "的那些地方，彼此有什麼聯絡？", "把我劃過線的內容串成一條主線講講");
+    return '<div class="ch-empty">' + PR.logo("hero") + "<b>邊讀邊問</b><p>預設帶上你正在讀的段落；把正文裡選中的文字拖到輸入框，可以引用多段一起問。" + (colors.length ? "問到“標" + colorName(colors[0]) + "的”“劃線”時，會自動找出你的 " + Object.values(counts).reduce((a, b) => a + b, 0) + " 處標記。" : "") + "</p>" +
       '<div class="chips">' + sug.map((q) => '<button data-c="suggest">' + PR.esc(q) + "</button>").join("") + "</div></div>";
   }
   function composerHtml() {
     if (!PR.canChat()) {
       const repo = (S.demo && S.demo.repo) || "https://github.com/Edwardxlai/easyread";
-      return '<div class="ch-compose ch-readonly"><b>这是演示里的对话记录，这里不能提问</b><span>装到自己电脑上之后，边读边问 Claude、GPT 或免费模型；可以引用多段，问“我标红的那些”也能找到。</span>' +
-        '<a class="btn sm accent" href="' + repo + '" target="_blank" rel="noopener">去 GitHub 安装 ↗</a></div>';
+      return '<div class="ch-compose ch-readonly"><b>這是演示裡的對話記錄，這裡不能提問</b><span>裝到自己電腦上之後，邊讀邊問 Claude、GPT 或免費模型；可以引用多段，問“我標紅的那些”也能找到。</span>' +
+        '<a class="btn sm accent" href="' + repo + '" target="_blank" rel="noopener">去 GitHub 安裝 ↗</a></div>';
     }
     const m = modelOf(st.model);
     const chips = st.refs.length ? st.refs.map((r, i) => refChip(r, i)).join("") : st.auto && !st.noAuto ? refChip(st.auto, 0, true) : "";
     const menu = st.menuOpen ? '<div class="ch-menu">' + st.models.map((x) => '<button data-c="model" data-m="' + PR.esc(x.id) + '" class="' + (x.id === st.model ? "on" : "") + '"' + (x.ready === false ? ' disabled title="' + PR.esc(x.hint) + '"' : "") + ">" +
-      "<b>" + PR.esc(x.label) + "</b><small>" + PR.esc(x.ready === false ? x.hint : [x.source, x.id === st.def ? "默认" : ""].filter(Boolean).join(" · ")) + "</small></button>").join("") +
+      "<b>" + PR.esc(x.label) + "</b><small>" + PR.esc(x.ready === false ? x.hint : [x.source, x.id === st.def ? "預設" : ""].filter(Boolean).join(" · ")) + "</small></button>").join("") +
       '<hr><button data-c="manage">' + PR.icon("gear", "sm") + "管理模型…</button></div>" : "";
     return '<div class="ch-compose">' + (chips ? '<div class="ch-chips">' + chips + "</div>" : "") +
-      '<textarea id="chatInput" rows="1" placeholder="问点什么…">' + PR.esc(st.draft) + "</textarea>" +
-      '<div class="ch-bar"><button class="ch-model" data-c="menu" title="换模型">' + PR.esc(m.label) + PR.icon("chevron", "sm") + "</button>" + menu +
+      '<textarea id="chatInput" rows="1" placeholder="問點什麼…">' + PR.esc(st.draft) + "</textarea>" +
+      '<div class="ch-bar"><button class="ch-model" data-c="menu" title="換模型">' + PR.esc(m.label) + PR.icon("chevron", "sm") + "</button>" + menu +
       '<span class="grow"></span>' + PR.usageChip(st.limits, thread() && thread().messages, st.usageOpen) +
       (st.usageOpen ? PR.usagePop(st.limits, thread() && thread().messages) : "") + (st.streaming ? '<button class="ch-send stop" data-c="stop" title="停止">' + PR.icon("stop", "sm") + "</button>"
-        : '<button class="ch-send" data-c="send" title="发送（Enter）；换行用 Shift+Enter">' + PR.icon("arrowUp", "sm") + "</button>") + "</div></div>";
+        : '<button class="ch-send" data-c="send" title="傳送（Enter）；換行用 Shift+Enter">' + PR.icon("arrowUp", "sm") + "</button>") + "</div></div>";
   }
   function render() {
     const el = panel();
@@ -150,7 +150,7 @@
     if (ta) st.draft = ta.value;
     const t = thread();
     const msgs = t ? t.messages || [] : [];
-    el.innerHTML = headHtml() + '<div class="ch-scroll" id="chatList">' + (msgs.length ? msgs.map(msgHtml).join("") : st.loaded ? emptyHtml() : '<p class="hint" style="padding:20px">加载中…</p>') + "</div>" + composerHtml();
+    el.innerHTML = headHtml() + '<div class="ch-scroll" id="chatList">' + (msgs.length ? msgs.map(msgHtml).join("") : st.loaded ? emptyHtml() : '<p class="hint" style="padding:20px">載入中…</p>') + "</div>" + composerHtml();
     const box = PR.$("#chatList");
     box.scrollTop = box.scrollHeight;
     const input = PR.$("#chatInput");
@@ -165,7 +165,7 @@
   }
   const renderLiveSoon = PR.throttle(renderLive, 60);
 
-  /* ---------- 发送 ---------- */
+  /* ---------- 傳送 ---------- */
   async function send(text, noteId, only) {
     text = (text || "").trim();
     if (!text || st.streaming) return;
@@ -208,12 +208,12 @@
       }
     } catch (e) {
       if (e.name === "AbortError") msg.content += "\n\n（已停止）";
-      else msg.error = "没能回答：" + e.message;
+      else msg.error = "沒能回答：" + e.message;
     }
     st.streaming = null;
     t.updated = PR.nowIso();
     if (noteId) { PR.asking.delete(noteId); setTimeout(() => PR.poll && PR.poll(), 300); }
-    if (!only) { st.refs = []; st.noAuto = false; autoContext(); }  // 问完清掉引用，回到“正在读”
+    if (!only) { st.refs = []; st.noAuto = false; autoContext(); }  // 問完清掉引用，回到“正在讀”
     render();
   }
 
@@ -239,13 +239,13 @@
     if (c === "go") return PR.jumpTo("b-" + b.dataset.anchor);
     if (c === "rename" && row) {
       const t = st.threads.find((x) => x.id === row.dataset.t);
-      const title = await PR.promptText({ title: "对话改名", value: t.title, ok: "改名", at: row });
+      const title = await PR.promptText({ title: "對話改名", value: t.title, ok: "改名", at: row });
       if (title) { t.title = title; await PR.api("/api/p/" + PR.pid + "/chat/rename", { method: "POST", body: { thread: t.id, title: t.title } }); render(); }
       return;
     }
     if (c === "del" && row) {
       const t = st.threads.find((x) => x.id === row.dataset.t);
-      if (!(await PR.confirm({ title: "删除这个对话？", body: "「" + t.title + "」。已经放到页边的讨论不受影响。", ok: "删除", danger: true, at: row }))) return;
+      if (!(await PR.confirm({ title: "刪除這個對話？", body: "「" + t.title + "」。已經放到頁邊的討論不受影響。", ok: "刪除", danger: true, at: row }))) return;
       await PR.api("/api/p/" + PR.pid + "/chat/delete", { method: "POST", body: { thread: t.id } });
       st.threads = st.threads.filter((x) => x !== t);
       if (st.cur === t.id) st.cur = null;
@@ -253,15 +253,15 @@
     }
     const card = b.closest(".cm.ai");
     const m = card && thread() && thread().messages.find((x) => x.id === card.dataset.id);
-    if (c === "copy" && m) navigator.clipboard.writeText(m.content).then(() => PR.toast("已复制"));
+    if (c === "copy" && m) navigator.clipboard.writeText(m.content).then(() => PR.toast("已複製"));
     if (c === "pin" && m) {
       try {
         await PR.api("/api/p/" + PR.pid + "/chat/pin", { method: "POST", body: { thread: st.cur, id: m.id } });
-        PR.toast("已放到页边"); setTimeout(() => PR.poll && PR.poll(), 200);
-      } catch (err) { PR.toast("没放成：" + PR.esc(err.message)); }
+        PR.toast("已放到頁邊"); setTimeout(() => PR.poll && PR.poll(), 200);
+      } catch (err) { PR.toast("沒放成：" + PR.esc(err.message)); }
     }
   });
-  document.addEventListener("click", (e) => {  // 点对话列表里的一行：切过去
+  document.addEventListener("click", (e) => {  // 點對話列表裡的一行：切過去
     const row = e.target.closest("#chatpanel .ch-thread[data-t]");
     if (!row || e.target.closest("[data-c]")) return;
     st.cur = row.dataset.t; st.listOpen = false;
@@ -275,7 +275,7 @@
     if (e.key === "Escape") e.target.blur();
   });
   document.addEventListener("input", (e) => { if (e.target.id === "chatInput") PR.autosize(e.target); });
-  /* 把正文里选中的文字拖进问 AI 面板：变成一段引用，而不是一堆粘进来的字 */
+  /* 把正文裡選中的文字拖進問 AI 面板：變成一段引用，而不是一堆粘進來的字 */
   let dragRef = null;
   document.addEventListener("dragstart", (e) => {
     const sel = window.getSelection();
@@ -296,13 +296,13 @@
     addRef(anchor, quote);
     render(); focusInput();
   });
-  /* 读到别处时，上下文跟着换成当前段（手动指定的不动） */
+  /* 讀到別處時，上下文跟著換成當前段（手動指定的不動） */
   window.addEventListener("scroll", PR.debounce(() => {
     if (!PR.chatOpen() || st.streaming) return;
     const before = st.auto && st.auto.anchor;
     autoContext();
     if ((st.auto && st.auto.anchor) === before || st.refs.length || st.noAuto) return;
     const el = PR.$(".chip-ctx.auto > span");
-    if (el && st.auto) { el.textContent = ctxLabel(st.auto); el.parentElement.title = "会带上你正在读的这段：" + ctxLabel(st.auto); } else render();
+    if (el && st.auto) { el.textContent = ctxLabel(st.auto); el.parentElement.title = "會帶上你正在讀的這段：" + ctxLabel(st.auto); } else render();
   }, 400), { passive: true });
 })(window.PR);

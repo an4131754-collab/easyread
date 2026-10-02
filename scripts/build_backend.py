@@ -28,20 +28,20 @@ def python_with_pyinstaller() -> list[str]:
         probe = subprocess.run([candidate, "-c", "import PyInstaller"], cwd=ROOT, capture_output=True)
         if probe.returncode == 0:
             return [candidate]
-    raise SystemExit("未找到 PyInstaller。请运行：python -m pip install pyinstaller")
+    raise SystemExit("未找到 PyInstaller。請執行：python -m pip install pyinstaller")
 
 
 def check_dependencies(python: list[str]) -> None:
     for module in REQUIRED:
         probe = subprocess.run(python + ["-c", f"import {module}"], cwd=ROOT, capture_output=True)
         if probe.returncode:
-            raise SystemExit(f"无法加载后端依赖 {module}。请使用打包的 Python 安装：python -m pip install pyinstaller .")
+            raise SystemExit(f"無法載入後端依賴 {module}。請使用打包的 Python 安裝：python -m pip install pyinstaller .")
 
 
 def main() -> None:
-    sys.stdout.reconfigure(encoding="utf-8")  # Windows 控制台默认不是 UTF-8，下面的中文提示会让脚本崩掉
+    sys.stdout.reconfigure(encoding="utf-8")  # Windows 控制台預設不是 UTF-8，下面的中文提示會讓指令碼崩掉
     python = python_with_pyinstaller()
-    check_dependencies(python)  # 验证通过后再清理旧产物
+    check_dependencies(python)  # 驗證通過後再清理舊產物
     OUT.mkdir(parents=True, exist_ok=True)
     WORK.mkdir(parents=True, exist_ok=True)
     for old in OUT.iterdir():
@@ -55,7 +55,7 @@ def main() -> None:
                     *[arg for module in REQUIRED for arg in ("--collect-all", module)],
                     str(ROOT / "scripts" / "backend_entry.py")]
     subprocess.run(cmd, cwd=ROOT, check=True)
-    print(f"后端已生成：{OUT / ('easyread-backend.exe' if os.name == 'nt' else 'easyread-backend')}")
+    print(f"後端已生成：{OUT / ('easyread-backend.exe' if os.name == 'nt' else 'easyread-backend')}")
 
 
 if __name__ == "__main__":

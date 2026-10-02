@@ -1,11 +1,11 @@
 [project]
 name = "easyread"
 version = "1.2.6"
-description = "EasyRead：把英文论文读成舒服的中文——后台翻译、对照原文、批注笔记、文献库"
+description = "EasyRead：把英文論文讀成易讀的繁體中文——背景翻譯、對照原文、批註筆記、文獻庫"
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.10"
-keywords = ["paper", "translation", "reader", "arxiv", "llm", "论文翻译"]
+keywords = ["paper", "translation", "reader", "arxiv", "llm", "論文翻譯"]
 dependencies = [
   "pypdfium2>=4.30",
   "pdfplumber>=0.11",

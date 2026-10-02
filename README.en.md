@@ -2,11 +2,11 @@
   <img src="docs/images/logo.svg" width="72" alt="EasyRead">
 </p>
 <h1 align="center">EasyRead</h1>
-<p align="center"><b>Read English papers as comfortable, well-typeset Chinese.</b><br>
+<p align="center"><b>Read English papers in clear, well-typeset Traditional Chinese.</b><br>
 Drop in a PDF and it gets translated page by page in the background. Equations and tables keep their original layout, the source is always one click away, and you can highlight, take notes and ask AI as you read.<br>
 Runs locally. Your papers and notes never leave your computer.</p>
 
-<p align="center"><a href="README.md">简体中文</a> · <b>English</b></p>
+<p align="center"><a href="README.md">繁體中文</a> · <b>English</b></p>
 
 <p align="center"><a href="https://edwardxlai.github.io/easyread/demo/"><b>▶ Try the live demo</b></a> · <a href="https://edwardxlai.github.io/easyread/en/">Homepage</a> · <a href="https://github.com/Edwardxlai/easyread/releases/latest">Download</a></p>
 
@@ -19,7 +19,7 @@ Runs locally. Your papers and notes never leave your computer.</p>
 
 <p align="center"><img src="docs/images/pages.jpg" width="860" alt="Translation side by side with the original page"></p>
 
-> **Who is this for?** EasyRead translates **English → Chinese**, and its interface is in Chinese. It's built for Chinese-speaking students and researchers. If you read Chinese (or want to help add other target languages), read on.
+> **Who is this for?** EasyRead translates **English → Traditional Chinese**, and its interface is in Traditional Chinese. It's built for Chinese-speaking students and researchers. If you read Chinese (or want to help add other target languages), read on.
 
 ## How it differs from "throw the PDF into a translator"
 
@@ -84,8 +84,8 @@ Your browser opens `http://127.0.0.1:8765`. The server only listens on localhost
 
 ## Usage
 
-1. Open Settings (top right) → Models: add the models you want and choose 设为翻译 (use for translation) on one card. Models for translation and Ask AI are managed on the same page.
-2. Drag a PDF into the window, or paste an arXiv ID, arXiv / OpenReview link or a direct PDF link (`Ctrl+V` on the library page works too). For long papers you can translate just the main text, or a page range such as pages 5–12. You can also pick which model to use for this import, or choose 读英文原文 (read the English original) to only lay out the paper without translating; click 翻译成中文 (translate to Chinese) any time later.
+1. Open Settings (top right) → Models: add the models you want and choose 設為翻譯 (use for translation) on one card. Models for translation and Ask AI are managed on the same page.
+2. Drag a PDF into the window, or paste an arXiv ID, arXiv / OpenReview link or a direct PDF link (`Ctrl+V` on the library page works too). For long papers you can translate just the main text, or a page range such as pages 5–12. You can also pick which model to use for this import, or choose 讀英文原文 (read the English original) to only lay out the paper without translating; click 翻譯成繁體中文 (translate to Traditional Chinese) any time later.
 3. Translation runs in the background page by page. Translated parts are readable immediately; untranslated pages show the original.
 4. Click a paragraph for its action bar; select text to highlight, note or ask. Press `?` for all shortcuts.
 

@@ -40,7 +40,7 @@ class JobsTest(unittest.TestCase):
         for state in ("queued", "running"):
             self.jobs._write(self.ws, state=state, message="original")
             before = self.ws.load("job")
-            with self.assertRaisesRegex(ValueError, "已有任务"):
+            with self.assertRaisesRegex(ValueError, "已有任務"):
                 self.jobs.enqueue(self.ws, pages=[2])
             self.assertEqual(self.ws.load("job"), before)
             self.assertEqual(self.jobs.bulk.qsize(), 1)

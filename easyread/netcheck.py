@@ -1,8 +1,8 @@
-"""翻译、提问前先看一眼网络：连不上就立刻用中文说清楚怎么办（国内多半是没开梯子），不让人干等到超时。
+"""翻譯、提問前先看一眼網路：連不上就立刻用中文說清楚怎麼辦（國內多半是沒開梯子），不讓人乾等到超時。
 
-- problem(cfg)：按引擎找到它真正要连的地址，发一个请求；收到任何 HTTP 响应都算通。
-- explain(cfg, msg)：引擎跑到一半报错时，报错像网络问题就补一句该怎么办。
-- proxy_env()：梯子只开了“系统代理”时 Claude Code / Codex 读不到，把它转成 HTTPS_PROXY 传过去。
+- problem(cfg)：按引擎找到它真正要連的地址，發一個請求；收到任何 HTTP 響應都算通。
+- explain(cfg, msg)：引擎跑到一半報錯時，報錯像網路問題就補一句該怎麼辦。
+- proxy_env()：梯子只開了“系統代理”時 Claude Code / Codex 讀不到，把它轉成 HTTPS_PROXY 傳過去。
 """
 from __future__ import annotations
 
@@ -19,17 +19,17 @@ from . import http
 from .log import log
 from .presets import NEEDS_VPN, PRESETS
 
-_OK_TTL = 120  # 通过一次后两分钟内不再测，一篇论文几十批不用每批都测
+_OK_TTL = 120  # 通過一次後兩分鐘內不再測，一篇論文幾十批不用每批都測
 _ok: dict[str, float] = {}
 _LOCAL = {"localhost", "127.0.0.1", "::1"}
 _NET = re.compile(r"ECONNREFUSED|ETIMEDOUT|ENOTFOUND|ECONNRESET|EAI_AGAIN|fetch failed|connection error|unable to connect"
-                  r"|error sending request|stream disconnected|timed out|getaddrinfo|连不上", re.I)
+                  r"|error sending request|stream disconnected|timed out|getaddrinfo|連不上", re.I)
 _REGION = re.compile(r"unsupported_country|not available in your (country|region)|request not allowed", re.I)
 _CERT = re.compile(r"CERTIFICATE_VERIFY_FAILED|certificate verify failed|self.signed certificate|unknown issuer", re.I)
 
 
 def _claude_base() -> str:
-    """Claude Code 可能配了中转（CC Switch 之类写在 ~/.claude/settings.json 的 env 里），国内中转不用梯子。"""
+    """Claude Code 可能配了中轉（CC Switch 之類寫在 ~/.claude/settings.json 的 env 裡），國內中轉不用梯子。"""
     base = os.environ.get("ANTHROPIC_BASE_URL")
     if not base:
         try:
@@ -55,16 +55,16 @@ def _codex_base() -> str:
 
 
 def target(cfg: dict) -> dict | None:
-    """{name, url, vpn}：vpn 表示国内要开梯子才连得上。"""
+    """{name, url, vpn}：vpn 表示國內要開梯子才連得上。"""
     e = cfg.get("engine")
     if e == "claude":
         url = _claude_base()
         official = "anthropic.com" in url
-        return {"name": "Claude" if official else "Claude Code 配置的中转地址", "url": url, "vpn": official}
+        return {"name": "Claude" if official else "Claude Code 配置的中轉地址", "url": url, "vpn": official}
     if e == "codex":
         url = _codex_base()
         official = "chatgpt.com" in url or "openai.com" in url
-        return {"name": "OpenAI（Codex）" if official else "Codex 配置的中转地址", "url": url, "vpn": official}
+        return {"name": "OpenAI（Codex）" if official else "Codex 配置的中轉地址", "url": url, "vpn": official}
     if e == "openai":
         o = cfg.get("openai") or {}
         url = (o.get("base_url") or "").strip().rstrip("/")
@@ -72,31 +72,31 @@ def target(cfg: dict) -> dict | None:
             return None
         p = next((x for x in PRESETS if x["id"] == o.get("preset")), None) \
             or next((x for x in PRESETS if x["base_url"].rstrip("/") == url), None)
-        return {"name": p["name"] if p else "接口", "url": url, "vpn": bool(p and p["id"] in NEEDS_VPN)}
+        return {"name": p["name"] if p else "介面", "url": url, "vpn": bool(p and p["id"] in NEEDS_VPN)}
     return None
 
 
 def _advice(t: dict) -> str:
     host = urlparse(t["url"]).hostname or t["url"]
     if host in _LOCAL:
-        return f"连不上 {t['name']}（{urlparse(t['url']).netloc}）：先把它打开，再点重试。"
+        return f"連不上 {t['name']}（{urlparse(t['url']).netloc}）：先把它開啟，再點重試。"
     if t["vpn"]:
-        return (f"连不上 {t['name']}（{host}）。在国内要先打开梯子（VPN）再点重试；开着还不行，把梯子切到 TUN 或全局模式。"
-                "不想开梯子，可以在设置里换成国内引擎（DeepSeek、智谱 GLM、硅基流动等）。")
-    return f"连不上 {t['name']}（{host}）：检查网络和地址有没有填对；开着梯子的话，试试让国内网站直连。"
+        return (f"連不上 {t['name']}（{host}）。在國內要先開啟梯子（VPN）再點重試；開著還不行，把梯子切到 TUN 或全域性模式。"
+                "不想開梯子，可以在設定裡換成國內引擎（DeepSeek、智譜 GLM、矽基流動等）。")
+    return f"連不上 {t['name']}（{host}）：檢查網路和地址有沒有填對；開著梯子的話，試試讓國內網站直連。"
 
 
 def _region(t: dict) -> str:
-    return f"{t['name']} 拒绝了当前地区的访问：梯子节点在它不支持的地区（比如香港），换成美国、日本、新加坡等节点再重试。"
+    return f"{t['name']} 拒絕了當前地區的訪問：梯子節點在它不支援的地區（比如香港），換成美國、日本、新加坡等節點再重試。"
 
 
 def _certificate(t: dict) -> str:
     host = urlparse(t["url"]).hostname or t["url"]
-    return f"{t['name']}（{host}）证书校验失败：请检查系统信任的根证书；使用代理时，也检查代理证书是否已获系统信任。"
+    return f"{t['name']}（{host}）證書校驗失敗：請檢查系統信任的根證書；使用代理時，也檢查代理證書是否已獲系統信任。"
 
 
 def problem(cfg: dict, timeout: float = 6) -> str | None:
-    """连得上返回 None，连不上返回给用户看的一句话。"""
+    """連得上返回 None，連不上返回給使用者看的一句話。"""
     t = target(cfg)
     u = urlparse(t["url"]) if t else None
     if not u or not u.hostname:
@@ -104,19 +104,19 @@ def problem(cfg: dict, timeout: float = 6) -> str | None:
     origin = f"{u.scheme}://{u.netloc}/"
     if time.time() - _ok.get(origin, 0) < _OK_TTL:
         return None
-    for attempt in range(2):  # 梯子偶尔抖一下，失败一次不算
+    for attempt in range(2):  # 梯子偶爾抖一下，失敗一次不算
         try:
             http.urlopen(origin, timeout=timeout).close()
-        except urllib.error.HTTPError as e:  # 有 HTTP 响应就说明网络是通的
+        except urllib.error.HTTPError as e:  # 有 HTTP 響應就說明網路是通的
             if _REGION.search(e.read(2000).decode("utf-8", "replace")):
                 return _region(t)
-        except Exception as e:  # noqa: BLE001  DNS 失败、拒绝连接、超时、证书被劫持……
+        except Exception as e:  # noqa: BLE001  DNS 失敗、拒絕連線、超時、證書被劫持……
             if _CERT.search(str(e)):
-                log.info("证书校验失败 %s：%s", origin, e)
+                log.info("證書校驗失敗 %s：%s", origin, e)
                 return _certificate(t)
             if attempt == 0:
                 continue
-            log.info("连通性检查失败 %s：%s", origin, e)
+            log.info("連通性檢查失敗 %s：%s", origin, e)
             return _advice(t)
         _ok[origin] = time.time()
         return None
@@ -124,7 +124,7 @@ def problem(cfg: dict, timeout: float = 6) -> str | None:
 
 def explain(cfg: dict, msg: str) -> str:
     t = target(cfg)
-    if not t or "梯子" in msg or "先把它打开" in msg:
+    if not t or "梯子" in msg or "先把它開啟" in msg:
         return msg
     if _REGION.search(msg):
         return msg + "\n" + _region(t)
@@ -138,12 +138,12 @@ def explain(cfg: dict, msg: str) -> str:
 
 
 def offline(msg: str) -> bool:
-    """这条报错是不是网络 / 地区问题（是的话剩下的页不用再试了）。"""
-    return "梯子" in msg or "先把它打开" in msg or "证书校验失败" in msg
+    """這條報錯是不是網路 / 地區問題（是的話剩下的頁不用再試了）。"""
+    return "梯子" in msg or "先把它開啟" in msg or "證書校驗失敗" in msg
 
 
 def proxy_env() -> dict | None:
-    """Windows / macOS 的系统代理 Python 读得到，Node 写的 Claude Code 读不到；没设 HTTPS_PROXY 时替它补上。"""
+    """Windows / macOS 的系統代理 Python 讀得到，Node 寫的 Claude Code 讀不到；沒設 HTTPS_PROXY 時替它補上。"""
     if any(os.environ.get(k) for k in ("HTTPS_PROXY", "https_proxy", "ALL_PROXY", "all_proxy")):
         return None
     p = urllib.request.getproxies()

@@ -1,10 +1,10 @@
-/* 阅读页启动与全局事件：滚动、快捷键、远端更新（agent 追加讨论、后台翻译进度）。 */
+/* 閱讀頁啟動與全域性事件：滾動、快捷鍵、遠端更新（agent 追加討論、背景翻譯進度）。 */
 (function (PR) {
   "use strict";
   const S = PR.state;
   const body = document.body;
 
-  /* 当前阅读的块：视口上部 30% 那条线穿过的块 */
+  /* 當前閱讀的塊：視口上部 30% 那條線穿過的塊 */
   PR.readingBlock = function () {
     const line = innerHeight * 0.3;
     let best = null;
@@ -46,7 +46,7 @@
     saveProgress();
   }, 120);
 
-  /* ---------- 快捷键 ---------- */
+  /* ---------- 快捷鍵 ---------- */
   document.addEventListener("keydown", (e) => {
     if (e.target.closest("textarea, input, [contenteditable]") || e.ctrlKey || e.metaKey || e.altKey) return;
     const k = e.key.toLowerCase();
@@ -63,11 +63,11 @@
       PR.$("#selbar").classList.remove("open");
       return;
     }
-    const act = PR.keyAction(k);  // 键位可在“说明 → 快捷键”里改
+    const act = PR.keyAction(k);  // 鍵位可在“說明 → 快捷鍵”裡改
     if (act && PR.runAction(act)) e.preventDefault();
   });
 
-  /* ---------- 数据变化 ---------- */
+  /* ---------- 資料變化 ---------- */
   const busy = () => PR.editingKey || PR.editingNote;
   const refreshNotes = PR.debounce(() => {
     if (busy()) return refreshNotes();
@@ -105,19 +105,19 @@
     const first = fresh[0];
     fresh.forEach((e) => PR.flashCard(e.id));
     const what = PR.plain(first.title || first.q || first.body || "").slice(0, 28);
-    PR.toast("新增 " + fresh.length + " 条：" + PR.esc(what) + (what.length >= 28 ? "…" : ""), {
+    PR.toast("新增 " + fresh.length + " 條：" + PR.esc(what) + (what.length >= 28 ? "…" : ""), {
       label: "去看看", fn: () => { PR.jumpTo("b-" + PR.anchorOfEntry(first)); setTimeout(() => PR.flashCard(first.id), 400); },
     }, 7000);
   }
 
-  /* ---------- 启动 ---------- */
+  /* ---------- 啟動 ---------- */
   async function boot() {
     PR.applyPrefs();
     try { await PR.load(); } catch (e) {
-      PR.$("#paper").innerHTML = '<div class="pending">读不到论文：' + PR.esc(e.message) + '。<a href="/">回文献库</a></div>';
+      PR.$("#paper").innerHTML = '<div class="pending">讀不到論文：' + PR.esc(e.message) + '。<a href="/">迴文獻庫</a></div>';
       return;
     }
-    if (PR.store.mode === "server") {  // 以本机 prefs.json 为准
+    if (PR.store.mode === "server") {  // 以本機 prefs.json 為準
       const p = await PR.loadPrefs();
       if (p.reader) { Object.assign(PR.prefs, p.reader); PR.applyPrefs(); }
       PR.useServerUi(p);
@@ -125,12 +125,12 @@
     if (PR.store.mode === "static") PR.$("#backBtn").style.display = "none";
     PR.applyFeatures();
     const m = S.paper.meta || {};
-    document.title = (m.short_zh || m.title_zh || m.title_en || "论文") + " · EasyRead";
+    document.title = (m.short_zh || m.title_zh || m.title_en || "論文") + " · EasyRead";
     PR.$(".bar-title").textContent = m.short_zh || m.title_zh || m.title_en || "";
     PR.ls.get("pr-seen-" + PR.paperKey, (S.discussion.entries || []).map((e) => e.id)).forEach((id) => seen.add(id));
     PR.ls.set("pr-seen-" + PR.paperKey, Array.from(seen));
     PR.renderPaper();
-    PR.setupDemo();  // 署名要放在论文标题下面，得等正文渲染出来
+    PR.setupDemo();  // 署名要放在論文標題下面，得等正文渲染出來
     PR.applyMarks();
     PR.renderMargin();
     PR.renderJobState();
@@ -138,7 +138,7 @@
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", PR.debounce(() => { PR.fitWide(); PR.renderMargin(); }, 150));
     if (document.fonts) document.fonts.ready.then(() => { PR.fitWide(null, true); PR.layoutMargin(); });
-    // 正文变宽变窄（最大化、贴边分屏只来一次 resize，那时版面可能还没变完）就重新缩放宽公式
+    // 正文變寬變窄（最大化、貼邊分屏只來一次 resize，那時版面可能還沒變完）就重新縮放寬公式
     let paperW = 0;
     new ResizeObserver(PR.debounce(() => {
       const w = PR.$("#paper").clientWidth;
@@ -148,7 +148,7 @@
     PR.startPolling();
 
     if (location.hash && document.getElementById(location.hash.slice(1))) {
-      // 打开带 #段落 的链接：先跳过去，等字体、公式排好后再对一次中，免得排版变动把它挤偏
+      // 開啟帶 #段落 的連結：先跳過去，等字型、公式排好後再對一次中，免得排版變動把它擠偏
       const id = location.hash.slice(1);
       setTimeout(() => PR.jumpTo(id, { noBack: true, instant: true }), 200);
       Promise.all([document.fonts ? document.fonts.ready : null, new Promise((r) => setTimeout(r, 900))])
@@ -158,14 +158,14 @@
       if (b && scrollY < 50) {
         let h = null;
         for (const x of S.paper.blocks) { if (x.type === "heading") h = x; if (x.id === b.id) break; }
-        PR.toast("上次读到" + (h ? "「" + (h.num ? h.num + " " : "") + PR.plain(PR.textFor(h.id)) + "」" : "第 " + b.page + " 页"),
-          { label: "接着读", fn: () => PR.jumpTo("b-" + b.id, { noBack: true }) }, 8000);
+        PR.toast("上次讀到" + (h ? "「" + (h.num ? h.num + " " : "") + PR.plain(PR.textFor(h.id)) + "」" : "第 " + b.page + " 頁"),
+          { label: "接著讀", fn: () => PR.jumpTo("b-" + b.id, { noBack: true }) }, 8000);
       } else if (!PR.ls.get("easyread-hint-seen", false)) {
         PR.ls.set("easyread-hint-seen", true);
-        const touch = matchMedia("(pointer: coarse)").matches;  // 手机上没有右键和键盘
-        const tip = S.demo ? "在线演示：点段落、选中文字试试划线和笔记；顶栏“问 AI”里有一段真实的 AI 对话。"
-          : touch ? "点一下段落出现操作条；长按选中文字，可以划线、写笔记。"
-          : "点一下段落出现操作条，右键有完整菜单；选中文字可以划线、写笔记。" + (PR.keysOn ? "<kbd>=</kbd> <kbd>-</kbd> 调字号" : "");
+        const touch = matchMedia("(pointer: coarse)").matches;  // 手機上沒有右鍵和鍵盤
+        const tip = S.demo ? "線上演示：點段落、選中文字試試劃線和筆記；頂欄“問 AI”裡有一段真實的 AI 對話。"
+          : touch ? "點一下段落出現操作條；長按選中文字，可以劃線、寫筆記。"
+          : "點一下段落出現操作條，右鍵有完整選單；選中文字可以劃線、寫筆記。" + (PR.keysOn ? "<kbd>=</kbd> <kbd>-</kbd> 調字號" : "");
         setTimeout(() => PR.toast(tip, null, 9000), 800);
       }
     }

@@ -1,4 +1,4 @@
-"""启动本地服务：只监听 127.0.0.1，记下地址给命令行复用；start.cmd / start.sh 启动时页面都关了就退出。"""
+"""啟動本地服務：只監聽 127.0.0.1，記下地址給命令列複用；start.cmd / start.sh 啟動時頁面都關了就退出。"""
 from __future__ import annotations
 
 import os
@@ -14,12 +14,12 @@ from .store import now_iso, read_json, write_json_atomic
 
 
 class _Server(ThreadingHTTPServer):
-    # Windows 上 SO_REUSEADDR 会让两个进程同时占住 8765，浏览器随机连到其中一个（比如旧版本）
+    # Windows 上 SO_REUSEADDR 會讓兩個程序同時佔住 8765，瀏覽器隨機連到其中一個（比如舊版本）
     allow_reuse_address = os.name != "nt"
 
 
 def serve(port: int | None = None, open_browser: bool = False, path: str = "/", exit_on_close: bool = False):
-    """exit_on_close：start.cmd / start.sh 启动时为真，页面都关了、后台任务也做完了就退出。"""
+    """exit_on_close：start.cmd / start.sh 啟動時為真，頁面都關了、背景任務也做完了就退出。"""
     setup_log(config.LOG_PATH)
     cfg = config.load()
     app = App(cfg)
@@ -34,8 +34,8 @@ def serve(port: int | None = None, open_browser: bool = False, path: str = "/", 
     app.presence = Presence(app.jobs.busy, httpd.shutdown, exit_on_close)
     if not config.temp_library():
         write_json_atomic(config.SERVER_INFO, {"url": url, "pid": os.getpid(), "started": now_iso()})
-    log.info("EasyRead %s 已启动：%s  文献库：%s", __version__, url, app.lib.root)
-    print(f"EasyRead 已启动：{url}  文献库：{app.lib.root}", flush=True)
+    log.info("EasyRead %s 已啟動：%s  文獻庫：%s", __version__, url, app.lib.root)
+    print(f"EasyRead 已啟動：{url}  文獻庫：{app.lib.root}", flush=True)
     if open_browser:
         threading.Timer(0.4, lambda: webbrowser.open(url + path)).start()
     try:
@@ -45,4 +45,4 @@ def serve(port: int | None = None, open_browser: bool = False, path: str = "/", 
     finally:
         httpd.server_close()
         if not config.temp_library() and (read_json(config.SERVER_INFO, {}) or {}).get("pid") == os.getpid():
-            config.SERVER_INFO.unlink(missing_ok=True)  # 下次 easyread 命令不会去连一个已经关掉的服务
+            config.SERVER_INFO.unlink(missing_ok=True)  # 下次 easyread 命令不會去連一個已經關掉的服務

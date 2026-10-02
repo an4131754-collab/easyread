@@ -1,14 +1,14 @@
-"""从各种来源拿到论文 PDF 和元数据。
+"""從各種來源拿到論文 PDF 和後設資料。
 
-能认的输入：
-- arXiv 编号或链接（2411.00640、arxiv.org/abs/…），以及 alphaXiv、Hugging Face Papers 等带 arXiv 编号的论文站链接
-- DOI（10.xxxx/…、doi.org 链接）——查 Semantic Scholar 的开放获取 PDF，没有就退到 arXiv 版本
-- OpenReview、ACL Anthology、bioRxiv / medRxiv、PubMed Central 链接
-- 期刊 / 会议的论文页面——读页面里的 citation_pdf_url 等元数据（Google Scholar 和 Zotero 都认这套标签）
-- PDF 直链
-- 论文标题——在 Semantic Scholar 里找最匹配的一篇
+能認的輸入：
+- arXiv 編號或連結（2411.00640、arxiv.org/abs/…），以及 alphaXiv、Hugging Face Papers 等帶 arXiv 編號的論文站連結
+- DOI（10.xxxx/…、doi.org 連結）——查 Semantic Scholar 的開放獲取 PDF，沒有就退到 arXiv 版本
+- OpenReview、ACL Anthology、bioRxiv / medRxiv、PubMed Central 連結
+- 期刊 / 會議的論文頁面——讀頁面裡的 citation_pdf_url 等後設資料（Google Scholar 和 Zotero 都認這套標籤）
+- PDF 直鏈
+- 論文標題——在 Semantic Scholar 裡找最匹配的一篇
 
-本地拖进来的 PDF 也会用这里的 enrich()：从第一页找 arXiv 编号或 DOI，补上作者、年份、出处。
+本地拖進來的 PDF 也會用這裡的 enrich()：從第一頁找 arXiv 編號或 DOI，補上作者、年份、出處。
 """
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ ARXIV_RE = re.compile(r"(?<![\d.])(\d{4}\.\d{4,5}(?:v\d+)?|[a-z\-]+(?:\.[A-Z]{2}
 DOI_RE = re.compile(r"\b(10\.\d{4,9}/[^\s\"<>]+[^\s\"<>.,;)\]])", re.I)
 
 
-# 链接里带 arXiv 编号的论文站：alphaXiv、Hugging Face Papers、Papers.cool……直接去 arXiv 拿 PDF
+# 連結裡帶 arXiv 編號的論文站：alphaXiv、Hugging Face Papers、Papers.cool……直接去 arXiv 拿 PDF
 ARXIV_MIRRORS = ("alphaxiv.org", "huggingface.co/papers", "hf.co/papers", "papers.cool/arxiv", "paperswithcode.com",
                  "arxiv-sanity", "semanticscholar.org/arxiv", "scholar.archive.org", "hjfy.top", "chatpaper", "papers.labml.ai")
 
@@ -39,18 +39,18 @@ class SourceError(ValueError):
     pass
 
 
-# ---------- 网络 ----------
+# ---------- 網路 ----------
 def _get(url: str, accept: str = "*/*", timeout: int = 60, limit: int = MAX_PDF) -> tuple[bytes, str, str]:
-    """返回 (内容, Content-Type, 最终地址)。"""
+    """返回 (內容, Content-Type, 最終地址)。"""
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": accept, "Accept-Language": "en,zh;q=0.8"})
     try:
         with http.urlopen(req, timeout=timeout) as r:
             data = r.read(limit + 1)
             ctype, final = r.headers.get("Content-Type", ""), r.geturl()
     except Exception as e:  # noqa: BLE001
-        raise SourceError(f"打不开 {url}：{e}")
+        raise SourceError(f"打不開 {url}：{e}")
     if len(data) > limit:
-        raise SourceError("文件超过 200 MB")
+        raise SourceError("檔案超過 200 MB")
     return data, ctype, final
 
 
@@ -62,7 +62,7 @@ def _json(url: str) -> dict:
 def _pdf(url: str) -> bytes:
     data, _, _ = _get(url, "application/pdf,*/*", 120)
     if not data.startswith(b"%PDF"):
-        raise SourceError(f"{url} 打开的不是 PDF")
+        raise SourceError(f"{url} 開啟的不是 PDF")
     return data
 
 
@@ -73,7 +73,7 @@ def _arxiv_pdf(aid: str) -> bytes:
         base = re.sub(r"v\d+$", "", aid)
         if base == aid:
             raise
-        return _pdf(f"https://arxiv.org/pdf/{base}")  # 链接里的版本号 arXiv 上还没有（或写错了），退到最新版
+        return _pdf(f"https://arxiv.org/pdf/{base}")  # 連結裡的版本號 arXiv 上還沒有（或寫錯了），退到最新版
 
 
 def _name(url: str, fallback: str = "paper") -> str:
@@ -82,13 +82,13 @@ def _name(url: str, fallback: str = "paper") -> str:
     return name if name.lower().endswith(".pdf") else name + ".pdf"
 
 
-# ---------- 元数据 ----------
+# ---------- 後設資料 ----------
 def arxiv_meta(aid: str) -> dict:
     meta = {"arxiv": f"arXiv:{aid}", "url": f"https://arxiv.org/abs/{aid}"}
     try:
         data, _, _ = _get(f"https://export.arxiv.org/api/query?id_list={aid}", timeout=30, limit=2_000_000)
         meta.update(_parse_arxiv_atom(data))
-    except Exception:  # noqa: BLE001 —— 元数据拿不到不影响导入
+    except Exception:  # noqa: BLE001 —— 後設資料拿不到不影響匯入
         pass
     return meta
 
@@ -147,10 +147,10 @@ def s2_search_title(title: str) -> dict | None:
 
 def _from_s2(p: dict | None, what: str) -> tuple[bytes, str, dict]:
     if not p:
-        raise SourceError(f"在 Semantic Scholar 上没找到 {what}")
+        raise SourceError(f"在 Semantic Scholar 上沒找到 {what}")
     meta = _s2_meta(p)
     ext = p.get("externalIds") or {}
-    if ext.get("ArXiv"):  # arXiv 版最稳
+    if ext.get("ArXiv"):  # arXiv 版最穩
         aid = ext["ArXiv"]
         return _arxiv_pdf(aid), f"{aid}.pdf", {**arxiv_meta(aid), **{k: v for k, v in meta.items() if k in ("doi", "venue")}}
     oa = (p.get("openAccessPdf") or {}).get("url")
@@ -160,10 +160,10 @@ def _from_s2(p: dict | None, what: str) -> tuple[bytes, str, dict]:
         except SourceError:
             data, name, page_meta = _from_page(oa)
             return data, name, {**meta, **{k: v for k, v in page_meta.items() if k not in meta}}
-    raise SourceError(f"找到了《{meta.get('title_en', what)}》，但没有公开的 PDF。请从出版社或学校图书馆下载后拖进来")
+    raise SourceError(f"找到了《{meta.get('title_en', what)}》，但沒有公開的 PDF。請從出版社或學校圖書館下載後拖進來")
 
 
-# ---------- 网页里的 PDF 链接 ----------
+# ---------- 網頁裡的 PDF 連結 ----------
 _META_RE = re.compile(r"<meta\s+[^>]*?(?:name|property)\s*=\s*[\"']([^\"']+)[\"'][^>]*?content\s*=\s*[\"']([^\"']*)[\"']", re.I)
 _META_RE2 = re.compile(r"<meta\s+[^>]*?content\s*=\s*[\"']([^\"']*)[\"'][^>]*?(?:name|property)\s*=\s*[\"']([^\"']+)[\"']", re.I)
 
@@ -199,7 +199,7 @@ def _from_page(url: str) -> tuple[bytes, str, dict]:
     meta["year"] = (re.search(r"(19|20)\d{2}", meta["date"] or "") or [""])[0]
     meta = {k: v for k, v in meta.items() if v}
     pdf_url = first("citation_pdf_url")
-    if not pdf_url:  # 找页面里明显的 PDF 链接
+    if not pdf_url:  # 找頁面裡明顯的 PDF 連結
         m = re.search(r"href=[\"']([^\"']+\.pdf(?:\?[^\"']*)?)[\"']", page, re.I)
         pdf_url = m.group(1) if m else ""
     if pdf_url:
@@ -210,14 +210,14 @@ def _from_page(url: str) -> tuple[bytes, str, dict]:
             pass
     if meta.get("doi"):
         return _from_s2(s2_lookup("DOI:" + meta["doi"]), meta["doi"])
-    raise SourceError("这个网页里没找到能下载的 PDF。可能需要登录或订阅，请下载后拖进来")
+    raise SourceError("這個網頁裡沒找到能下載的 PDF。可能需要登入或訂閱，請下載後拖進來")
 
 
 # ---------- 入口 ----------
 def fetch(ref: str) -> tuple[bytes, str, dict]:
     ref = (ref or "").strip().strip("<>")
     if not ref:
-        raise SourceError("填一个链接、arXiv 编号、DOI 或论文标题")
+        raise SourceError("填一個連結、arXiv 編號、DOI 或論文標題")
     low = ref.lower()
     is_url = bool(re.match(r"https?://", ref, re.I))
 
@@ -255,18 +255,18 @@ def fetch(ref: str) -> tuple[bytes, str, dict]:
             return _from_page(ref)
         except SourceError:
             m = re.search(r"(?<![\d.])(\d{4}\.\d{4,5})(?:v\d+)?(?![\d])", urllib.parse.urlparse(ref).path)
-            if not m:  # 别的论文站：网页里找不到 PDF，但链接里有 arXiv 编号，就当 arXiv 论文
+            if not m:  # 別的論文站：網頁裡找不到 PDF，但連結裡有 arXiv 編號，就當 arXiv 論文
                 raise
             return _arxiv_pdf(m.group(1)), f"{m.group(1)}.pdf", arxiv_meta(m.group(1))
 
-    # 其余当作标题
+    # 其餘當作標題
     if len(ref) < 8:
-        raise SourceError("认不出来。可以填 arXiv 编号、DOI、论文链接、PDF 直链，或者完整的论文标题")
+        raise SourceError("認不出來。可以填 arXiv 編號、DOI、論文連結、PDF 直鏈，或者完整的論文標題")
     return _from_s2(s2_search_title(ref), f"“{ref}”")
 
 
 def enrich(first_page_text: str, meta: dict) -> dict:
-    """本地 PDF：从第一页文字里找 arXiv 编号或 DOI，补全元数据。只补空着的字段。"""
+    """本地 PDF：從第一頁文字裡找 arXiv 編號或 DOI，補全後設資料。只補空著的欄位。"""
     if meta.get("authors") and meta.get("year"):
         return {}
     text = first_page_text[:6000]

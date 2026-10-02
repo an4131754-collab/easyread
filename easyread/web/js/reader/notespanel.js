@@ -1,4 +1,4 @@
-/* 右侧笔记面板：全部批注按原文顺序排好（可筛选、可就地编辑），以及整篇的“论文笔记”。 */
+/* 右側筆記面板：全部批註按原文順序排好（可篩選、可就地編輯），以及整篇的“論文筆記”。 */
 (function (PR) {
   "use strict";
   const S = PR.state;
@@ -22,7 +22,7 @@
       if (b.type === "heading" || b.type === "references") cur = b;
       if (b.id === id) break;
     }
-    return cur ? (cur.num ? cur.num + " " : "") + PR.plain(PR.textFor(cur.id) || cur.zh) : "论文开头";
+    return cur ? (cur.num ? cur.num + " " : "") + PR.plain(PR.textFor(cur.id) || cur.zh) : "論文開頭";
   }
   PR.sectionOf = sectionOf;
 
@@ -42,28 +42,28 @@
   PR.renderNotesPanel = function (editId) {
     if (editId !== undefined) { editing = editId; tab = "notes"; }
     const el = panel();
-    if (el.contains(document.activeElement) && document.activeElement.matches("textarea") && editId === undefined) return; // 正在打字，不打断
+    if (el.contains(document.activeElement) && document.activeElement.matches("textarea") && editId === undefined) return; // 正在打字，不打斷
     const list = items();
     const count = PR.myNotes().length + (S.discussion.entries || []).length;
-    let h = '<div class="np-head"><div class="seg"><button data-np="notes" class="' + (tab === "notes" ? "on" : "") + '">批注 ' + count + '</button><button data-np="paper" class="' + (tab === "paper" ? "on" : "") + '">论文笔记</button></div>' +
-      '<span class="grow"></span><button class="btn sm" data-np-act="md" title="导出 Markdown">导出</button><button class="btn icon" data-np-act="close" title="关闭（M）">×</button></div>';
+    let h = '<div class="np-head"><div class="seg"><button data-np="notes" class="' + (tab === "notes" ? "on" : "") + '">批註 ' + count + '</button><button data-np="paper" class="' + (tab === "paper" ? "on" : "") + '">論文筆記</button></div>' +
+      '<span class="grow"></span><button class="btn sm" data-np-act="md" title="匯出 Markdown">匯出</button><button class="btn icon" data-np-act="close" title="關閉（M）">×</button></div>';
     if (tab === "paper") {
       const body = (S.reader.paper_note || {}).body || "";
-      h += '<div class="np-paper"><div class="np-tools"><span class="hint">整篇的感悟、总结、待办。自动保存。</span><span class="grow"></span>' + PR.noteHelpButtons() +
-        '<button class="btn sm' + (preview ? " on" : "") + '" data-np-act="preview">' + (preview ? "编辑" : "预览") + "</button></div>" +
-        (preview ? '<div class="np-preview">' + (body ? PR.mdBlocks(body) : '<p class="hint">还没有写。</p>') + "</div>"
-          : '<textarea id="paperNote" placeholder="读完这篇，你怎么看？&#10;&#10;可以写：核心论点、我同意/不同意的地方、能用到哪里、还没搞懂的问题……&#10;支持 $公式$、**粗体**，空行分段。">' + PR.esc(body) + "</textarea>") + PR.noteHelpBox() + "</div>";
+      h += '<div class="np-paper"><div class="np-tools"><span class="hint">整篇的感悟、總結、待辦。自動儲存。</span><span class="grow"></span>' + PR.noteHelpButtons() +
+        '<button class="btn sm' + (preview ? " on" : "") + '" data-np-act="preview">' + (preview ? "編輯" : "預覽") + "</button></div>" +
+        (preview ? '<div class="np-preview">' + (body ? PR.mdBlocks(body) : '<p class="hint">還沒有寫。</p>') + "</div>"
+          : '<textarea id="paperNote" placeholder="讀完這篇，你怎麼看？&#10;&#10;可以寫：核心論點、我同意/不同意的地方、能用到哪裡、還沒搞懂的問題……&#10;支援 $公式$、**粗體**，空行分段。">' + PR.esc(body) + "</textarea>") + PR.noteHelpBox() + "</div>";
     } else {
-      const chips = [["all", "全部"], ["mine", "我的笔记"], ["hl", "划线"], ["agent", "AI"], ["open", "待回答"]]
+      const chips = [["all", "全部"], ["mine", "我的筆記"], ["hl", "劃線"], ["agent", "AI"], ["open", "待回答"]]
         .map(([k, l]) => '<button data-nf="' + k + '" class="' + (filter === k ? "on" : "") + '">' + l + "</button>").join("");
-      h += '<div class="np-filters">' + chips + '</div><div class="np-add"><button class="btn sm line" data-np-act="add">' + PR.icon("plus", "sm") + "给当前段写笔记</button></div><div class=\"np-list\">";
+      h += '<div class="np-filters">' + chips + '</div><div class="np-add"><button class="btn sm line" data-np-act="add">' + PR.icon("plus", "sm") + "給當前段寫筆記</button></div><div class=\"np-list\">";
       let lastSec = null;
       for (const it of list) {
-        const sec = it.anchor === "head" ? "论文开头" : "第 " + (PR.blockById[it.anchor] || {}).page + " 页 · " + sectionOf(it.anchor);
+        const sec = it.anchor === "head" ? "論文開頭" : "第 " + (PR.blockById[it.anchor] || {}).page + " 頁 · " + sectionOf(it.anchor);
         if (sec !== lastSec) { h += '<div class="np-sec">' + PR.esc(sec) + "</div>"; lastSec = sec; }
         h += PR.cardHtml(it, editing);
       }
-      if (!list.length) h += '<p class="hint np-empty">' + (filter === "all" ? "还没有批注。选中正文文字可以划线、写笔记、提问；点一下段落也能加笔记。" : "这个分类下没有内容。") + "</p>";
+      if (!list.length) h += '<p class="hint np-empty">' + (filter === "all" ? "還沒有批註。選中正文文字可以劃線、寫筆記、提問；點一下段落也能加筆記。" : "這個分類下沒有內容。") + "</p>";
       h += "</div>";
     }
     el.innerHTML = h;
@@ -92,7 +92,7 @@
     PR.autosize(e.target);
     if (e.target.id === "paperNote") {
       savePaperNote();
-      const btns = PR.$("#notespanel .nh-btns");  // 笔记从空变成有内容（或反过来）：“起草稿”换成“点评 / 帮我改”
+      const btns = PR.$("#notespanel .nh-btns");  // 筆記從空變成有內容（或反過來）：“起草稿”換成“點評 / 幫我改”
       if (btns && (btns.querySelector('[data-nh="draft"]') ? 1 : 0) !== (e.target.value.trim() ? 0 : 1)) btns.outerHTML = PR.noteHelpButtons();
     }
     else if (e.target.matches(".card textarea")) saveEditing();
@@ -128,29 +128,29 @@
     if (card.dataset.anchor) { PR.jumpTo("b-" + card.dataset.anchor); if (card.dataset.note) setTimeout(() => PR.$$('mark[data-note="' + card.dataset.note + '"]').forEach((m) => m.classList.add("active")), 400); }
   });
 
-  /* 导出的 Markdown：论文笔记 + 按原文顺序的批注 */
-  /* pick：{paper, note, highlight, question, ai, chat, quote}，不传就全要 */
+  /* 匯出的 Markdown：論文筆記 + 按原文順序的批註 */
+  /* pick：{paper, note, highlight, question, ai, chat, quote}，不傳就全要 */
   PR.notesMarkdown = function (pick, chat) {
     pick = pick || { paper: true, note: true, highlight: true, question: true, ai: true, quote: true };
     const m = S.paper.meta || {};
     const link = m.url || (m.arxiv ? "https://arxiv.org/abs/" + String(m.arxiv).replace(/^arXiv:/i, "").split(/[\sv]/)[0] : "");
     const out = ["# " + (m.title_zh || m.title_en || ""), "", m.title_en ? "*" + m.title_en + "*  " : "", [m.authors, m.date, link].filter(Boolean).join(" · "), ""];
     const pn = (S.reader.paper_note || {}).body;
-    if (pick.paper && pn) out.push("## 论文笔记", "", pn, "");
+    if (pick.paper && pn) out.push("## 論文筆記", "", pn, "");
     const want = (it) => it.src === "mine" ? !!pick[it.data.kind === "question" ? "question" : it.data.kind === "highlight" ? "highlight" : "note"] : !!pick.ai;
     const list = (() => { const f = filter; filter = "all"; const r = items().filter(want); filter = f; return r; })();
-    if (list.length) out.push("## 批注", "");
+    if (list.length) out.push("## 批註", "");
     let lastSec = "";
     for (const it of list) {
-      const sec = it.anchor === "head" ? "论文开头" : sectionOf(it.anchor);
+      const sec = it.anchor === "head" ? "論文開頭" : sectionOf(it.anchor);
       if (sec !== lastSec) { out.push("### " + sec, ""); lastSec = sec; }
       const d = it.data;
       const q = pick.quote && d.quote ? "「" + d.quote + "」" : "";
-      if (it.src === "mine") out.push("- **" + ({ question: "我的问题", highlight: "划线" }[d.kind] || "我的笔记") + "**" + q + (d.body ? "：" + d.body : ""));
-      else out.push("- **AI" + (d.kind === "reply" ? " 回答" : "") + (d.title ? "：" + d.title : "") + "**" + q + (d.q ? "（问：" + d.q + "）" : "") + "\n\n  " + (d.body || "").replace(/\n/g, "\n  "));
+      if (it.src === "mine") out.push("- **" + ({ question: "我的問題", highlight: "劃線" }[d.kind] || "我的筆記") + "**" + q + (d.body ? "：" + d.body : ""));
+      else out.push("- **AI" + (d.kind === "reply" ? " 回答" : "") + (d.title ? "：" + d.title : "") + "**" + q + (d.q ? "（問：" + d.q + "）" : "") + "\n\n  " + (d.body || "").replace(/\n/g, "\n  "));
     }
     if (pick.chat && chat && chat.length) {
-      out.push("", "## 问 AI 的对话", "");
+      out.push("", "## 問 AI 的對話", "");
       for (const c of chat) out.push(c.role === "user" ? "**我**：" + c.content : "**AI**（" + (c.model || "") + "）：" + c.content, "");
     }
     return out.join("\n");

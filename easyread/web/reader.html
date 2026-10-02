@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-TW">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -18,30 +18,30 @@
 <div id="progress" aria-hidden="true"><i></i></div>
 
 <header class="topbar" id="bar">
-  <a class="btn brand-back" id="backBtn" href="/" title="回文献库"></a>
-  <button class="btn icon" data-act="drawer" title="目录（T）"></button>
+  <a class="btn brand-back" id="backBtn" href="/" title="迴文獻庫"></a>
+  <button class="btn icon" data-act="drawer" title="目錄（T）"></button>
   <div class="bar-titles">
     <span class="bar-title"></span>
     <span class="bar-section"></span>
   </div>
   <span class="grow"></span>
   <span class="job-state" id="jobState"></span>
-  <div class="seg" role="group" aria-label="显示">
-    <button data-mode="zh" title="只看译文">译文</button>
-    <button data-mode="bi" title="译文下附原文（B）">对照</button>
+  <div class="seg" role="group" aria-label="顯示">
+    <button data-mode="zh" title="只看譯文">譯文</button>
+    <button data-mode="bi" title="譯文下附原文（B）">對照</button>
   </div>
-  <button class="btn" data-act="pages" title="原文页，跟随阅读位置（O）"></button>
-  <button class="btn" data-act="notes" title="笔记面板（M）"></button>
-  <button class="btn" data-act="chat" title="边读边问 AI（A）"></button>
-  <button class="btn" data-act="settings" title="字号、版心、字体（=、- 调字号）">Aa</button>
-  <button class="save-state" data-act="about" title="保存状态"><i></i><span>…</span></button>
+  <button class="btn" data-act="pages" title="原文頁，跟隨閱讀位置（O）"></button>
+  <button class="btn" data-act="notes" title="筆記面板（M）"></button>
+  <button class="btn" data-act="chat" title="邊讀邊問 AI（A）"></button>
+  <button class="btn" data-act="settings" title="字號、版心、字型（=、- 調字號）">Aa</button>
+  <button class="save-state" data-act="about" title="儲存狀態"><i></i><span>…</span></button>
 </header>
 
-<aside id="drawer" aria-label="目录">
+<aside id="drawer" aria-label="目錄">
   <div class="drawer-tabs" role="tablist">
-    <button data-tab="toc" class="on">目录</button>
-    <button data-tab="terms">术语</button>
-    <button data-tab="about">说明</button>
+    <button data-tab="toc" class="on">目錄</button>
+    <button data-tab="terms">術語</button>
+    <button data-tab="about">說明</button>
     <button data-tab="recent" class="server-only">最近</button>
   </div>
   <div class="drawer-body"></div>
@@ -49,31 +49,31 @@
 <div id="scrim"></div>
 
 <main id="stage">
-  <article id="paper" lang="zh-CN"></article>
-  <aside id="margin" aria-label="讨论与笔记"></aside>
+  <article id="paper" lang="zh-TW"></article>
+  <aside id="margin" aria-label="討論與筆記"></aside>
 </main>
 
-<section id="pageview" class="side-panel" aria-label="原文页">
+<section id="pageview" class="side-panel" aria-label="原文頁">
   <div class="pv-head">
-    <button class="btn icon" data-pv="prev" title="上一页（[）">‹</button>
+    <button class="btn icon" data-pv="prev" title="上一頁（[）">‹</button>
     <span class="pv-label"></span>
-    <button class="btn icon" data-pv="next" title="下一页（]）">›</button>
+    <button class="btn icon" data-pv="next" title="下一頁（]）">›</button>
     <span class="grow"></span>
-    <label class="pv-follow" title="随阅读位置翻页"><input type="checkbox" checked> 跟随</label>
+    <label class="pv-follow" title="隨閱讀位置翻頁"><input type="checkbox" checked> 跟隨</label>
     <button class="btn sm" data-pv="zoom">放大</button>
     <a class="btn sm" data-pv="pdf" target="_blank" rel="noopener">PDF</a>
-    <button class="btn icon" data-pv="close" title="关闭（O）">×</button>
+    <button class="btn icon" data-pv="close" title="關閉（O）">×</button>
   </div>
   <div class="pv-scroll"><div class="pv-page"><img alt=""><div class="pv-hl"></div></div></div>
 </section>
 
-<section id="notespanel" class="side-panel" aria-label="笔记"></section>
-<section id="chatpanel" class="side-panel" aria-label="问 AI"></section>
+<section id="notespanel" class="side-panel" aria-label="筆記"></section>
+<section id="chatpanel" class="side-panel" aria-label="問 AI"></section>
 <div class="dialog-backdrop" id="readerDlg"><div class="dialog" role="dialog"></div></div>
-<div class="dialog-backdrop" id="settingsDlg"><div class="dialog" role="dialog" aria-label="设置"></div></div>
+<div class="dialog-backdrop" id="settingsDlg"><div class="dialog" role="dialog" aria-label="設定"></div></div>
 <div class="dialog-backdrop" id="textDlg"><div class="dialog wide" role="dialog"></div></div>
 
-<div id="settings" class="menu" role="dialog" aria-label="阅读设置"></div>
+<div id="settings" class="menu" role="dialog" aria-label="閱讀設定"></div>
 <div id="popover" class="popover" role="tooltip"></div>
 <div id="selbar" class="popover" role="toolbar"></div>
 <div id="blockbar" class="popover" role="toolbar"></div>

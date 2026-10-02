@@ -1,9 +1,9 @@
-"""翻译 / 回答用的模型后端。
+"""翻譯 / 回答用的模型後端。
 
-- claude：本机的 Claude Code 无头模式（claude -p），用你已有的登录，不需要 Key；能自己读原页图核对公式和表格。
-- codex：本机的 Codex CLI（codex exec），同样用已有登录，原页图作为附件发过去。
-- openai：任何 OpenAI 兼容接口（Ollama、智谱、硅基流动、DeepSeek、Gemini……），在设置里填地址、模型和 Key；
-  Chat Completions 和 Responses 两种格式都行（见 openai_api.py）。
+- claude：本機的 Claude Code 無頭模式（claude -p），用你已有的登入，不需要 Key；能自己讀原頁圖核對公式和表格。
+- codex：本機的 Codex CLI（codex exec），同樣用已有登入，原頁圖作為附件發過去。
+- openai：任何 OpenAI 相容介面（Ollama、智譜、矽基流動、DeepSeek、Gemini……），在設定裡填地址、模型和 Key；
+  Chat Completions 和 Responses 兩種格式都行（見 openai_api.py）。
 """
 from __future__ import annotations
 
@@ -27,12 +27,12 @@ class Cancelled(RuntimeError):
     pass
 
 
-ENGINE_NAMES = {"claude": "Claude Code", "codex": "Codex CLI", "openai": "API", "none": "不翻译"}
+ENGINE_NAMES = {"claude": "Claude Code", "codex": "Codex CLI", "openai": "API", "none": "不翻譯"}
 
 
 def run(cfg: dict, prompt: str, cwd: Path, images: list[Path] | None = None, cancel: threading.Event | None = None,
         meter: usage.Meter | None = None) -> str:
-    """meter：传了就把这次调用的 token 用量记进去（整篇翻译时用）。"""
+    """meter：傳了就把這次呼叫的 token 用量記進去（整篇翻譯時用）。"""
     bad = netcheck.problem(cfg)
     if bad:
         raise EngineError(bad)
@@ -50,11 +50,11 @@ def _run(cfg: dict, prompt: str, cwd: Path, images: list[Path] | None, cancel: t
         return run_codex(cfg["codex"], prompt, cwd, images or [], cancel, meter)
     if engine == "openai":
         return run_openai(cfg["openai"], prompt, images or [], cancel, meter)
-    raise EngineError("没有配置翻译引擎（设置 → 模型）")
+    raise EngineError("沒有配置翻譯引擎（設定 → 模型）")
 
 
 def image_mode(cfg: dict) -> str:
-    """提示词里怎么说原页图：claude 自己用 Read 读；codex 和能看图的接口作为附件；其余没有图。"""
+    """提示詞裡怎麼說原頁圖：claude 自己用 Read 讀；codex 和能看圖的介面作為附件；其餘沒有圖。"""
     engine = cfg.get("engine")
     if engine == "claude":
         return "claude"
@@ -70,9 +70,9 @@ def who(cfg: dict) -> str:
     return {"claude": "claude", "codex": "codex"}.get(engine, "")
 
 
-# ---------- 本机 CLI ----------
+# ---------- 本機 CLI ----------
 _NO_WINDOW = 0x08000000 if hasattr(subprocess, "CREATE_NO_WINDOW") else 0
-# stream-json 比 json 多一条 rate_limit_event（订阅额度用了百分之几）；-p 下用它必须加 --verbose
+# stream-json 比 json 多一條 rate_limit_event（訂閱額度用了百分之幾）；-p 下用它必須加 --verbose
 _CLAUDE_ARGS = ["--output-format", "stream-json", "--verbose", "--allowedTools", "Read", "--strict-mcp-config",
                 "--disable-slash-commands", "--no-session-persistence"]
 
@@ -94,7 +94,7 @@ def _popen(args: list[str], cwd: Path):
 def run_claude(c: dict, prompt: str, cwd: Path, cancel=None, meter=None) -> str:
     exe = claude_path(c)
     if not exe:
-        raise EngineError(f"找不到 Claude Code 命令：{c.get('command') or 'claude'}（先装好并登录 Claude Code）")
+        raise EngineError(f"找不到 Claude Code 命令：{c.get('command') or 'claude'}（先裝好並登入 Claude Code）")
     args = [exe, "-p", *_CLAUDE_ARGS]
     if c.get("model"):
         args += ["--model", c["model"]]
@@ -103,21 +103,21 @@ def run_claude(c: dict, prompt: str, cwd: Path, cancel=None, meter=None) -> str:
     events = _json_lines(out)
     res = next((e for e in reversed(events) if e.get("type") == "result"), None)
     if res is None:
-        raise EngineError(f"Claude Code 输出不是 JSON：{out[:300]}")
+        raise EngineError(f"Claude Code 輸出不是 JSON：{out[:300]}")
     if meter is not None:
         meter.add(**usage.from_claude(res, next((e for e in reversed(events) if e.get("type") == "rate_limit_event"), None)))
     if res.get("is_error") or res.get("subtype", "success") != "success":
         msg = str(res.get("result") or res.get("terminal_reason") or res.get("subtype"))
         if "limit" in msg.lower():
-            msg += "（用量到上限了，等额度恢复后点“重试”，或在设置里换个引擎）"
-        raise EngineError(f"Claude Code 出错：{msg}")
+            msg += "（用量到上限了，等額度恢復後點“重試”，或在設定裡換個引擎）"
+        raise EngineError(f"Claude Code 出錯：{msg}")
     return res.get("result") or ""
 
 
 def run_codex(c: dict, prompt: str, cwd: Path, images: list[Path], cancel=None, meter=None) -> str:
     exe = codex_path(c)
     if not exe:
-        raise EngineError(f"找不到 Codex 命令：{c.get('command') or 'codex'}（先装好并登录 Codex CLI）")
+        raise EngineError(f"找不到 Codex 命令：{c.get('command') or 'codex'}（先裝好並登入 Codex CLI）")
     fd, last = tempfile.mkstemp(suffix=".txt", prefix="easyread-codex-")
     os.close(fd)
     args = [exe, "exec", "--skip-git-repo-check", "--sandbox", "read-only", "--ephemeral", "--color", "never", "--json", "-o", last]
@@ -138,12 +138,12 @@ def run_codex(c: dict, prompt: str, cwd: Path, images: list[Path], cancel=None, 
                 meter.add(**usage.from_codex(e))
     if not text:
         errs = [str(e.get("message") or (e.get("error") or {}).get("message") or "") for e in events if e.get("type") in ("error", "turn.failed")]
-        raise EngineError("Codex 没有给出结果：" + (next((m for m in reversed(errs) if m), "") or (out or "")[-300:]))
+        raise EngineError("Codex 沒有給出結果：" + (next((m for m in reversed(errs) if m), "") or (out or "")[-300:]))
     return text
 
 
 def _json_lines(out: str) -> list[dict]:
-    """CLI 一行一个 JSON 事件；夹杂的非 JSON 行跳过。"""
+    """CLI 一行一個 JSON 事件；夾雜的非 JSON 行跳過。"""
     events = []
     for line in (out or "").splitlines():
         line = line.strip()
@@ -172,29 +172,29 @@ def _communicate(proc, stdin_text: str, timeout: int, cancel) -> str:
             raise Cancelled()
         if waited > timeout:
             proc.kill()
-            raise EngineError(f"超过 {timeout} 秒没有结果")
+            raise EngineError(f"超過 {timeout} 秒沒有結果")
     if proc.returncode not in (0, None) and not result.get("out"):
-        raise EngineError((result.get("err") or "")[-500:] or f"退出码 {proc.returncode}")
+        raise EngineError((result.get("err") or "")[-500:] or f"退出碼 {proc.returncode}")
     return result.get("out", "")
 
 
-# ---------- OpenAI 兼容接口 ----------
+# ---------- OpenAI 相容介面 ----------
 def run_openai(c: dict, prompt: str, images: list[Path], cancel=None, meter=None) -> str:
-    from . import openai_api  # 它要用本文件的 EngineError，放这里免得循环导入
+    from . import openai_api  # 它要用本檔案的 EngineError，放這裡免得迴圈匯入
     return openai_api.complete(c, prompt, images, cancel, meter)
 
 
 def parse_json(text: str):
-    """从模型输出里取出 JSON（容忍 ```json 围栏和前后废话）。"""
-    t = re.sub(r"<think>[\s\S]*?</think>", "", text).strip()  # 推理模型（deepseek-r1、qwen3）先输出的思考过程
-    # 先取最外层的 { … }：译文里可能本身带代码块（论文附录的 PyTorch 代码），按 ``` 围栏切会切到半截
+    """從模型輸出裡取出 JSON（容忍 ```json 圍欄和前後廢話）。"""
+    t = re.sub(r"<think>[\s\S]*?</think>", "", text).strip()  # 推理模型（deepseek-r1、qwen3）先輸出的思考過程
+    # 先取最外層的 { … }：譯文裡可能本身帶程式碼塊（論文附錄的 PyTorch 程式碼），按 ``` 圍欄切會切到半截
     bodies = []
     for s in (t, *(m.group(1).strip() for m in re.finditer(r"```(?:json)?\s*([\s\S]*?)```", t))):
         start = min([i for i in (s.find("{"), s.find("[")) if i >= 0], default=-1)
         if start >= 0:
             bodies.append(s[start:max(s.rfind("}"), s.rfind("]")) + 1])
     if not bodies:
-        raise EngineError("模型输出里没有 JSON：" + text[:200])
+        raise EngineError("模型輸出裡沒有 JSON：" + text[:200])
     first = None
     for body in bodies:
         try:
@@ -202,12 +202,12 @@ def parse_json(text: str):
         except json.JSONDecodeError as e:
             first = first or e
     body = bodies[0]
-    # 常见毛病：TeX 反斜杠没写成两个（\alpha、\sum）、字符串里有原样换行
+    # 常見毛病：TeX 反斜槓沒寫成兩個（\alpha、\sum）、字串裡有原樣換行
     fixed = re.sub(r'\\(?!["\\/bfnrtu])', r"\\\\", body)
     try:
         return json.loads(fixed, strict=False)
     except json.JSONDecodeError:
-        raise EngineError(f"模型输出的 JSON 格式有错（{first}），会自动重试")
+        raise EngineError(f"模型輸出的 JSON 格式有錯（{first}），會自動重試")
 
 
 def _version(exe: str) -> str:
@@ -219,16 +219,16 @@ def _version(exe: str) -> str:
 
 
 def test(cfg: dict) -> dict:
-    """设置页“测试”按钮：真的让模型回一句，确认引擎能用。"""
+    """設定頁“測試”按鈕：真的讓模型回一句，確認引擎能用。"""
     engine = cfg.get("engine")
     if engine in ("claude", "codex"):
         exe = (claude_path if engine == "claude" else codex_path)(cfg[engine])
         if not exe:
-            return {"ok": False, "message": f"找不到 {engine} 命令，先安装并登录"}
+            return {"ok": False, "message": f"找不到 {engine} 命令，先安裝並登入"}
     if engine == "none":
-        return {"ok": True, "message": "未启用自动翻译"}
+        return {"ok": True, "message": "未啟用自動翻譯"}
     try:
-        out = run(cfg, '只回复 JSON，不要别的文字：{"ok": true}', Path(tempfile.gettempdir()), None, None)
+        out = run(cfg, '只回復 JSON，不要別的文字：{"ok": true}', Path(tempfile.gettempdir()), None, None)
         parse_json(out)
         return {"ok": True, "message": "可以用：" + out.strip()[:40]}
     except (EngineError, Cancelled) as e:

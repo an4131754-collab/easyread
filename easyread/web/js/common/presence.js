@@ -1,5 +1,5 @@
-/* 页面开着就连着一条 WebSocket，让服务知道还有人在用。
-   用 start.cmd / start.sh 启动时，页面都关了、后台任务也做完了，服务会自己退出（见 easyread/presence.py）。 */
+/* 頁面開著就連著一條 WebSocket，讓服務知道還有人在用。
+   用 start.cmd / start.sh 啟動時，頁面都關了、背景任務也做完了，服務會自己退出（見 easyread/presence.py）。 */
 (function () {
   "use strict";
   if (location.protocol !== "http:" || typeof WebSocket === "undefined") return;
@@ -8,7 +8,7 @@
     let ws;
     try { ws = new WebSocket("ws://" + location.host + "/api/presence"); } catch (e) { return; }
     ws.onopen = () => { retries = 0; };
-    ws.onclose = () => { retries += 1; setTimeout(connect, Math.min(30000, 1000 * retries)); };  // 断了就重连（服务重启过）
+    ws.onclose = () => { retries += 1; setTimeout(connect, Math.min(30000, 1000 * retries)); };  // 斷了就重連（服務重啟過）
   }
   connect();
 })();

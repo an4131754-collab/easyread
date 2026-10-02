@@ -1,4 +1,4 @@
-// 顶栏：滚动后加分隔线；导航高亮当前所在的区块
+// 頂欄：滾動後加分隔線；導航高亮當前所在的區塊
 (function () {
   var bar = document.querySelector('.topbar');
   var onScroll = function () { bar.classList.toggle('scrolled', window.scrollY > 8); };

@@ -1,4 +1,4 @@
-/* 共用小工具。所有脚本共用全局 PR 命名空间（不打包、不用构建，也能内联成单文件离线版）。 */
+/* 共用小工具。所有指令碼共用全域性 PR 名稱空間（不打包、不用構建，也能內聯成單檔案離線版）。 */
 window.PR = window.PR || {};
 (function (PR) {
   "use strict";
@@ -22,7 +22,7 @@ window.PR = window.PR || {};
   PR.esc = (s) => String(s == null ? "" : s)
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-  /* 和 Python store.text_hash 一致：FNV-1a 32 位，按 UTF-16 码元 */
+  /* 和 Python store.text_hash 一致：FNV-1a 32 位，按 UTF-16 碼元 */
   PR.hashText = function (s) {
     let h = 0x811c9dc5;
     s = s || "";
@@ -49,11 +49,11 @@ window.PR = window.PR || {};
   PR.relTime = function (iso) {
     if (!iso) return "";
     const s = (Date.now() - new Date(iso)) / 1000;
-    if (s < 60) return "刚刚";
-    if (s < 3600) return Math.floor(s / 60) + " 分钟前";
-    if (s < 86400) return Math.floor(s / 3600) + " 小时前";
+    if (s < 60) return "剛剛";
+    if (s < 3600) return Math.floor(s / 60) + " 分鐘前";
+    if (s < 86400) return Math.floor(s / 3600) + " 小時前";
     if (s < 86400 * 30) return Math.floor(s / 86400) + " 天前";
-    return new Date(iso).toLocaleDateString("zh-CN");
+    return new Date(iso).toLocaleDateString("zh-TW");
   };
 
   PR.uid = (p) => (p || "n") + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -79,7 +79,7 @@ window.PR = window.PR || {};
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } },
     del(k) { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } },
   };
-  try { // 改名前（coread-*）存的偏好搬过来
+  try { // 改名前（coread-*）存的偏好搬過來
     Object.keys(localStorage).filter((k) => k.startsWith("coread-")).forEach((k) => {
       const nk = "easyread-" + k.slice(7);
       if (localStorage.getItem(nk) == null) localStorage.setItem(nk, localStorage.getItem(k));
@@ -87,7 +87,7 @@ window.PR = window.PR || {};
     });
   } catch (e) { /* ignore */ }
 
-  /* 偏好存到本机数据目录的 prefs.json（换浏览器、清缓存都还在）；localStorage 只当缓存。离线单文件版没有服务，只用缓存。 */
+  /* 偏好存到本機資料目錄的 prefs.json（換瀏覽器、清快取都還在）；localStorage 只當快取。離線單檔案版沒有服務，只用快取。 */
   let prefQueue = {}, prefT = null;
   PR.savePrefs = function (section, obj) {
     prefQueue[section] = Object.assign(prefQueue[section] || {}, obj);
@@ -98,9 +98,9 @@ window.PR = window.PR || {};
     clearTimeout(prefT);
     if (!PR.token || location.protocol === "file:" || !Object.keys(prefQueue).length) return;
     const body = prefQueue; prefQueue = {};
-    if (leaving) {  // 关页面、刷新时：keepalive 让请求在页面走掉后也能发完
+    if (leaving) {  // 關頁面、重新整理時：keepalive 讓請求在頁面走掉後也能發完
       fetch("/api/prefs", { method: "POST", keepalive: true, headers: { "Content-Type": "application/json", "X-Token": PR.token }, body: JSON.stringify(body) }).catch(() => {});
-    } else PR.api("/api/prefs", { method: "POST", body }).catch(() => { /* 下次改动再存 */ });
+    } else PR.api("/api/prefs", { method: "POST", body }).catch(() => { /* 下次改動再存 */ });
   }
   window.addEventListener("pagehide", () => flushPrefs(true));
   PR.loadPrefs = async function () {
@@ -115,7 +115,7 @@ window.PR = window.PR || {};
 
   PR.autosize = function (ta) { ta.style.height = "auto"; ta.style.height = ta.scrollHeight + 2 + "px"; };
 
-  /* 图标：线性 20×20 */
+  /* 圖示：線性 20×20 */
   const P = {
     menu: "M3 5.5h14M3 10h14M3 14.5h9",
     back: "M12.5 4.5L7 10l5.5 5.5",
@@ -151,7 +151,7 @@ window.PR = window.PR || {};
     sparkle: "M10 3v4M10 13v4M3 10h4M13 10h4M5.5 5.5l2 2M12.5 12.5l2 2M14.5 5.5l-2 2M7.5 12.5l-2 2",
     question: "M7.5 7.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-.9.8-.9 1.4v.8M10 14.5v.01M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16z",
   };
-  PR.HL_COLORS = [["yellow", "黄"], ["green", "绿"], ["blue", "蓝"], ["pink", "红"]];  // pink 历史上叫粉，现在画成红
+  PR.HL_COLORS = [["yellow", "黃"], ["green", "綠"], ["blue", "藍"], ["pink", "紅"]];  // pink 歷史上叫粉，現在畫成紅
   PR.logo = (cls) => '<svg class="' + (cls || "mark") + '" viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="1" width="30" height="30" rx="8" fill="#2d6173"/><path d="M16 10.5C13.6 8.8 10.4 8.3 7 8.6v14.2c3.4-.3 6.6.2 9 1.9 2.4-1.7 5.6-2.2 9-1.9V8.6c-3.4-.3-6.6.2-9 1.9z" fill="#f6f3ec"/><path d="M16 10.5v14.2" stroke="#2d6173" stroke-width="1.2"/><path d="M9.4 13.4h4M9.4 16.4h4M9.4 19.4h2.6" stroke="#9fb7bf" stroke-width="1.6" stroke-linecap="round"/><path d="M18.6 13.4h4M18.6 16.4h4M18.6 19.4h2.6" stroke="#e0a84f" stroke-width="1.6" stroke-linecap="round"/></svg>';
   PR.icon = (name, cls) => '<svg class="i' + (cls ? " " + cls : "") + '" viewBox="0 0 20 20" aria-hidden="true"><path d="' + (P[name] || "") + '"/></svg>';
   PR.icons = { menu: PR.icon("menu"), edit: PR.icon("edit", "sm"), note: PR.icon("note", "sm") };
@@ -170,7 +170,7 @@ window.PR = window.PR || {};
     PR._toastT = setTimeout(() => t.classList.remove("open"), ms || 4200);
   };
 
-  /* 服务接口：写操作带页面加载时拿到的令牌 */
+  /* 服務介面：寫操作帶頁面載入時拿到的令牌 */
   PR.api = async function (path, opts) {
     opts = opts || {};
     const headers = Object.assign({}, opts.headers || {});
@@ -179,22 +179,22 @@ window.PR = window.PR || {};
     if (opts.method && opts.method !== "GET") headers["X-Token"] = PR.token || "";
     const r = await fetch(path, { method: opts.method || "GET", headers, body, cache: "no-store" });
     const data = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(data.error || "请求失败 " + r.status);
+    if (!r.ok) throw new Error(data.error || "請求失敗 " + r.status);
     return data;
   };
 
-  /* 主题：文献库和阅读页共用 */
+  /* 主題：文獻庫和閱讀頁共用 */
   PR.applyTheme = function (theme) {
     const dark = theme === "dark" || (theme !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
     document.documentElement.dataset.theme = dark ? "dark" : "light";
   };
 
-  /* 简单事件总线 */
+  /* 簡單事件匯流排 */
   const subs = {};
   PR.on = (ev, fn) => (subs[ev] = subs[ev] || []).push(fn);
   PR.emit = (ev, data) => (subs[ev] || []).forEach((fn) => { try { fn(data); } catch (e) { console.error(e); } });
 
-  /* 通用下拉菜单：items = [{label, icon, kbd, fn} | "-"] */
+  /* 通用下拉選單：items = [{label, icon, kbd, fn} | "-"] */
   PR.menu = function (anchorOrPoint, items) {
     let m = PR.$("#ctxmenu");
     if (!m) { m = PR.el("div", { id: "ctxmenu", class: "menu" }); document.body.appendChild(m); }
@@ -204,7 +204,7 @@ window.PR = window.PR || {};
     m.onclick = (e) => {
       const b = e.target.closest("[data-i]"); if (!b) return;
       const r = m.getBoundingClientRect();
-      PR.lastMenuAt = { x: r.left, y: r.top };  // 菜单项要确认时，确认框就出在菜单原来的位置
+      PR.lastMenuAt = { x: r.left, y: r.top };  // 選單項要確認時，確認框就出在選單原來的位置
       PR.closeMenu(); items[+b.dataset.i].fn();
       setTimeout(() => (PR.lastMenuAt = null), 0);
     };

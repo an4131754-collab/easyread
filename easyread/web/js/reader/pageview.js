@@ -1,4 +1,4 @@
-/* 右侧面板：原文页（随阅读位置翻页、框出当前段）。和笔记面板共用右侧，一次开一个。 */
+/* 右側面板：原文頁（隨閱讀位置翻頁、框出當前段）。和筆記面板共用右側，一次開一個。 */
 (function (PR) {
   "use strict";
   const S = PR.state;
@@ -7,8 +7,8 @@
   const pages = () => (S.paper.meta || {}).pages || [];
   const boxesOf = (loc) => loc.boxes && loc.boxes.length ? loc.boxes : [loc.box];
 
-  /* 右侧面板开关：pages | notes | null */
-  /* 面板滑出的同时正文就让位：重排只要几十毫秒（fitWide 不再重量公式），不必等面板滑完再跳一下。 */
+  /* 右側面板開關：pages | notes | null */
+  /* 面板滑出的同時正文就讓位：重排只要幾十毫秒（fitWide 不再重量公式），不必等面板滑完再跳一下。 */
   PR.side = null;
   PR.openSide = function (name) {
     PR.side = name;
@@ -18,14 +18,14 @@
     PR.$('[data-act="chat"]').classList.toggle("on", name === "chat");
     PR.$('[data-act="pages"]').classList.toggle("on", name === "pages");
     PR.$('[data-act="notes"]').classList.toggle("on", name === "notes");
-    if (name) { const t = PR.$("#toast"); if (t) t.classList.remove("open"); }  // 提示条别挡住面板底部的输入框
-    if (body.classList.contains("side-open") === !!name) return;  // 面板之间切换：正文宽度不变
+    if (name) { const t = PR.$("#toast"); if (t) t.classList.remove("open"); }  // 提示條別擋住面板底部的輸入框
+    if (body.classList.contains("side-open") === !!name) return;  // 面板之間切換：正文寬度不變
     const anchor = PR.readingBlock && PR.readingBlock();
     const node = anchor && document.getElementById("b-" + anchor);
     const before = node ? node.getBoundingClientRect().top : 0;
     body.classList.toggle("side-open", !!name);
     PR.fitWide(); PR.renderMargin();
-    if (node) window.scrollBy(0, node.getBoundingClientRect().top - before);  // 重排后还停在刚才读的地方
+    if (node) window.scrollBy(0, node.getBoundingClientRect().top - before);  // 重排後還停在剛才讀的地方
   };
 
   PR.togglePages = function (force) {
@@ -39,14 +39,14 @@
     showPage(page, blockId);
   };
 
-  /* 原图是 2.4 倍渲染（约 1500 像素宽、几百 KB），面板用不了那么大：要一张和面板一样宽的，服务端生成一次后缓存 */
+  /* 原圖是 2.4 倍渲染（約 1500 畫素寬、幾百 KB），面板用不了那麼大：要一張和麵板一樣寬的，服務端生成一次後快取 */
   function srcOf(n) {
     const p = pages()[n - 1];
     if (!p) return "";
     const base = PR.imageUrl(p.img);
     if (PR.store.mode !== "server") return base;
     const need = (PR.$(".pv-scroll").clientWidth || 480) * (body.classList.contains("pv-zoom") ? 1.65 : 1) * (devicePixelRatio || 1);
-    return need <= 1000 ? base + "?w=1000" : need <= 1600 ? base + "?w=1600" : base;  // 1000 宽的服务端已提前生成好
+    return need <= 1000 ? base + "?w=1000" : need <= 1600 ? base + "?w=1600" : base;  // 1000 寬的服務端已提前生成好
   }
   const preloaded = new Set();
   function preload(n) {
@@ -64,7 +64,7 @@
     const src = srcOf(pvPage);
     if (img.getAttribute("src") !== src) { img.setAttribute("src", src); PR.$(".pv-page").classList.add("loading"); img.onload = () => PR.$(".pv-page").classList.remove("loading"); }
     preload(pvPage + 1); preload(pvPage - 1);
-    PR.$(".pv-label").textContent = "第 " + pvPage + " / " + list.length + " 页";
+    PR.$(".pv-label").textContent = "第 " + pvPage + " / " + list.length + " 頁";
     const pdf = PR.$('[data-pv="pdf"]');
     const url = PR.pdfUrl(pvPage);
     pdf.style.display = url ? "" : "none";
@@ -82,14 +82,14 @@
       }));
       hl.classList.add("on");
       const scroller = PR.$(".pv-scroll");
-      const doScroll = () => { const h = PR.$(".pv-page").offsetHeight;  // 原页里框出的那段也放在面板中间
+      const doScroll = () => { const h = PR.$(".pv-page").offsetHeight;  // 原頁裡框出的那段也放在面板中間
         const [, y0, , y1] = boxes[0];
         scroller.scrollTo({ top: Math.max(0, ((y0 + y1) / 2) * h + 18 - scroller.clientHeight / 2), behavior: "smooth" }); };
       img.complete ? doScroll() : img.addEventListener("load", doScroll, { once: true });
     } else hl.classList.remove("on");
   }
 
-  /* 译文里和原页框对应的那段也标出来（同一个颜色），一眼看出左右是哪两段 */
+  /* 譯文裡和原頁框對應的那段也標出來（同一個顏色），一眼看出左右是哪兩段 */
   let paired = null, holdUntil = 0;
   function pair(id) {
     if (paired === id) return;
@@ -99,11 +99,11 @@
     const node = id && document.getElementById("b-" + id);
     if (node) node.classList.add("pv-pair");
   }
-  PR.on("block-rendered", (id) => { if (id === paired) { paired = null; pair(id); } });  // 段落重画后补回标记
+  PR.on("block-rendered", (id) => { if (id === paired) { paired = null; pair(id); } });  // 段落重畫後補回標記
   PR.on("rendered", () => { const id = paired; paired = null; pair(id); });
   PR.on("remote", (changed) => { if (PR.side === "pages" && changed.includes("layout")) showPage(pvPage, pvBlock); });
 
-  /* 点原页上的某一段 → 正文跳到那段译文（排版特殊、看不出语序时，从原文找回去） */
+  /* 點原頁上的某一段 → 正文跳到那段譯文（排版特殊、看不出語序時，從原文找回去） */
   function blockAt(x, y) {
     let best = null, area = Infinity;
     for (const id in S.layout) {
@@ -121,7 +121,7 @@
     const id = blockAt((e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height);
     if (!id) return;
     pvBlock = id;
-    holdUntil = Date.now() + 1500;  // 跳过去的滚动会触发“跟随阅读位置”，别让它把刚点的段换掉
+    holdUntil = Date.now() + 1500;  // 跳過去的滾動會觸發“跟隨閱讀位置”，別讓它把剛點的段換掉
     showPage(pvPage, id);
     PR.jumpTo("b-" + id);
   });
@@ -137,7 +137,7 @@
     // Selection controls an explicit click; scrolling follows the viewport.
     const id = force ? (PR.currentBlock && PR.currentBlock()) || reading : reading;
     const b = PR.blockById[id];
-    if (!b) {  // 还在标题区，不在任何一段上：给第 1 页，别让面板空着
+    if (!b) {  // 還在標題區，不在任何一段上：給第 1 頁，別讓面板空著
       if (force || pvBlock) { pvBlock = null; showPage(1); }
       return;
     }
@@ -154,7 +154,7 @@
     if (act === "close") { PR.togglePages(false); pair(null); }
     if (act === "prev") showPage(pvPage - 1, pvBlock);
     if (act === "next") showPage(pvPage + 1, pvBlock);
-    if (act === "zoom") { body.classList.toggle("pv-zoom"); b.textContent = body.classList.contains("pv-zoom") ? "适宽" : "放大"; showPage(pvPage, pvBlock); }
+    if (act === "zoom") { body.classList.toggle("pv-zoom"); b.textContent = body.classList.contains("pv-zoom") ? "適寬" : "放大"; showPage(pvPage, pvBlock); }
   });
   PR.pageStep = (d) => showPage(pvPage + d, pvBlock);
 })(window.PR);

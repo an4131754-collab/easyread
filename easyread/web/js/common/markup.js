@@ -1,5 +1,5 @@
-/* 行内标记：$TeX$、**粗体**、*斜体*、`代码`、[n] 引用，以及“公式 (1) / 表 2 / 第 2.2 节 / 附录 A”这类交叉引用。
-   译文、讨论、笔记都用同一套，用户编辑时看到的就是这套原始标记。 */
+/* 行內標記：$TeX$、**粗體**、*斜體*、`程式碼`、[n] 引用，以及“公式 (1) / 表 2 / 第 2.2 節 / 附錄 A”這類交叉引用。
+   譯文、討論、筆記都用同一套，使用者編輯時看到的就是這套原始標記。 */
 (function (PR) {
   "use strict";
   const MATH = /(?<!\\)\$((?:\\\$|[^$])+?)(?<!\\)\$/g;
@@ -12,7 +12,7 @@
     try {
       html = katex.renderToString(tex, { displayMode: !!display, throwOnError: false, strict: "ignore", trust: false });
     } catch (e) {
-      html = '<code title="公式渲染失败">' + PR.esc(tex) + "</code>";
+      html = '<code title="公式渲染失敗">' + PR.esc(tex) + "</code>";
     }
     mathCache.set(key, html);
     return html;
@@ -34,15 +34,15 @@
   }
 
   function xrefLinks(s) {
-    // 公式 (9) 和 (10)：把这一串里每个编号都链上
-    s = s.replace(/公式\s*[（(]\d+[）)](?:\s*(?:和|与|及|、|或|,|，)\s*[（(]\d+[）)])*/g,
+    // 公式 (9) 和 (10)：把這一串裡每個編號都鏈上
+    s = s.replace(/公式\s*[（(]\d+[）)](?:\s*(?:和|與|及|、|或|,|，)\s*[（(]\d+[）)])*/g,
       (m) => m.replace(/[（(](\d+)[）)]/g, (mm, n) => xref("eq", n, mm)));
     s = s.replace(/公式\s*(\d+)(?![\d.）)])/g, (m, n) => xref("eq", n, m));
     s = s.replace(/表\s*(\d+)/g, (m, n) => xref("tab", n, m));
-    s = s.replace(/图\s*(\d+)/g, (m, n) => xref("fig", n, m));
-    s = s.replace(/第\s*(\d+(?:\.\d+)*)\s*节/g, (m, n) => xref("sec", n, m));
-    s = s.replace(/附录\s*([A-Z])(?![a-zA-Z])/g, (m, n) => xref("sec", n, m));
-    // 英文原文里的
+    s = s.replace(/圖\s*(\d+)/g, (m, n) => xref("fig", n, m));
+    s = s.replace(/第\s*(\d+(?:\.\d+)*)\s*節/g, (m, n) => xref("sec", n, m));
+    s = s.replace(/附錄\s*([A-Z])(?![a-zA-Z])/g, (m, n) => xref("sec", n, m));
+    // 英文原文裡的
     s = s.replace(/\b(Equations?)\s+(\d+)(?:\s+(and)\s+(\d+))?/g, (m, w, a, and, b) =>
       w + " " + xref("eq", a, a) + (b ? " " + and + " " + xref("eq", b, b) : ""));
     s = s.replace(/\bTable\s+(\d+)/g, (m, n) => xref("tab", n, m));
@@ -52,12 +52,12 @@
     return s;
   }
 
-  /* AI 回答里偶尔会带出段落编号 [p4-5]、[eq7]，换成读者看得懂的“式 7”“第 4 页” */
+  /* AI 回答裡偶爾會帶出段落編號 [p4-5]、[eq7]，換成讀者看得懂的“式 7”“第 4 頁” */
   function blockLabel(s) {
     return s.replace(/\[([a-z]+\d*(?:-[\w-]+)?)\]/g, (m, id) => {
       const b = PR.blockById && PR.blockById[id];
       if (!b) return m;
-      return b.type === "math" && b.tag ? "（式 " + b.tag + "）" : b.page ? "（第 " + b.page + " 页）" : m;
+      return b.type === "math" && b.tag ? "（式 " + b.tag + "）" : b.page ? "（第 " + b.page + " 頁）" : m;
     });
   }
 
@@ -75,14 +75,14 @@
   PR.md = function (text, opts) {
     opts = opts || {};
     text = String(text == null ? "" : text);
-    // 公式先换成占位符再处理粗体等标记，这样 **粗体里带 $公式$** 也能认出来
+    // 公式先換成佔位符再處理粗體等標記，這樣 **粗體裡帶 $公式$** 也能認出來
     const maths = [];
     MATH.lastIndex = 0;
     const s = text.replace(MATH, (m, t) => "" + (maths.push(t) - 1) + "");
     return inline(s, opts).replace(/(\d+)/g, (m, i) => PR.tex(maths[i].replace(/\\\$/g, "\\$"), false));
   };
 
-  /* 多段文字（讨论、笔记正文）：空行分段；$$...$$ 是行间公式——AI 常把它紧贴在上一行文字或列表后面，也要拆出来 */
+  /* 多段文字（討論、筆記正文）：空行分段；$$...$$ 是行間公式——AI 常把它緊貼在上一行文字或列表後面，也要拆出來 */
   PR.mdBlocks = function (text, opts) {
     return String(text || "").trim().split(/\n\s*\n/).map((p) =>
       p.split(/(?<!\\)\$\$([\s\S]+?)\$\$/).map((part, i) =>
@@ -144,7 +144,7 @@
     p = p.trim();
     if (!p) return "";
 
-    // 1. 表格（Markdown GFM 表格：表头 + 分隔行 + 数据行）
+    // 1. 表格（Markdown GFM 表格：表頭 + 分隔行 + 資料行）
     const lines = p.split("\n");
     const dIdx = lines.findIndex((l, idx) => idx >= 1 && isTableDelimiter(l) && lines[idx - 1].includes("|"));
     if (dIdx >= 1) {
@@ -162,7 +162,7 @@
         (after.length ? para(after.join("\n"), opts) : "");
     }
 
-    // 2. 引用块（> 开头）
+    // 2. 引用塊（> 開頭）
     const qIdx = lines.findIndex((l) => /^\s*>/.test(l));
     if (qIdx >= 0) {
       let qEnd = qIdx;
@@ -175,11 +175,11 @@
         (after.length ? para(after.join("\n"), opts) : "");
     }
 
-    // 3. 标题
+    // 3. 標題
     const h = p.match(/^#{1,4}\s+(.+)$/);
     if (h) return '<p class="md-h">' + PR.md(h[1], opts) + "</p>";
 
-    // 4. 列表：从某行起每行都以 “- ”“* ”或“1. ”开头（AI 的回答常用“引子：\n- …\n- …”）
+    // 4. 列表：從某行起每行都以 “- ”“* ”或“1. ”開頭（AI 的回答常用“引子：\n- …\n- …”）
     const isItem = (l) => /^\s*([-*•]|\d+[.、)])\s+/.test(l);
     const k = lines.findIndex(isItem);
     if (k >= 0 && lines.slice(k).every(isItem)) {
@@ -191,6 +191,6 @@
     return "<p>" + PR.md(p, opts) + "</p>";
   }
 
-  /* 去掉标记的纯文字，给目录、列表摘要用 */
+  /* 去掉標記的純文字，給目錄、列表摘要用 */
   PR.plain = (text) => String(text || "").replace(MATH, (m, t) => t).replace(/\*\*|`/g, "");
 })(window.PR);

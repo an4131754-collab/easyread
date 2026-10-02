@@ -1,6 +1,6 @@
-"""把阅读页和一篇论文打成单个 HTML：离线打开、发给别人看。
+"""把閱讀頁和一篇論文打成單個 HTML：離線開啟、發給別人看。
 
-单文件里的修改存在浏览器；在页面“说明”里导出后，用 `easyread merge ID --from 导出.json` 并回文献库。
+單檔案裡的修改存在瀏覽器；在頁面“說明”裡匯出後，用 `easyread merge ID --from 匯出.json` 並回文獻庫。
 """
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ def _data_uri(path: Path, mime: str) -> str:
 def _inline_css(rel: str) -> str:
     path = WEB / rel
     css = path.read_text(encoding="utf-8")
-    if "katex" in rel:  # 字体转成 data URI，离线也能显示公式
+    if "katex" in rel:  # 字型轉成 data URI，離線也能顯示公式
         css = re.sub(r"url\((fonts/[^)]+\.woff2)\)", lambda m: f"url({_data_uri(path.parent / m.group(1), 'font/woff2')})", css)
         css = re.sub(r",\s*url\(fonts/[^)]+\.(woff|ttf)\) format\(\"(woff|truetype)\"\)", "", css)
     return f"<style>{css}</style>"
@@ -36,7 +36,7 @@ def _script(rel: str) -> str:
 
 
 def build(ws: Workspace, out: Path | None = None, assets: Path | None = None, extra: dict | None = None) -> Path:
-    """assets：图片不内嵌、另存到这个目录（放到网站上时页面小很多，图按需加载）；extra：额外写进页面数据的内容。"""
+    """assets：圖片不內嵌、另存到這個目錄（放到網站上時頁面小很多，圖按需載入）；extra：額外寫進頁面資料的內容。"""
     page = (WEB / "reader.html").read_text(encoding="utf-8")
     page = _LINK.sub(lambda m: _inline_css(m.group(1)), page)
     page = _SCRIPT.sub(lambda m: _script(m.group(1)), page)
@@ -59,9 +59,9 @@ def build(ws: Workspace, out: Path | None = None, assets: Path | None = None, ex
     data.update({"paper": paper, "images": images}, **(extra or {}))
     payload = json.dumps(data, ensure_ascii=False).replace("<", "\\u003c")
     page = page.replace("<!--PR:DATA-->", f'<script id="pr-data" type="application/json">{payload}</script>')
-    title = paper.get("meta", {}).get("title_zh") or paper.get("meta", {}).get("title_en") or "论文"
+    title = paper.get("meta", {}).get("title_zh") or paper.get("meta", {}).get("title_en") or "論文"
     page = re.sub(r"<title>.*?</title>", f"<title>{htmllib.escape(title)}</title>", page, count=1)
     stem = re.sub(r'[\\/:*?"<>|]', "", paper.get("meta", {}).get("short_zh") or ws.id)
-    out = out or ws.root / f"{stem}-离线版.html"
+    out = out or ws.root / f"{stem}-離線版.html"
     out.write_text(page, encoding="utf-8")
     return out

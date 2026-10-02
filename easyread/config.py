@@ -1,7 +1,7 @@
-"""配置和数据位置。
+"""配置和資料位置。
 
-从源码目录运行时，数据就放在源码目录（library/、config.json）；pip 安装后放在 ~/EasyRead。
-环境变量 EASYREAD_HOME 改数据目录，EASYREAD_LIBRARY 临时指定文献库（测试、多库）。
+從原始碼目錄執行時，資料就放在原始碼目錄（library/、config.json）；pip 安裝後放在 ~/EasyRead。
+環境變數 EASYREAD_HOME 改資料目錄，EASYREAD_LIBRARY 臨時指定文獻庫（測試、多庫）。
 """
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ PACKAGE = Path(__file__).resolve().parent
 WEB = PACKAGE / "web"
 _SOURCE = PACKAGE.parent
 HOME = Path(os.environ.get("EASYREAD_HOME") or (_SOURCE if (_SOURCE / "pyproject.toml").exists() else Path.home() / "EasyRead"))
-PROJECT = HOME  # 旧名，cli 里还在用
+PROJECT = HOME  # 舊名，cli 裡還在用
 CONFIG_PATH = HOME / "config.json"
 LOG_PATH = HOME / "easyread.log"
 SERVER_INFO = HOME / ".server.json"
@@ -25,16 +25,16 @@ SERVER_INFO = HOME / ".server.json"
 DEFAULTS = {
     "library_dir": str(HOME / "library"),
     "port": 8765,
-    "engine": "claude",          # claude | codex（本机 CLI 无头）| openai（任意 OpenAI 兼容接口）| none
-    "auto_translate": True,      # 导入后自动开始翻译
-    "check_updates": True,       # 打开文献库时问 GitHub 有没有新版本（一天一次），见 updates.py
-    "batch_pages": 2,            # 每次交给模型的页数
-    "concurrency": 1,            # 同时翻译几批
+    "engine": "claude",          # claude | codex（本機 CLI 無頭）| openai（任意 OpenAI 相容介面）| none
+    "auto_translate": True,      # 匯入後自動開始翻譯
+    "check_updates": True,       # 開啟文獻庫時問 GitHub 有沒有新版本（一天一次），見 updates.py
+    "batch_pages": 2,            # 每次交給模型的頁數
+    "concurrency": 1,            # 同時翻譯幾批
     "claude": {"command": "claude", "model": "", "extra_args": [], "timeout": 1200},
     "codex": {"command": "codex", "model": "", "extra_args": [], "timeout": 1200},
-    # api：chat（/chat/completions）| responses（/responses），见 openai_api.py
+    # api：chat（/chat/completions）| responses（/responses），見 openai_api.py
     "openai": {"preset": "", "base_url": "", "api": "chat", "api_key": "", "model": "", "vision": False, "timeout": 600},
-    # 阅读页右侧“问 AI”的模型名单和默认模型，见 chat_models.py
+    # 閱讀頁右側“問 AI”的模型名單和預設模型，見 chat_models.py
     "chat": copy.deepcopy(DEFAULT_CHAT),
 }
 
@@ -52,7 +52,7 @@ def is_first_run() -> bool:
 def load() -> dict:
     cfg = _merge(DEFAULTS, read_json(CONFIG_PATH, {}) or {})
     lib = os.environ.get("EASYREAD_LIBRARY") or os.environ.get("COREAD_LIBRARY")
-    if lib:  # 测试或多库时临时指定文献库
+    if lib:  # 測試或多庫時臨時指定文獻庫
         cfg["library_dir"] = lib
     return cfg
 
@@ -68,14 +68,14 @@ def save(patch: dict) -> dict:
 
 
 def with_key(o: dict) -> dict:
-    """页面提交的 openai 设置 → 要存的样子。每家服务商的 Key 分开存（keys[预设]），换来换去不用重填；
-    页面发回来的打码 Key 或空 Key 表示不改。"""
+    """頁面提交的 openai 設定 → 要存的樣子。每家服務商的 Key 分開存（keys[預設]），換來換去不用重填；
+    頁面發回來的打碼 Key 或空 Key 表示不改。"""
     cur = load()["openai"]
     o = dict(o)
     key = o.pop("api_key", None)
     preset = o.get("preset", cur.get("preset")) or ""
     keys = dict(cur.get("keys") or {})
-    if cur.get("api_key") and not keys:  # 旧配置只有一个 Key
+    if cur.get("api_key") and not keys:  # 舊配置只有一個 Key
         keys[cur.get("preset") or ""] = cur["api_key"]
     if key and not key.startswith("••••"):
         keys[preset] = key.strip()
@@ -85,7 +85,7 @@ def with_key(o: dict) -> dict:
 
 
 def public(cfg: dict) -> dict:
-    """给页面看的配置：密钥只露后四位。"""
+    """給頁面看的配置：金鑰只露後四位。"""
     out = copy.deepcopy(cfg)
     key = out["openai"].get("api_key") or ""
     out["openai"]["api_key"] = ("••••" + key[-4:]) if key else ""

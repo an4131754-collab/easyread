@@ -1,12 +1,12 @@
-/* 设置对话框（文献库页和阅读页共用）：外壳、分页、保存。
-   页：模型（翻译和问 AI 合在一起，settings-chat.js）、阅读 / 侧边栏 / 快捷键（settings-tabs.js 等）。
-   本文件里的 engine 不再单独成页，只留它的 collect：存的时候从 cfg 取翻译设置。
-   PR.openSettings("keys") 直接打开某一页；不指定就从“模型”页开始（不记上次停在哪页）。 */
+/* 設定對話方塊（文獻庫頁和閱讀頁共用）：外殼、分頁、儲存。
+   頁：模型（翻譯和問 AI 合在一起，settings-chat.js）、閱讀 / 側邊欄 / 快捷鍵（settings-tabs.js 等）。
+   本檔案裡的 engine 不再單獨成頁，只留它的 collect：存的時候從 cfg 取翻譯設定。
+   PR.openSettings("keys") 直接開啟某一頁；不指定就從“模型”頁開始（不記上次停在哪頁）。 */
 (function (PR) {
   "use strict";
   const dlg = () => PR.$("#settingsDlg");
-  const ALL_TABS = [["chat", "模型"], ["reading", "阅读"], ["library", "侧边栏"], ["keys", "快捷键"]];
-  const tabs = () => ALL_TABS.filter(([k]) => PR.settingsTabs[k]);  // “侧边栏”页只在文献库页面有
+  const ALL_TABS = [["chat", "模型"], ["reading", "閱讀"], ["library", "側邊欄"], ["keys", "快捷鍵"]];
+  const tabs = () => ALL_TABS.filter(([k]) => PR.settingsTabs[k]);  // “側邊欄”頁只在文獻庫頁面有
   PR.settingsTabs = PR.settingsTabs || {};
   const st = (PR.settingsState = { tab: "chat", cfg: null, presets: [], groups: [], found: null, chat: null, ui: null });
 
@@ -19,7 +19,7 @@
       theme: PR.ls.get("easyread-prefs", {}).theme || "auto", recording: null, editing: null, form: null, chatKeys: null, type: null, transChecked: false });
     render();
     dlg().classList.add("open");
-    // 每次打开都问一次（后端有缓存，很快）：刚装好或更新了 Claude Code / Codex，版本号和模型名单马上跟上
+    // 每次開啟都問一次（後端有快取，很快）：剛裝好或更新了 Claude Code / Codex，版本號和模型名單馬上跟上
     const r = await PR.api("/api/engines").catch(() => null);
     if (r && (JSON.stringify([r.found, r.models]) !== JSON.stringify([st.found, st.models]))) {
       st.found = r.found; st.models = r.models;
@@ -34,9 +34,9 @@
   function render() {
     const t = PR.settingsTabs[st.tab];
     dlg().querySelector(".dialog").innerHTML =
-      '<div class="set-head"><h2>设置</h2><div class="set-tabs">' + tabs().map(([k, l]) => '<button data-set-tab="' + k + '" class="' + (st.tab === k ? "on" : "") + '">' + l + "</button>").join("") + "</div></div>" +
+      '<div class="set-head"><h2>設定</h2><div class="set-tabs">' + tabs().map(([k, l]) => '<button data-set-tab="' + k + '" class="' + (st.tab === k ? "on" : "") + '">' + l + "</button>").join("") + "</div></div>" +
       '<div class="set-body">' + (t ? t.render(st) : "") + "</div>" +
-      '<div class="actions set-foot"><button class="linkish" id="showLog">运行日志</button><span class="grow"></span><button class="btn" id="setCancel">取消</button><button class="btn primary" id="setSave">保存</button></div>';
+      '<div class="actions set-foot"><button class="linkish" id="showLog">執行日誌</button><span class="grow"></span><button class="btn" id="setCancel">取消</button><button class="btn primary" id="setSave">儲存</button></div>';
   }
 
   async function save() {
@@ -49,19 +49,19 @@
     const prefs = PR.ls.get("easyread-prefs", {});
     if (prefs.theme !== st.theme) { prefs.theme = st.theme; PR.ls.set("easyread-prefs", prefs); PR.savePrefs("reader", { theme: st.theme }); if (PR.prefs) PR.prefs.theme = st.theme; }
     PR.applyTheme(st.theme);
-    if (st.type) {  // 排版：阅读页里立刻生效；文献库页只存起来
+    if (st.type) {  // 排版：閱讀頁裡立刻生效；文獻庫頁只存起來
       PR.ls.set("easyread-prefs", Object.assign(PR.ls.get("easyread-prefs", {}), st.type));
       if (PR.resetAllType) PR.resetAllType(st.type); else PR.savePrefs("reader", st.type);
     }
     dlg().classList.remove("open");
-    PR.toast("设置已保存");
+    PR.toast("設定已儲存");
     PR.onSettingsSaved && PR.onSettingsSaved();
     PR.emit("settings-saved", st);
   }
 
   PR.showText = function (title, text) {
     const d = PR.$("#textDlg");
-    d.querySelector(".dialog").innerHTML = "<h2>" + PR.esc(title) + '</h2><pre class="logview">' + PR.esc(text || "（还没有记录）") + '</pre><div class="actions"><button class="btn" data-close>关闭</button></div>';
+    d.querySelector(".dialog").innerHTML = "<h2>" + PR.esc(title) + '</h2><pre class="logview">' + PR.esc(text || "（還沒有記錄）") + '</pre><div class="actions"><button class="btn" data-close>關閉</button></div>';
     d.classList.add("open");
     const pre = d.querySelector("pre"); pre.scrollTop = pre.scrollHeight;
   };
@@ -72,8 +72,8 @@
     if (e.target === dlg() || e.target.closest("#setCancel")) { st.recording = null; return dlg().classList.remove("open"); }
     const tb = e.target.closest("[data-set-tab]");
     if (tb) { sync(); st.tab = tb.dataset.setTab; st.recording = null; st.editing = null; render(); return; }
-    if (e.target.closest("#showLog")) { const r = await PR.api("/api/log"); PR.showText("运行日志", r.text + "\n\n（完整日志：" + r.path + "）"); return; }
-    if (e.target.closest("#setSave")) { try { await save(); } catch (err) { PR.toast("保存失败：" + PR.esc(err.message)); } return; }
+    if (e.target.closest("#showLog")) { const r = await PR.api("/api/log"); PR.showText("執行日誌", r.text + "\n\n（完整日誌：" + r.path + "）"); return; }
+    if (e.target.closest("#setSave")) { try { await save(); } catch (err) { PR.toast("儲存失敗：" + PR.esc(err.message)); } return; }
     const t = PR.settingsTabs[st.tab];
     if (t && t.click && (await t.click(e, st, dlg()))) render();
   });
@@ -88,7 +88,7 @@
     if (e.key === "Escape") dlg().classList.remove("open");
   }, true);
 
-  /* ---------- 翻译设置：存的时候从 cfg 取（页面在 settings-chat.js，改动随时写回 cfg） ---------- */
+  /* ---------- 翻譯設定：存的時候從 cfg 取（頁面在 settings-chat.js，改動隨時寫回 cfg） ---------- */
   PR.settingsTabs.engine = {
     collect(state) {
       const c = state.cfg, o = c.openai;

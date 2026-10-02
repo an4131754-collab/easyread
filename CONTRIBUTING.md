@@ -1,8 +1,8 @@
-# 参与贡献
+# 參與貢獻
 
-欢迎提 Issue 和 PR。下面是一些约定，照着来能更快合并。
+歡迎提 Issue 和 PR。下面是一些約定，照著來能更快合併。
 
-## 本地跑起来
+## 本地跑起來
 
 需要 Python 3.10+。
 
@@ -13,27 +13,27 @@ python -m pip install -e .
 easyread
 ```
 
-浏览器会打开 `http://127.0.0.1:8765`。也可以直接用 `start.cmd`（Windows）或 `./start.sh`（macOS / Linux）。
+瀏覽器會開啟 `http://127.0.0.1:8765`。也可以直接用 `start.cmd`（Windows）或 `./start.sh`（macOS / Linux）。
 
-改桌面版（Electron）还需要 Node.js 22+，见 README 的“桌面版”一节。
+改桌面版（Electron）還需要 Node.js 22+，見 README 的“桌面版”一節。
 
-## 跑测试
+## 跑測試
 
 ```bash
 python -m unittest discover tests -v
 node --test tests/test_*.cjs
 ```
 
-提 PR 后 GitHub Actions 会在 Windows、macOS、Linux 上自动跑一遍。第一次贡献的 PR 需要维护者点一下批准才会开始跑，稍等就好。
+提 PR 後 GitHub Actions 會在 Windows、macOS、Linux 上自動跑一遍。第一次貢獻的 PR 需要維護者點一下批准才會開始跑，稍等就好。
 
 ## 提 PR
 
-- 一个 PR 只做一件事，方便审和回退。
-- 标题和说明写清楚改了什么、为什么改；修 bug 的话写一下怎么复现。
-- 改了界面的，附一张截图。
-- 修了 bug 或加了功能，尽量在 `tests/` 里补一个测试。
-- 不用改 `CHANGELOG.md` 和版本号，发版时维护者统一写。
+- 一個 PR 只做一件事，方便審和回退。
+- 標題和說明寫清楚改了什麼、為什麼改；修 bug 的話寫一下怎麼復現。
+- 改了介面的，附一張截圖。
+- 修了 bug 或加了功能，儘量在 `tests/` 裡補一個測試。
+- 不用改 `CHANGELOG.md` 和版本號，發版時維護者統一寫。
 
-## 报问题
+## 報問題
 
-直接开 Issue 就行，有模板提示要写哪些信息，填不全也没关系。
+直接開 Issue 就行，有模板提示要寫哪些資訊，填不全也沒關係。

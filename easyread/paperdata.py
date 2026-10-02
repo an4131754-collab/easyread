@@ -1,4 +1,4 @@
-"""翻译方对 paper.json / discussion.json 的写入：并入译文块、追加讨论。都在锁内完成。"""
+"""翻譯方對 paper.json / discussion.json 的寫入：併入譯文塊、追加討論。都在鎖內完成。"""
 from __future__ import annotations
 
 import hashlib
@@ -24,14 +24,14 @@ def parse_pages(spec) -> list[int]:
 
 
 def merge_blocks(ws: Workspace, data: dict, done=None, replace_pages=None, en_only: bool = False) -> dict:
-    """并入一批块。同 id 整块替换；新块按 _after 或页码顺序插入。
-    replace_pages：先删掉这些页上已有的块（重新翻译某几页时用）。
-    en_only：这批是“只读原文”整理出来的、只有英文的块，done 的页记进 translation.en_pages；否则从 en_pages 里去掉。"""
+    """併入一批塊。同 id 整塊替換；新塊按 _after 或頁碼順序插入。
+    replace_pages：先刪掉這些頁上已有的塊（重新翻譯某幾頁時用）。
+    en_only：這批是“只讀原文”整理出來的、只有英文的塊，done 的頁記進 translation.en_pages；否則從 en_pages 裡去掉。"""
     if isinstance(data, list):
         data = {"blocks": data}
     for b in data.get("blocks", []):
         if not b.get("id") or b.get("type") not in BLOCK_TYPES:
-            raise ValueError(f"块缺 id 或类型不对：{str(b)[:120]}")
+            raise ValueError(f"塊缺 id 或型別不對：{str(b)[:120]}")
 
     def apply(paper):
         blocks = paper.setdefault("blocks", [])
@@ -39,7 +39,7 @@ def merge_blocks(ws: Workspace, data: dict, done=None, replace_pages=None, en_on
             drop = set(replace_pages)
             blocks[:] = [b for b in blocks if b.get("page") not in drop]
         n_new = n_upd = 0
-        last = None  # 同一批的新块保持给定顺序，接在上一个新块后面
+        last = None  # 同一批的新塊保持給定順序，接在上一個新塊後面
         for b in data.get("blocks", []):
             b = dict(b)
             after = b.pop("_after", None)
@@ -52,7 +52,7 @@ def merge_blocks(ws: Workspace, data: dict, done=None, replace_pages=None, en_on
                 pos = index[after] + 1
             elif last is not None:
                 pos = index[last] + 1
-            else:  # 这批第一个新块按页码放：插在第一个页码更大的块之前
+            else:  # 這批第一個新塊按頁碼放：插在第一個頁碼更大的塊之前
                 pos = next((i for i, x in enumerate(blocks) if (x.get("page") or 0) > (b.get("page") or 0)), len(blocks))
             blocks.insert(pos, b)
             last = b["id"]
@@ -84,13 +84,13 @@ def _scope(paper: dict) -> None:
     tr = paper.setdefault("translation", {})
     total = paper.get("meta", {}).get("page_count") or 0
     n = len(set(tr.get("done_pages", [])) - set(tr.get("en_pages", [])))
-    tr["scope"] = "全文" if total and n >= total else f"已译 {n} / {total} 页"
+    tr["scope"] = "全文" if total and n >= total else f"已譯 {n} / {total} 頁"
 
 
 def fill_zh(ws: Workspace, data: dict, pages: list[int], keys: set[str]) -> list[str]:
-    """给只读原文整理出来的块就地补译文（块 id 不变，笔记还挂得住）。
-    data 是模型的输出 {"zh": {键: 译文}, "meta", "glossary"}；keys 是这次要译的键。
-    返回漏译的键；这几页的键都译齐了，才把页从 en_pages 去掉。"""
+    """給只讀原文整理出來的塊就地補譯文（塊 id 不變，筆記還掛得住）。
+    data 是模型的輸出 {"zh": {鍵: 譯文}, "meta", "glossary"}；keys 是這次要譯的鍵。
+    返回漏譯的鍵；這幾頁的鍵都譯齊了，才把頁從 en_pages 去掉。"""
     got = {k: v for k, v in (data.get("zh") or {}).items() if k in keys and v}
 
     def apply(paper):
@@ -116,7 +116,7 @@ def fill_zh(ws: Workspace, data: dict, pages: list[int], keys: set[str]) -> list
         if data.get("glossary"):
             have = {str(x.get("en")) for x in paper.get("glossary", [])}
             paper["glossary"] = paper.get("glossary", []) + [x for x in data["glossary"] if isinstance(x, dict) and str(x.get("en")) not in have]
-        missing = [k for k in keys if k not in got and not k.endswith("#head")]  # 表头没译不算漏
+        missing = [k for k in keys if k not in got and not k.endswith("#head")]  # 表頭沒譯不算漏
         left = {by_id[k.partition("#")[0]].get("page") for k in missing if k.partition("#")[0] in by_id}
         tr = paper.setdefault("translation", {})
         tr["en_pages"] = sorted(set(tr.get("en_pages", [])) - (set(pages) - left))
@@ -135,11 +135,11 @@ def add_discussion(ws: Workspace, items) -> tuple[int, int]:
         if it.get("kind", "explain") not in DISCUSSION_KINDS:
             raise ValueError(f"kind 只能是 {sorted(DISCUSSION_KINDS)}")
         if it.get("anchor") and it["anchor"] not in block_ids:
-            raise ValueError(f"锚点块不存在：{it['anchor']}")
+            raise ValueError(f"錨點塊不存在：{it['anchor']}")
         if it.get("reply_to") and it["reply_to"] not in notes:
-            raise ValueError(f"要回复的用户笔记不存在：{it['reply_to']}")
+            raise ValueError(f"要回復的使用者筆記不存在：{it['reply_to']}")
         if not (it.get("body") or "").strip():
-            raise ValueError("body 不能为空")
+            raise ValueError("body 不能為空")
 
     def merge(disc):
         entries = disc.setdefault("entries", [])
@@ -172,7 +172,7 @@ def delete_discussion(ws: Workspace, did: str) -> int:
 
 
 def set_block_text(ws: Workspace, key: str, zh: str) -> None:
-    """重译一段后写回译者稿。key 同页面：块 id、id#caption、id#序号。"""
+    """重譯一段後寫回譯者稿。key 同頁面：塊 id、id#caption、id#序號。"""
     bid, _, field = key.partition("#")
 
     def apply(paper):

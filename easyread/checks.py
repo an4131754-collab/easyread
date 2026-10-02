@@ -1,4 +1,4 @@
-"""检查 paper.json / discussion.json：块 id、引用号、锚点、被 JSON 吃掉的反斜杠、全部 TeX 能否渲染。"""
+"""檢查 paper.json / discussion.json：塊 id、引用號、錨點、被 JSON 吃掉的反斜槓、全部 TeX 能否渲染。"""
 from __future__ import annotations
 
 import json
@@ -38,24 +38,24 @@ def block_problems(blocks: list[dict], refs: set[str] | None = None) -> tuple[li
         if not bid:
             problems.append(f"缺 id：{str(b)[:80]}")
         elif bid in ids:
-            problems.append(f"id 重复：{bid}")
+            problems.append(f"id 重複：{bid}")
         ids.add(bid)
         if b.get("type") not in BLOCK_TYPES:
-            problems.append(f"{bid}：未知类型 {b.get('type')}")
+            problems.append(f"{bid}：未知型別 {b.get('type')}")
         if b.get("type") == "math":
             tex.append((bid, b.get("tex", ""), True))
         for t in list(texts(b)) + [b.get("tex", "")]:
             if _CTRL.search(t or ""):
-                problems.append(f"{bid}：含控制字符，多半是 JSON 里 TeX 命令（frac、text、bar、nu 这类）前的反斜杠只写了一个")
+                problems.append(f"{bid}：含控制字元，多半是 JSON 裡 TeX 命令（frac、text、bar、nu 這類）前的反斜槓只寫了一個")
         for t in texts(b):
             if (t.count("$") - t.count("\\$")) % 2:
-                problems.append(f"{bid}：$ 不成对")
+                problems.append(f"{bid}：$ 不成對")
             tex += [(bid, m.group(1), False) for m in _INLINE_MATH.finditer(t)]
             if refs:
                 for m in _CITE.finditer(_INLINE_MATH.sub("", t)):
                     for n in re.split(r"\s*[,–-]\s*", m.group(1)):
                         if n not in refs:
-                            problems.append(f"{bid}：引用 [{n}] 不在参考文献里")
+                            problems.append(f"{bid}：引用 [{n}] 不在參考文獻裡")
     return problems, tex
 
 
@@ -66,7 +66,7 @@ def tex_problems(items: list) -> list[str]:
     proc = subprocess.run([node, str(CHECK_TEX), str(KATEX)], input=json.dumps(items, ensure_ascii=False),
                           capture_output=True, text=True, encoding="utf-8")
     if proc.returncode not in (0, 1):
-        return [f"TeX 检查没跑起来：{proc.stderr.strip()[:300]}"]
+        return [f"TeX 檢查沒跑起來：{proc.stderr.strip()[:300]}"]
     return [line for line in proc.stdout.splitlines() if line.strip()]
 
 
@@ -77,7 +77,7 @@ def check(ws: Workspace) -> dict:
     ids = {b.get("id") for b in paper.get("blocks", [])}
     for e in disc.get("entries", []):
         if e.get("anchor") and e["anchor"] not in ids:
-            problems.append(f"讨论 {e['id']} 的锚点不存在：{e['anchor']}")
+            problems.append(f"討論 {e['id']} 的錨點不存在：{e['anchor']}")
         for t in (e.get("body", ""), e.get("q", "")):
             tex += [(e["id"], m.group(1), False) for m in _INLINE_MATH.finditer(t)]
     problems += tex_problems(tex)

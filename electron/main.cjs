@@ -5,8 +5,8 @@ const os = require("os");
 const path = require("path");
 const windowState = require("./window-state.cjs");
 
-// 窗口缓存等放 %APPDATA%\EasyRead（默认会用 package.json 的 name，叫 easyread-desktop）。
-// 论文和设置不放这里：打包后的后端默认用 ~/EasyRead，和 pip 安装版同一个位置，用户找得到、好备份。
+// 視窗快取等放 %APPDATA%\EasyRead（預設會用 package.json 的 name，叫 easyread-desktop）。
+// 論文和設定不放這裡：打包後的後端預設用 ~/EasyRead，和 pip 安裝版同一個位置，使用者找得到、好備份。
 app.setPath("userData", path.join(app.getPath("appData"), "EasyRead"));
 
 let backend;
@@ -27,7 +27,7 @@ function backendCommand() {
   if (app.isPackaged) {
     const executable = packagedBackend();
     if (!fs.existsSync(executable)) {
-      throw new Error(`找不到打包后的 EasyRead 后端：${executable}`);
+      throw new Error(`找不到打包後的 EasyRead 後端：${executable}`);
     }
     return { command: executable, args: ["serve", "--port", "0"], cwd: os.homedir() };
   }
@@ -40,8 +40,8 @@ function backendCommand() {
   return { command, args: ["-m", "easyread", "serve", "--port", "0"], cwd: root };
 }
 
-// macOS / Linux 从启动台、桌面图标打开时，拿不到终端里配的 PATH（Homebrew、npm 全局目录），
-// 后端会找不到 claude / codex。向用户的登录 shell 要一份 PATH 补上。
+// macOS / Linux 從啟動臺、桌面圖示開啟時，拿不到終端裡配的 PATH（Homebrew、npm 全域性目錄），
+// 後端會找不到 claude / codex。向用戶的登入 shell 要一份 PATH 補上。
 function loginShellPath() {
   if (process.platform === "win32") return "";
   try {
@@ -79,7 +79,7 @@ function startBackend() {
       fn(value);
     };
     const timer = setTimeout(() => {
-      finish(reject, new Error(`EasyRead 后端启动超时。${output.slice(-500)}`));
+      finish(reject, new Error(`EasyRead 後端啟動超時。${output.slice(-500)}`));
       stopBackend();
     }, 30000);
 
@@ -91,7 +91,7 @@ function startBackend() {
     });
     backend.stdout.on("data", (chunk) => {
       output = (output + chunk.toString()).slice(-65536);
-      const match = output.match(/EasyRead\s+已启动：\s*(http:\/\/127\.0\.0\.1:\d+)/);
+      const match = output.match(/EasyRead\s+已啟動：\s*(http:\/\/127\.0\.0\.1:\d+)/);
       if (match) finish(resolve, match[1]);
     });
     backend.stderr.on("data", (chunk) => {
@@ -99,7 +99,7 @@ function startBackend() {
     });
     backend.once("error", (error) => finish(reject, error));
     backend.once("exit", (code, signal) => {
-      if (!settled) finish(reject, new Error(`EasyRead 后端退出（code=${code}, signal=${signal}）。${output.slice(-500)}`));
+      if (!settled) finish(reject, new Error(`EasyRead 後端退出（code=${code}, signal=${signal}）。${output.slice(-500)}`));
       backend = undefined;
       backendReady = undefined;
     });
@@ -136,7 +136,7 @@ async function createWindow() {
     url = await startBackend();
   } catch (error) {
     windowOpening = false;
-    dialog.showErrorBox("EasyRead 启动失败", error.message);
+    dialog.showErrorBox("EasyRead 啟動失敗", error.message);
     app.quit();
     return;
   }

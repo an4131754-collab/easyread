@@ -63,7 +63,7 @@ def main():
                 for _ in range(100):
                     if proc.poll() is not None:
                         raise RuntimeError(output.read_text(encoding="utf-8"))
-                    match = re.search(r"EasyRead 已启动：(http://127\.0\.0\.1:\d+)", output.read_text(encoding="utf-8"))
+                    match = re.search(r"EasyRead 已啟動：(http://127\.0\.0\.1:\d+)", output.read_text(encoding="utf-8"))
                     if match:
                         url = match[1]
                         break
@@ -80,7 +80,7 @@ def main():
                     if width < 1468:  # the 612 pt source was rendered at 2.4x
                         assert (ws / "pages" / f"w{width}" / "page-001.webp").is_file(), "resizing did not run"
             finally:
-                if os.name == "nt":  # onefile 在 Windows 上是两层进程，只杀外层的话里层还占着 easyread.log，临时目录删不掉
+                if os.name == "nt":  # onefile 在 Windows 上是兩層程序，只殺外層的話裡層還佔著 easyread.log，臨時目錄刪不掉
                     subprocess.run(["taskkill", "/pid", str(proc.pid), "/t", "/f"], capture_output=True)
                 proc.terminate()
                 try:

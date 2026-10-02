@@ -1,5 +1,5 @@
-/* EasyRead · 共用的设计变量与基础组件（文献库页和阅读页都用） */
-[hidden] { display: none !important; }  /* 元素设了 hidden 就一定藏起来，别被自己的 display 盖掉 */
+/* EasyRead · 共用的設計變數與基礎元件（文獻庫頁和閱讀頁都用） */
+[hidden] { display: none !important; }  /* 元素設了 hidden 就一定藏起來，別被自己的 display 蓋掉 */
 :root {
   --bg: #f6f3ec;
   --surface: #fbfaf6;
@@ -72,7 +72,7 @@ a { color: inherit; }
 svg.i { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 svg.i.sm { width: 15px; height: 15px; }
 
-/* 顶栏：常驻 */
+/* 頂欄：常駐 */
 .topbar {
   position: fixed; inset: 0 0 auto 0; height: var(--bar-h); z-index: 50;
   display: flex; align-items: center; gap: 12px; padding: 0 14px;
@@ -88,7 +88,7 @@ svg.i.sm { width: 15px; height: 15px; }
 .brand-back .mark { width: 24px; height: 24px; }
 .brand small { font: 400 12.5px/1 var(--ui); color: var(--ink-3); letter-spacing: .02em; margin-left: 2px; }
 
-/* 按钮 */
+/* 按鈕 */
 .btn {
   height: 32px; padding: 0 12px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;
   font-size: 13.5px; color: var(--ink-2); white-space: nowrap; text-decoration: none;
@@ -131,15 +131,15 @@ textarea.input { height: auto; padding: 8px 10px; resize: vertical; line-height:
 .spin { width: 11px; height: 11px; border-radius: 50%; border: 1.6px solid currentColor; border-right-color: transparent; animation: spin .8s linear infinite; display: inline-block; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* 浮层 */
-.menu, .popover {  /* 菜单要能盖住设置对话框（.dialog-backdrop 是 90） */
+/* 浮層 */
+.menu, .popover {  /* 選單要能蓋住設定對話方塊（.dialog-backdrop 是 90） */
   position: fixed; z-index: 100; background: var(--surface); color: var(--ink);
   box-shadow: 0 0 0 1px var(--rule), var(--shadow); border-radius: 10px;
   opacity: 0; pointer-events: none; transform: translateY(4px); transition: opacity .14s, transform .14s;
 }
 .menu.open, .popover.open { opacity: 1; pointer-events: auto; transform: none; }
 .menu-list { padding: 5px; min-width: 190px; }
-/* 页面内确认框（js/common/confirm.js） */
+/* 頁面內確認框（js/common/confirm.js） */
 .confirm { z-index: 120; width: min(320px, calc(100vw - 16px)); padding: 14px 14px 12px; box-sizing: border-box; }
 .confirm .cf-title { font-size: 14px; font-weight: 600; line-height: 1.45; }
 .confirm .cf-body { margin-top: 5px; font-size: 13px; line-height: 1.6; color: var(--ink-2); }

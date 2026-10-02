@@ -1,6 +1,6 @@
-"""后台翻译：一批几页交给模型，校验后并进 paper.json。每批落盘，中断了下次接着译。
+"""背景翻譯：一批幾頁交給模型，校驗後並進 paper.json。每批落盤，中斷了下次接著譯。
 
-一批失败会重试；还是失败就记下来跳过，接着译后面的页，最后在页面上给“重试失败的页”。
+一批失敗會重試；還是失敗就記下來跳過，接著譯後面的頁，最後在頁面上給“重試失敗的頁”。
 """
 from __future__ import annotations
 
@@ -14,21 +14,21 @@ from .log import log
 from .paperdata import add_discussion, fill_zh, merge_blocks, set_block_text
 from .store import Workspace, now_iso
 
-_merge_lock = threading.Lock()  # 并发翻译时，并入 paper.json 和重算原页定位一次只做一个
-# 用量到顶、余额不足这类错误，后面的批次也一定失败：直接停，剩下的页记为没译，等额度恢复后一键重试
-_QUOTA = re.compile(r"session limit|usage limit|rate limit reached|insufficient_quota|余额不足|额度|接口返回 40[12]", re.I)
-_REF_LINE = re.compile(r"^\s*(\d+\.?\s*)?(references|bibliography|参考文献)\s*$", re.I | re.M)
+_merge_lock = threading.Lock()  # 併發翻譯時，併入 paper.json 和重算原頁定位一次只做一個
+# 用量到頂、餘額不足這類錯誤，後面的批次也一定失敗：直接停，剩下的頁記為沒譯，等額度恢復後一鍵重試
+_QUOTA = re.compile(r"session limit|usage limit|rate limit reached|insufficient_quota|餘額不足|額度|介面返回 40[12]", re.I)
+_REF_LINE = re.compile(r"^\s*(\d+\.?\s*)?(references|bibliography|參考文獻)\s*$", re.I | re.M)
 
 
 def prepare(ws: Workspace) -> None:
     pages = pdfwork.prepare(ws.root)
     extra = {}
-    try:  # 本地拖进来的 PDF：从第一页的 arXiv 编号或 DOI 补上作者、年份、出处
+    try:  # 本地拖進來的 PDF：從第一頁的 arXiv 編號或 DOI 補上作者、年份、出處
         first = ws.root / "extract" / "page-001.txt"
         if first.exists():
             extra = sources.enrich(first.read_text(encoding="utf-8", errors="replace"), ws.load("paper").get("meta", {}))
     except Exception:  # noqa: BLE001
-        log.exception("补元数据失败 %s", ws.id)
+        log.exception("補後設資料失敗 %s", ws.id)
 
     def apply(paper):
         meta = paper.setdefault("meta", {})
@@ -40,7 +40,7 @@ def prepare(ws: Workspace) -> None:
 
 
 def references_page(ws: Workspace) -> int | None:
-    """参考文献从哪一页开始（找单独成行的 References 标题）。找不到返回 None。"""
+    """參考文獻從哪一頁開始（找單獨成行的 References 標題）。找不到返回 None。"""
     n = ws.load("paper").get("meta", {}).get("page_count") or 0
     for p in range(2, n + 1):
         f = ws.root / "extract" / f"page-{p:03d}.txt"
@@ -50,7 +50,7 @@ def references_page(ws: Workspace) -> int | None:
 
 
 def scope_pages(ws: Workspace, scope: str | None) -> list[int] | None:
-    """翻译范围：all 全文；body 到参考文献那页为止；range:A-B 第 A 到 B 页；first:N 前 N 页（旧写法）。返回 None 表示全文。"""
+    """翻譯範圍：all 全文；body 到參考文獻那頁為止；range:A-B 第 A 到 B 頁；first:N 前 N 頁（舊寫法）。返回 None 表示全文。"""
     n = ws.load("paper").get("meta", {}).get("page_count") or 0
     if scope == "body":
         ref = references_page(ws)
@@ -60,7 +60,7 @@ def scope_pages(ws: Workspace, scope: str | None) -> list[int] | None:
         start, end = sorted((int(a or 1), int(b or n)))
         lo, hi = max(1, start), min(n, end)
         if lo > hi:
-            raise ValueError(f"指定页码超出了论文范围（共 {n} 页）")
+            raise ValueError(f"指定頁碼超出了論文範圍（共 {n} 頁）")
         return list(range(lo, hi + 1))
     if scope and scope.startswith("first:"):
         k = int(scope.split(":", 1)[1] or 0)
@@ -74,7 +74,7 @@ def _next_head(ws: Workspace, n: int) -> str:
 
 
 def _normalize(data: dict, pages: list[int], taken: set[str]) -> dict:
-    """补页码、去掉和已有块撞车的 id、丢掉明显无效的块。"""
+    """補頁碼、去掉和已有塊撞車的 id、丟掉明顯無效的塊。"""
     if isinstance(data, list):
         data = {"blocks": data}
     blocks = []
@@ -110,13 +110,13 @@ def _problems(data: dict) -> list[str]:
 
 
 def journal(ws: Workspace, line: str) -> None:
-    """每篇论文自己的翻译记录 job.log，页面上“查看记录”看的就是它。"""
+    """每篇論文自己的翻譯記錄 job.log，頁面上“檢視記錄”看的就是它。"""
     with open(ws.root / "job.log", "a", encoding="utf-8") as f:
         f.write(f"{now_iso()[:19].replace('T', ' ')}  {line}\n")
 
 
 def _fill_batch(ws: Workspace, cfg: dict, batch: list[int], cancel, say, meter=None) -> None:
-    """只读原文整理过的页：不重排，只给已有的块补译文。漏译的键抛错，重试时只译剩下的。"""
+    """只讀原文整理過的頁：不重排，只給已有的塊補譯文。漏譯的鍵拋錯，重試時只譯剩下的。"""
     items = prompts_en.todo([b for b in ws.load("paper").get("blocks", []) if b.get("page") in batch])
     if not items:
         fill_zh(ws, {}, batch, set())
@@ -124,26 +124,26 @@ def _fill_batch(ws: Workspace, cfg: dict, batch: list[int], cancel, say, meter=N
     text = engines.run(cfg, prompts_en.fill(ws, batch, items), ws.root, None, cancel, meter)
     data = engines.parse_json(text)
     if not isinstance(data, dict) or not isinstance(data.get("zh"), dict):
-        raise engines.EngineError("模型输出的格式不对（缺 zh）")
+        raise engines.EngineError("模型輸出的格式不對（缺 zh）")
     fake = [{"id": k, "type": "para", "zh": v} for k, v in data["zh"].items() if isinstance(v, str)]
     problems = _problems({"blocks": fake})
     if problems:
-        say(f"第 {batch[0]} 页起有 {len(problems)} 处公式或格式问题，正在让模型修正")
+        say(f"第 {batch[0]} 頁起有 {len(problems)} 處公式或格式問題，正在讓模型修正")
         try:
             fixed = engines.parse_json(engines.run(cfg, prompts.repair(prompts.dump(data), problems), ws.root, None, cancel, meter))
             if isinstance(fixed, dict) and isinstance(fixed.get("zh"), dict) and len(fixed["zh"]) >= len(data["zh"]):
                 data = fixed
         except engines.EngineError as e:
-            journal(ws, f"第 {batch} 页修正失败，保留原译：{e}")
+            journal(ws, f"第 {batch} 頁修正失敗，保留原譯：{e}")
     with _merge_lock:
         missing = fill_zh(ws, data, batch, set(items))
         _save_checks(ws, data.get("checks"), batch)
     if missing:
-        raise engines.EngineError(f"漏译了 {len(missing)} 处（{', '.join(missing[:5])}）")
+        raise engines.EngineError(f"漏譯了 {len(missing)} 處（{', '.join(missing[:5])}）")
 
 
 def _one_batch(ws: Workspace, cfg: dict, batch: list[int], total_pages: int, cancel, say, meter=None, read=False) -> None:
-    """read：只读原文，整理成块但不翻译。"""
+    """read：只讀原文，整理成塊但不翻譯。"""
     mode = engines.image_mode(cfg)
     images = [pdfwork.engine_image(ws.root, n) for n in batch] if mode != "text" else []
     nxt = batch[-1] + 1
@@ -157,29 +157,29 @@ def _one_batch(ws: Workspace, cfg: dict, batch: list[int], total_pages: int, can
         raise
     data = _normalize(data, batch, _taken(ws, batch))
     problems = _problems(data)
-    if problems:  # 给一次修的机会
-        say(f"第 {batch[0]} 页起有 {len(problems)} 处公式或格式问题，正在让模型修正")
+    if problems:  # 給一次修的機會
+        say(f"第 {batch[0]} 頁起有 {len(problems)} 處公式或格式問題，正在讓模型修正")
         try:
             fixed = engines.parse_json(engines.run(cfg, prompts.repair(prompts.dump(data), problems), ws.root, None, cancel, meter))
             fixed = _normalize(fixed, batch, _taken(ws, batch))
             if fixed["blocks"] and len(_problems(fixed)) < len(problems):
                 data = fixed
         except engines.EngineError as e:
-            journal(ws, f"第 {batch} 页修正失败，保留原译：{e}")
-    if not data["blocks"] and not data.get("references"):  # 整页都是参考文献时只有 references，没有新块，也算译完
-        raise engines.EngineError("模型没有" + ("整理" if read else "译") + "出任何内容")
+            journal(ws, f"第 {batch} 頁修正失敗，保留原譯：{e}")
+    if not data["blocks"] and not data.get("references"):  # 整頁都是參考文獻時只有 references，沒有新塊，也算譯完
+        raise engines.EngineError("模型沒有" + ("整理" if read else "譯") + "出任何內容")
     with _merge_lock:
-        data = _normalize(data, batch, _taken(ws, batch))  # 并发时别的批可能刚占用了同名 id
+        data = _normalize(data, batch, _taken(ws, batch))  # 併發時別的批可能剛佔用了同名 id
         merge_blocks(ws, data, done=batch, replace_pages=batch, en_only=read)
         _save_checks(ws, data.get("checks"), batch)
         try:
             pdfwork.locate(ws.root)
-        except Exception:  # noqa: BLE001 —— 定位失败不影响阅读
-            log.exception("locate 失败 %s", ws.id)
+        except Exception:  # noqa: BLE001 —— 定位失敗不影響閱讀
+            log.exception("locate 失敗 %s", ws.id)
 
 
 def _save_checks(ws: Workspace, checks, batch: list[int]) -> None:
-    """模型发现的原文问题 → 页边的“原文核对提示”。重译这几页时，先去掉上次翻译留下的那几条。"""
+    """模型發現的原文問題 → 頁邊的“原文核對提示”。重譯這幾頁時，先去掉上次翻譯留下的那幾條。"""
     pages = {b["id"]: b.get("page") for b in ws.load("paper").get("blocks", [])}
     old = [e["id"] for e in ws.load("discussion").get("entries", [])
            if e.get("kind") == "check" and e.get("by") == "translator" and pages.get(e.get("anchor")) in batch]
@@ -192,11 +192,11 @@ def _save_checks(ws: Workspace, checks, batch: list[int]) -> None:
         try:
             add_discussion(ws, items)
         except ValueError as e:
-            journal(ws, f"核对提示没存上：{e}")
+            journal(ws, f"核對提示沒存上：{e}")
 
 
 def _batches(pages: list[int], size: int, en_pages: set[int]) -> list[list[int]]:
-    """分批；只读原文整理过的页（补译文）和要从头译的页不混在一批里。"""
+    """分批；只讀原文整理過的頁（補譯文）和要從頭譯的頁不混在一批裡。"""
     out: list[list[int]] = []
     for n in pages:
         if out and len(out[-1]) < size and (out[-1][0] in en_pages) == (n in en_pages):
@@ -207,14 +207,14 @@ def _batches(pages: list[int], size: int, en_pages: set[int]) -> list[list[int]]
 
 
 def translate_pages(ws: Workspace, cfg: dict, pages: list[int], cancel, report, meter=None, read=False) -> dict[int, str]:
-    """翻译给定的页（已完成的页会重译并替换；只读原文整理过的页就地补译文）。report(done, total, message)；
-    meter 收集 token 用量。read：只读原文，把页整理成块但不翻译。返回没做成的页 {页码: 原因}。"""
+    """翻譯給定的頁（已完成的頁會重譯並替換；只讀原文整理過的頁就地補譯文）。report(done, total, message)；
+    meter 收集 token 用量。read：只讀原文，把頁整理成塊但不翻譯。返回沒做成的頁 {頁碼: 原因}。"""
     paper = ws.load("paper")
     total_pages = paper.get("meta", {}).get("page_count") or 0
     en_pages = set() if read else set(paper.get("translation", {}).get("en_pages", []))
     size = max(1, int(cfg.get("batch_pages") or 2))
     batches = _batches(pages, size, en_pages)
-    verb = "正在整理原文" if read else "正在翻译"
+    verb = "正在整理原文" if read else "正在翻譯"
     workers = max(1, min(8, int(cfg.get("concurrency") or 1)))
     state = {"done": 0, "active": set(), "quota": ""}
     failed: dict[int, str] = {}
@@ -222,10 +222,10 @@ def translate_pages(ws: Workspace, cfg: dict, pages: list[int], cancel, report, 
     bad = netcheck.problem(cfg)
     if bad:
         raise engines.EngineError(bad)
-    journal(ws, ("只读原文（不翻译）" if read else "") + f"开始：{len(pages)} 页，{len(batches)} 批，引擎 {engines.ENGINE_NAMES.get(cfg.get('engine'), cfg.get('engine'))}，并发 {workers}")
+    journal(ws, ("只讀原文（不翻譯）" if read else "") + f"開始：{len(pages)} 頁，{len(batches)} 批，引擎 {engines.ENGINE_NAMES.get(cfg.get('engine'), cfg.get('engine'))}，併發 {workers}")
 
     def label(batch):
-        return f"第 {batch[0]}–{batch[-1]} 页" if len(batch) > 1 else f"第 {batch[0]} 页"
+        return f"第 {batch[0]}–{batch[-1]} 頁" if len(batch) > 1 else f"第 {batch[0]} 頁"
 
     def say(msg=None):
         with lock:
@@ -236,7 +236,7 @@ def translate_pages(ws: Workspace, cfg: dict, pages: list[int], cancel, report, 
     def work(batch):
         if cancel.is_set():
             return
-        if state["quota"]:  # 额度用完了，不再白跑
+        if state["quota"]:  # 額度用完了，不再白跑
             with lock:
                 state["done"] += len(batch)
                 for n in batch:
@@ -259,13 +259,13 @@ def translate_pages(ws: Workspace, cfg: dict, pages: list[int], cancel, report, 
                 raise
             except Exception as e:  # noqa: BLE001
                 err = str(e) if isinstance(e, engines.EngineError) else f"{type(e).__name__}: {e}"
-                journal(ws, f"{label(batch)} 第 {attempt + 1} 次失败：{err[:500]}")
-                log.warning("翻译失败 %s %s: %s", ws.id, batch, err[:300])
+                journal(ws, f"{label(batch)} 第 {attempt + 1} 次失敗：{err[:500]}")
+                log.warning("翻譯失敗 %s %s: %s", ws.id, batch, err[:300])
                 if cancel.is_set():
                     raise engines.Cancelled()
                 if _QUOTA.search(err) or netcheck.offline(err):
                     state["quota"] = err[:300]
-                    journal(ws, "额度用完或连不上，停止翻译剩下的页")
+                    journal(ws, "額度用完或連不上，停止翻譯剩下的頁")
                     break
         with lock:
             state["active"].discard(tuple(batch))
@@ -278,10 +278,10 @@ def translate_pages(ws: Workspace, cfg: dict, pages: list[int], cancel, report, 
     with ThreadPoolExecutor(max_workers=workers) as pool:
         futures = [pool.submit(work, b) for b in batches]
         for f in futures:
-            f.result()  # Cancelled 在这里抛出去
+            f.result()  # Cancelled 在這裡丟擲去
     if cancel.is_set():
         raise engines.Cancelled()
-    journal(ws, "结束" + (f"，{len(failed)} 页失败：{sorted(failed)}" if failed else "，全部成功"))
+    journal(ws, "結束" + (f"，{len(failed)} 頁失敗：{sorted(failed)}" if failed else "，全部成功"))
     return failed
 
 
@@ -291,7 +291,7 @@ def answer(ws: Workspace, cfg: dict, note_id: str, cancel) -> None:
         raise KeyError(note_id)
     text = engines.run(cfg, prompts.answer(ws, note), ws.root, None, cancel).strip()
     if not text:
-        raise engines.EngineError("模型没有给出回答")
+        raise engines.EngineError("模型沒有給出回答")
     add_discussion(ws, [{"reply_to": note_id, "kind": "reply", "body": text, "by": engines.who(cfg)}])
 
 
@@ -299,5 +299,5 @@ def retranslate(ws: Workspace, cfg: dict, key: str, hint: str, cancel) -> None:
     data = engines.parse_json(engines.run(cfg, prompts.retranslate(ws, key, hint), ws.root, None, cancel))
     zh = (data or {}).get("zh", "").strip() if isinstance(data, dict) else ""
     if not zh:
-        raise engines.EngineError("模型没有给出新译文")
+        raise engines.EngineError("模型沒有給出新譯文")
     set_block_text(ws, key, zh)

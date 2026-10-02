@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-TW">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>EasyRead · 把英文论文读成舒服的中文</title>
-<meta name="description" content="本地运行的论文阅读器：导入 PDF，用你已有的 Claude Code、Codex，或 DeepSeek、智谱、本机 Ollama 等模型在后台逐页翻译；公式表格照原文排好，边读边划线、记笔记、问 AI。免费开源。">
-<meta property="og:title" content="EasyRead · 把英文论文读成舒服的中文">
-<meta property="og:description" content="导入 PDF，后台逐页翻译；公式表格照原文排好，随时对照原页，边读边划线、问 AI。本地运行，免费开源。">
+<title>EasyRead · 把英文論文讀成易讀的繁體中文</title>
+<meta name="description" content="本地執行的論文閱讀器：匯入 PDF，用你已有的 Claude Code、Codex，或 DeepSeek、智譜、本機 Ollama 等模型在背景逐頁翻譯；公式表格照原文排好，邊讀邊劃線、記筆記、問 AI。免費開源。">
+<meta property="og:title" content="EasyRead · 把英文論文讀成易讀的繁體中文">
+<meta property="og:description" content="匯入 PDF，背景逐頁翻譯；公式表格照原文排好，隨時對照原頁，邊讀邊劃線、問 AI。本地執行，免費開源。">
 <meta property="og:image" content="images/chat.jpg">
 <link rel="alternate" hreflang="en" href="en/index.html">
 <link rel="icon" href="images/logo.svg">
@@ -17,102 +17,102 @@
   <header class="top">
     <a class="brand" href="index.html"><img src="images/logo.svg" width="30" height="30" alt=""><span>Easy<b>Read</b></span></a>
     <span class="grow"></span>
-    <nav><a href="#features">功能</a><a href="#engines">翻译模型</a><a href="#install">安装</a><a href="#faq">常见问题</a><a class="gh" href="https://github.com/Edwardxlai/easyread">GitHub</a><a class="lang" href="en/index.html" hreflang="en">EN</a></nav>
+    <nav><a href="#features">功能</a><a href="#engines">翻譯模型</a><a href="#install">安裝</a><a href="#faq">常見問題</a><a class="gh" href="https://github.com/Edwardxlai/easyread">GitHub</a><a class="lang" href="en/index.html" hreflang="en">EN</a></nav>
   </header>
 </div></div>
 
 <div class="wrap">
   <div class="hero">
-    <h1>把英文论文，<br>读成<mark>舒服的中文</mark></h1>
-    <p class="sub">导入 PDF，用你已经在用的 Claude Code、Codex，或者免费模型，在后台逐页翻译。公式、表格照原文排好，随时对照原页，边读边划线、记笔记、问 AI。</p>
+    <h1>把英文論文，<br>讀成<mark>易讀的繁體中文</mark></h1>
+    <p class="sub">匯入 PDF，用你已經在用的 Claude Code、Codex，或者免費模型，在背景逐頁翻譯。公式、表格照原文排好，隨時對照原頁，邊讀邊劃線、記筆記、問 AI。</p>
     <div class="cta">
-      <a class="btn primary" href="demo/index.html">在线试读一篇 →</a>
-      <a class="btn line" href="https://github.com/Edwardxlai/easyread">免费下载 · GitHub</a>
+      <a class="btn primary" href="demo/index.html">線上試讀一篇 →</a>
+      <a class="btn line" href="https://github.com/Edwardxlai/easyread">免費下載 · GitHub</a>
     </div>
-    <p class="note">开源免费 · 本地运行，论文和笔记只存在你自己的电脑上</p>
-    <figure class="shot"><img src="images/pages.jpg" alt="阅读页：左边是译文，右边是原页" loading="eager"></figure>
+    <p class="note">開源免費 · 本地執行，論文和筆記只存在你自己的電腦上</p>
+    <figure class="shot"><img src="images/pages.jpg" alt="閱讀頁：左邊是譯文，右邊是原頁" loading="eager"></figure>
   </div>
 </div>
 
 <section id="features"><div class="wrap">
-  <h2>它和“把 PDF 丢给翻译软件”不一样</h2>
-  <p class="lead">翻译软件给你一堆断行的文字；EasyRead 给你一本排好版、能批注、能随时追问的中文论文。</p>
+  <h2>它和“把 PDF 丟給翻譯軟體”不一樣</h2>
+  <p class="lead">翻譯軟體給你一堆斷行的文字；EasyRead 給你一本排好版、能批註、能隨時追問的中文論文。</p>
   <div class="feat">
-    <div><h3>像读排好版的中文书</h3><p>宋体正文、舒服的行宽，公式用 KaTeX 按原文重排，表格是三线表，参考文献保留原文。</p></div>
-    <div><h3>随时核对原文</h3><p>一键切“对照”，每段下附英文；右侧开原页，跟着阅读位置翻页，框出当前段落。</p></div>
-    <div><h3>翻译和解释分开</h3><p>正文只放忠实的译文；AI 的解释、发现的原文笔误放在页边，一眼分清哪句是论文说的。</p></div>
-    <div><h3>边读边问 AI</h3><p>可以一次引用好几段来问；问“我标红的那些”，它会找出你红色的划线一起看。</p></div>
-    <div><h3>划线、笔记、提问</h3><p>四色荧光笔或下划线；笔记里的问题一键让 AI 回答。全部按原文顺序汇总，可导出 Markdown。</p></div>
-    <div><h3>不只是 arXiv</h3><p>拖进任何 PDF；或填 arXiv 编号、DOI、论文标题、OpenReview / ACL / bioRxiv 链接，自动找 PDF、补全信息。</p></div>
+    <div><h3>像讀排好版的中文書</h3><p>宋體正文、舒服的行寬，公式用 KaTeX 按原文重排，表格是三線表，參考文獻保留原文。</p></div>
+    <div><h3>隨時核對原文</h3><p>一鍵切“對照”，每段下附英文；右側開原頁，跟著閱讀位置翻頁，框出當前段落。</p></div>
+    <div><h3>翻譯和解釋分開</h3><p>正文只放忠實的譯文；AI 的解釋、發現的原文筆誤放在頁邊，一眼分清哪句是論文說的。</p></div>
+    <div><h3>邊讀邊問 AI</h3><p>可以一次引用好幾段來問；問“我標紅的那些”，它會找出你紅色的劃線一起看。</p></div>
+    <div><h3>劃線、筆記、提問</h3><p>四色熒光筆或下劃線；筆記裡的問題一鍵讓 AI 回答。全部按原文順序彙總，可匯出 Markdown。</p></div>
+    <div><h3>不只是 arXiv</h3><p>拖進任何 PDF；或填 arXiv 編號、DOI、論文標題、OpenReview / ACL / bioRxiv 連結，自動找 PDF、補全資訊。</p></div>
   </div>
 </div></section>
 
 <section><div class="wrap">
   <div class="row">
     <div class="text">
-      <h3>问 AI：引用几段，一起问</h3>
-      <p>选中正文拖进输入框，或者点段落上的“问 AI”，每段一个小标签。问题会带上这几段和你正在读的上下文。</p>
-      <p>你做过的标记不会每次都塞给模型；问到“标红的”“划线”“我的笔记”时，才按颜色找出来。</p>
-      <div class="quote">“我标红的那几句话分别对应哪个公式？”<small>演示里有这样一段真实的对话，可以打开看。</small></div>
+      <h3>問 AI：引用幾段，一起問</h3>
+      <p>選中正文拖進輸入框，或者點段落上的“問 AI”，每段一個小標籤。問題會帶上這幾段和你正在讀的上下文。</p>
+      <p>你做過的標記不會每次都塞給模型；問到“標紅的”“劃線”“我的筆記”時，才按顏色找出來。</p>
+      <div class="quote">“我標紅的那幾句話分別對應哪個公式？”<small>演示裡有這樣一段真實的對話，可以開啟看。</small></div>
     </div>
-    <figure class="shot"><img src="images/chat.jpg" alt="问 AI 面板" loading="lazy"></figure>
+    <figure class="shot"><img src="images/chat.jpg" alt="問 AI 面板" loading="lazy"></figure>
   </div>
   <div class="row flip">
     <div class="text">
-      <h3>原页就在旁边</h3>
-      <p>右侧原页跟着你读到的位置翻页，并框出这一段在 PDF 里的位置。公式、表格有疑问，扫一眼就能核对。</p>
+      <h3>原頁就在旁邊</h3>
+      <p>右側原頁跟著你讀到的位置翻頁，並框出這一段在 PDF 裡的位置。公式、表格有疑問，掃一眼就能核對。</p>
     </div>
-    <figure class="shot"><img src="images/pages.jpg" alt="原页对照" loading="lazy"></figure>
+    <figure class="shot"><img src="images/pages.jpg" alt="原頁對照" loading="lazy"></figure>
   </div>
   <div class="row">
     <div class="text">
-      <h3>所有批注，按原文顺序排好</h3>
+      <h3>所有批註，按原文順序排好</h3>
       <ul>
-        <li>你的划线、笔记、问题</li>
-        <li>翻译时发现的原文笔误（比如两张表数字对不上）</li>
+        <li>你的劃線、筆記、問題</li>
+        <li>翻譯時發現的原文筆誤（比如兩張表數字對不上）</li>
         <li>AI 的回答</li>
       </ul>
-      <p>整篇还有一页“论文笔记”。勾选要哪些，导出成 Markdown，放进 Obsidian、Notion。</p>
+      <p>整篇還有一頁“論文筆記”。勾選要哪些，匯出成 Markdown，放進 Obsidian、Notion。</p>
     </div>
-    <figure class="shot"><img src="images/notes.jpg" alt="笔记面板" loading="lazy"></figure>
+    <figure class="shot"><img src="images/notes.jpg" alt="筆記面板" loading="lazy"></figure>
   </div>
   <div class="row flip">
     <div class="text">
-      <h3>一个自己的文献库</h3>
-      <p>论文和分类都能置顶；自己建分类，把论文拖进去；最近阅读、星标、阅读进度一目了然；复制 GB/T 7714、APA、BibTeX 引用；导出单文件离线网页发给别人；删掉的论文先进回收站。</p>
+      <h3>一個自己的文獻庫</h3>
+      <p>論文和分類都能置頂；自己建分類，把論文拖進去；最近閱讀、星標、閱讀進度一目瞭然；複製 GB/T 7714、APA、BibTeX 引用；匯出單檔案離線網頁發給別人；刪掉的論文先進回收站。</p>
     </div>
-    <figure class="shot"><img src="images/library.jpg" alt="文献库" loading="lazy"></figure>
+    <figure class="shot"><img src="images/library.jpg" alt="文獻庫" loading="lazy"></figure>
   </div>
   <div class="row">
     <div class="text">
-      <h3>手机上也能读</h3>
-      <p>导出的离线网页和这个在线演示都适配手机：通勤路上接着读，划线照样能用。</p>
+      <h3>手機上也能讀</h3>
+      <p>匯出的離線網頁和這個線上演示都適配手機：通勤路上接著讀，劃線照樣能用。</p>
     </div>
-    <div class="phone"><figure class="shot"><img src="images/phone.jpg" alt="手机上阅读" loading="lazy"></figure></div>
+    <div class="phone"><figure class="shot"><img src="images/phone.jpg" alt="手機上閱讀" loading="lazy"></figure></div>
   </div>
 </div></section>
 
 <section id="engines"><div class="wrap">
-  <h2>翻译用什么模型：你来选</h2>
-  <p class="lead">设置里会自动检测本机装了什么，点“试译一句”马上知道能不能用。某一页失败会自动重试，额度用完就停下，等恢复后接着译。每次翻译用了多少 token 都有记录；用 Claude 订阅时还能看到 5 小时额度用到多少。</p>
+  <h2>翻譯用什麼模型：你來選</h2>
+  <p class="lead">設定裡會自動檢測本機裝了什麼，點“試譯一句”馬上知道能不能用。某一頁失敗會自動重試，額度用完就停下，等恢復後接著譯。每次翻譯用了多少 token 都有記錄；用 Claude 訂閱時還能看到 5 小時額度用到多少。</p>
   <div class="tablebox"><table class="engines">
-    <tr><th>来源</th><th>要什么</th><th>说明</th></tr>
-    <tr><td><b>Claude Code</b><span class="tag">推荐</span></td><td>装好并登录 Claude Code</td><td>不用 Key，用你订阅的额度；会看原页图核对公式，译得最好</td></tr>
-    <tr><td><b>Codex CLI</b></td><td>装好并登录 Codex</td><td>不用 Key，用 ChatGPT 账号</td></tr>
-    <tr><td><b>API 接口 · 国内直连</b></td><td>API Key</td><td>DeepSeek、智谱、阿里云百炼、Kimi、硅基流动、魔搭。智谱 GLM-4.7-Flash、硅基流动小模型免费；DeepSeek 一篇 20 页论文几毛钱</td></tr>
-    <tr><td><b>API 接口 · 海外</b></td><td>API Key（国内要开梯子）</td><td>OpenAI、Anthropic、Gemini、OpenRouter、Groq、Cerebras；后四家有免费额度</td></tr>
-    <tr><td><b>API 接口 · 本机</b><span class="tag">免费</span></td><td>装好 Ollama 或 LM Studio</td><td>完全离线，推荐 qwen3.5:9b（显卡小用 4b）</td></tr>
-    <tr><td><b>API 接口 · 自定义地址</b></td><td>地址 + Key</td><td>任意 OpenAI 兼容接口、中转站；点“获取模型列表”直接拉模型名</td></tr>
+    <tr><th>來源</th><th>要什麼</th><th>說明</th></tr>
+    <tr><td><b>Claude Code</b><span class="tag">推薦</span></td><td>裝好並登入 Claude Code</td><td>不用 Key，用你訂閱的額度；會看原頁圖核對公式，譯得最好</td></tr>
+    <tr><td><b>Codex CLI</b></td><td>裝好並登入 Codex</td><td>不用 Key，用 ChatGPT 賬號</td></tr>
+    <tr><td><b>API 介面 · 國內直連</b></td><td>API Key</td><td>DeepSeek、智譜、阿里雲百鍊、Kimi、矽基流動、魔搭。智譜 GLM-4.7-Flash、矽基流動小模型免費；DeepSeek 一篇 20 頁論文幾毛錢</td></tr>
+    <tr><td><b>API 介面 · 海外</b></td><td>API Key（國內要開梯子）</td><td>OpenAI、Anthropic、Gemini、OpenRouter、Groq、Cerebras；後四家有免費額度</td></tr>
+    <tr><td><b>API 介面 · 本機</b><span class="tag">免費</span></td><td>裝好 Ollama 或 LM Studio</td><td>完全離線，推薦 qwen3.5:9b（顯示卡小用 4b）</td></tr>
+    <tr><td><b>API 介面 · 自定義地址</b></td><td>地址 + Key</td><td>任意 OpenAI 相容介面、中轉站；點“獲取模型列表”直接拉模型名</td></tr>
   </table></div>
 </div></section>
 
 <section id="install"><div class="wrap">
-  <h2>三步用起来</h2>
-  <p class="lead">最省事是下载安装包，不用装 Python：Windows、macOS（Apple 芯片）、Linux 都有。</p>
+  <h2>三步用起來</h2>
+  <p class="lead">最省事是下載安裝包，不用裝 Python：Windows、macOS（Apple 晶片）、Linux 都有。</p>
   <div class="steps">
-    <div><h3>下载安装</h3><p>在 <a href="https://github.com/Edwardxlai/easyread/releases/latest">Releases</a> 下载 Windows 的 <code>.exe</code>、macOS 的 <code>.dmg</code> 或 Linux 的 <code>.AppImage</code>，装好打开就是独立窗口。也可以从源码运行（要 Python 3.10+）：Windows 双击 <code>start.cmd</code>，macOS / Linux 运行 <code>./start.sh</code>。</p></div>
-    <div><h3>选翻译模型</h3><p>右上角“设置”，选 Claude Code、Codex CLI 或 API 接口（DeepSeek、智谱、本机 Ollama……），点“试译一句”确认能用。</p></div>
-    <div><h3>导入论文，开始读</h3><p>把 PDF 拖进窗口，或粘贴 arXiv 编号、论文链接。已译的页马上能读，没译到的先显示原页。</p></div>
+    <div><h3>下載安裝</h3><p>在 <a href="https://github.com/Edwardxlai/easyread/releases/latest">Releases</a> 下載 Windows 的 <code>.exe</code>、macOS 的 <code>.dmg</code> 或 Linux 的 <code>.AppImage</code>，裝好開啟就是獨立視窗。也可以從原始碼執行（要 Python 3.10+）：Windows 雙擊 <code>start.cmd</code>，macOS / Linux 執行 <code>./start.sh</code>。</p></div>
+    <div><h3>選翻譯模型</h3><p>右上角“設定”，選 Claude Code、Codex CLI 或 API 介面（DeepSeek、智譜、本機 Ollama……），點“試譯一句”確認能用。</p></div>
+    <div><h3>匯入論文，開始讀</h3><p>把 PDF 拖進視窗，或貼上 arXiv 編號、論文連結。已譯的頁馬上能讀，沒譯到的先顯示原頁。</p></div>
   </div>
   <p class="lead">或者用 pip：</p>
   <pre><code>pip install git+https://github.com/Edwardxlai/easyread
@@ -120,16 +120,16 @@ easyread</code></pre>
 </div></section>
 
 <section id="faq" class="faq"><div class="wrap">
-  <h2>常见问题</h2>
-  <details><summary>要花钱吗？</summary><p>EasyRead 本身免费开源。翻译用的是你自己的模型：Claude Code / Codex 用你已有的订阅额度；API 接口里标“免费”的模型和本机 Ollama 不花钱，其他按量计费，DeepSeek 一篇 20 页论文几毛钱。</p></details>
-  <details><summary>用 Claude Code 翻译要挂梯子吗？</summary><p>和你平时在终端里用 <code>claude</code> 一样：平时要，这里也要。不想折腾的话，在设置的“API 接口”里选智谱、硅基流动（都有免费模型），或者本机 Ollama，国内直连。</p></details>
-  <details><summary>论文和笔记存在哪？会上传吗？</summary><p>全在本机。每篇论文一个文件夹，里面是原 PDF、原页图和几个 JSON 文件。只有翻译和提问时，相关文字会发给你选的那个模型。</p></details>
-  <details><summary>能发给没装 EasyRead 的人看吗？</summary><p>能。文献库里右键一篇论文 → “导出离线 HTML”，得到一个单文件网页，对方双击用浏览器打开就能读：译文、公式、原页图、你的划线和笔记都在里面。原页图打包在文件里，所以不小（27 页的论文约 10 MB）。</p></details>
-  <details><summary>在线演示里做的划线会保存吗？</summary><p>会存在你自己的浏览器里，别人看不到。演示不能导入新论文、不能提问；装到本机后才有完整功能。</p></details>
+  <h2>常見問題</h2>
+  <details><summary>要花錢嗎？</summary><p>EasyRead 本身免費開源。翻譯用的是你自己的模型：Claude Code / Codex 用你已有的訂閱額度；API 接口裡標“免費”的模型和本機 Ollama 不花錢，其他按量計費，DeepSeek 一篇 20 頁論文幾毛錢。</p></details>
+  <details><summary>用 Claude Code 翻譯要掛梯子嗎？</summary><p>和你平時在終端裡用 <code>claude</code> 一樣：平時要，這裡也要。不想折騰的話，在設定的“API 介面”裡選智譜、矽基流動（都有免費模型），或者本機 Ollama，國內直連。</p></details>
+  <details><summary>論文和筆記存在哪？會上傳嗎？</summary><p>全在本機。每篇論文一個資料夾，裡面是原 PDF、原頁圖和幾個 JSON 檔案。只有翻譯和提問時，相關文字會發給你選的那個模型。</p></details>
+  <details><summary>能發給沒裝 EasyRead 的人看嗎？</summary><p>能。文獻庫裡右鍵一篇論文 → “匯出離線 HTML”，得到一個單檔案網頁，對方雙擊用瀏覽器開啟就能讀：譯文、公式、原頁圖、你的劃線和筆記都在裡面。原頁圖打包在檔案裡，所以不小（27 頁的論文約 10 MB）。</p></details>
+  <details><summary>線上演示裡做的劃線會儲存嗎？</summary><p>會存在你自己的瀏覽器裡，別人看不到。演示不能匯入新論文、不能提問；裝到本機後才有完整功能。</p></details>
 </div></section>
 
 <footer>
-  <div class="wrap">EasyRead · MIT 许可 · <a href="https://github.com/Edwardxlai/easyread">GitHub</a> · 演示论文：Rafailov et al., <i>Direct Preference Optimization</i>（<a href="https://arxiv.org/abs/2305.18290">arXiv:2305.18290</a>，CC BY 4.0），译文由 EasyRead 调用 Claude 生成</div>
+  <div class="wrap">EasyRead · MIT 許可 · <a href="https://github.com/Edwardxlai/easyread">GitHub</a> · 演示論文：Rafailov et al., <i>Direct Preference Optimization</i>（<a href="https://arxiv.org/abs/2305.18290">arXiv:2305.18290</a>，CC BY 4.0），譯文由 EasyRead 呼叫 Claude 生成</div>
 </footer>
 <script src="site.js"></script>
 </body>

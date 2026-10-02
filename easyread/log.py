@@ -1,4 +1,4 @@
-"""日志：写到数据目录下的 easyread.log（双击启动时没有控制台，出错信息全靠它）。"""
+"""日誌：寫到資料目錄下的 easyread.log（雙擊啟動時沒有控制台，出錯資訊全靠它）。"""
 from __future__ import annotations
 
 import logging

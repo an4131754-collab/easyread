@@ -1,4 +1,4 @@
-"""检查新版本：版本号比较、一天只问一次、没网不报错、关掉后不联网。  python -m unittest tests.test_updates"""
+"""檢查新版本：版本號比較、一天只問一次、沒網不報錯、關掉後不聯網。  python -m unittest tests.test_updates"""
 import tempfile
 import unittest
 from pathlib import Path
@@ -23,7 +23,7 @@ class UpdatesTest(unittest.TestCase):
         def fetch():
             self.calls += 1
             if fail:
-                raise OSError("没网")
+                raise OSError("沒網")
             return {"latest": tag.lstrip("v"), "url": "https://example/r", "notes": "- 新功能", "published": "2026-10-02T00:00:00Z"}
         return mock.patch.object(updates, "_fetch", fetch)
 
@@ -57,7 +57,7 @@ class UpdatesTest(unittest.TestCase):
             u = updates.check()
             self.assertEqual(self.calls, 0)
             self.assertFalse(u["enabled"])
-            updates.check(force=True)  # 手动检查照样问
+            updates.check(force=True)  # 手動檢查照樣問
         self.assertEqual(self.calls, 1)
 
 

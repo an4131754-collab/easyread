@@ -33,7 +33,7 @@ async function desktop(platform = "darwin", lock = true) {
       child.stdout = new EventEmitter(); child.stderr = new EventEmitter();
       child.kill = () => { child.killed = true; child.emit("exit", 0, "SIGTERM"); };
       launches.push({ command, args, options, child });
-      queueMicrotask(() => child.stdout.emit("data", "EasyRead 已启动：http://127.0.0.1:9876\n"));
+      queueMicrotask(() => child.stdout.emit("data", "EasyRead 已啟動：http://127.0.0.1:9876\n"));
       return child;
     },
   };

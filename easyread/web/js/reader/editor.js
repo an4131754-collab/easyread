@@ -1,4 +1,4 @@
-/* 改译文：双击一段或按 E，原地变成编辑框。草稿随手存在浏览器里，误关页面也能找回。 */
+/* 改譯文：雙擊一段或按 E，原地變成編輯框。草稿隨手存在瀏覽器裡，誤關頁面也能找回。 */
 (function (PR) {
   "use strict";
   PR.editingKey = null;
@@ -14,12 +14,12 @@
     const edited = !!PR.editOf(key);
     PR.editingKey = key;
     const wrapEl = PR.el("div", { class: "editor-wrap" });
-    const ta = PR.el("textarea", { class: "editor", spellcheck: "false", "aria-label": "编辑译文" });
+    const ta = PR.el("textarea", { class: "editor", spellcheck: "false", "aria-label": "編輯譯文" });
     ta.value = draft != null && draft !== current ? draft : current;
     const bar = PR.el("div", { class: "editor-bar" },
-      "<span>" + (draft != null && draft !== current ? "已恢复上次没保存的草稿 · " : "") + "Ctrl+Enter 保存 · Esc 取消 · 支持 $公式$、**粗体**</span>" +
-      '<span class="grow"></span>' + (edited ? '<button data-e="revert">恢复译者稿</button>' : "") +
-      '<button data-e="cancel">取消</button><button data-e="save" class="primary">保存</button>');
+      "<span>" + (draft != null && draft !== current ? "已恢復上次沒儲存的草稿 · " : "") + "Ctrl+Enter 儲存 · Esc 取消 · 支援 $公式$、**粗體**</span>" +
+      '<span class="grow"></span>' + (edited ? '<button data-e="revert">恢復譯者稿</button>' : "") +
+      '<button data-e="cancel">取消</button><button data-e="save" class="primary">儲存</button>');
     wrapEl.append(ta, bar);
     zh.replaceChildren(wrapEl);
     PR.autosize(ta);
@@ -56,13 +56,13 @@
     PR.editZh(zh);
   });
 
-  /* 我改过、译者稿后来又变了 */
+  /* 我改過、譯者稿後來又變了 */
   PR.showStale = function (zh) {
     const key = zh.dataset.key;
     const agent = PR.agentText(key);
-    PR.popover(zh, '<div class="hd">译者稿（更新后）</div><div class="cap">' + PR.md(agent) + "</div>" +
+    PR.popover(zh, '<div class="hd">譯者稿（更新後）</div><div class="cap">' + PR.md(agent) + "</div>" +
       '<div class="hd" style="margin-top:10px">你的版本</div><div class="cap">' + PR.md(PR.textFor(key)) + "</div>" +
-      '<div style="display:flex;gap:8px;margin-top:10px"><button class="btn sm line" data-st="agent">换成译者稿</button><button class="btn sm line" data-st="mine">保留我的</button></div>', { sticky: true, wide: true });
+      '<div style="display:flex;gap:8px;margin-top:10px"><button class="btn sm line" data-st="agent">換成譯者稿</button><button class="btn sm line" data-st="mine">保留我的</button></div>', { sticky: true, wide: true });
     PR.$("#popover").onclick = (ev) => {
       const b = ev.target.closest("[data-st]");
       if (!b) return;
@@ -74,7 +74,7 @@
     };
   };
 
-  /* 术语一键替换：在我的版本里把旧译法换成新译法（写成我的修改，不动译者稿） */
+  /* 術語一鍵替換：在我的版本里把舊譯法換成新譯法（寫成我的修改，不動譯者稿） */
   PR.replaceTerm = function (from, to, dryRun) {
     if (!from || from === to) return 0;
     const esc = from.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -84,7 +84,7 @@
     for (const b of PR.state.paper.blocks || []) {
       for (const key of PR.blockKeys(b)) {
         const cur = PR.textFor(key);
-        const parts = cur.split(/(\$[^$]*\$)/);  // 公式里不替换
+        const parts = cur.split(/(\$[^$]*\$)/);  // 公式裡不替換
         let hits = 0;
         const next = parts.map((p, i) => (i % 2 ? p : p.replace(re, () => { hits++; return to; }))).join("");
         if (!hits) continue;

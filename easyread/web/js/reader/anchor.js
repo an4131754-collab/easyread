@@ -1,4 +1,4 @@
-/* 划线锚定（参考 Hypothesis 的 TextQuote：原话 + 前后文）和选中文字后的浮动条。 */
+/* 劃線錨定（參考 Hypothesis 的 TextQuote：原話 + 前後文）和選中文字後的浮動條。 */
 (function (PR) {
   "use strict";
   const S = PR.state;
@@ -85,7 +85,7 @@
     }
   };
 
-  /* ---------- 选中文字 -> 浮动条 ---------- */
+  /* ---------- 選中文字 -> 浮動條 ---------- */
   const selbar = () => PR.$("#selbar");
   let pendingSel = null;
 
@@ -111,15 +111,15 @@
     if (!pendingSel) { bar.classList.remove("open"); return; }
     PR.hideBlockbar && PR.hideBlockbar();
     const pen = PR.prefs.pen === "underline" ? "underline" : "marker";
-    bar.innerHTML = '<span class="pens"><button data-pen="marker" class="' + (pen === "marker" ? "on" : "") + '" title="荧光笔：涂底色">' + PR.icon("marker", "sm") + "</button>" +
-      '<button data-pen="underline" class="' + (pen === "underline" ? "on" : "") + '" title="下划线">' + PR.icon("underline", "sm") + "</button></span>" +
+    bar.innerHTML = '<span class="pens"><button data-pen="marker" class="' + (pen === "marker" ? "on" : "") + '" title="熒光筆：塗底色">' + PR.icon("marker", "sm") + "</button>" +
+      '<button data-pen="underline" class="' + (pen === "underline" ? "on" : "") + '" title="下劃線">' + PR.icon("underline", "sm") + "</button></span>" +
       '<span class="dots pen-' + pen + '">' + PR.HL_COLORS.map(([c, name], i) =>
-      '<button data-s="highlight" data-color="' + c + '" class="dot-' + c + '" title="' + name + (pen === "underline" ? "色下划线" : "色荧光笔") + (PR.keysOn ? "（" + (i + 1) + "）" : "") + '"></button>').join("") + "</span>" +
-      '<button data-s="note" title="写笔记（N）">' + PR.icon("note", "sm") + "笔记</button>" +
-      '<button data-s="question" title="提问（Q）">' + PR.icon("question", "sm") + "提问</button>" +
-      (PR.canChat && PR.canChat() && PR.feature("chat") ? '<button data-s="chat" title="把这句引用到问 AI（可以引用多段）">' + PR.icon("sparkle", "sm") + (PR.chatOpen && PR.chatOpen() ? "引用到对话" : "问 AI") + "</button>" : "") +
-      '<button data-s="en" title="看这段英文">' + PR.icon("en", "sm") + "原文</button>" +
-      '<button data-s="copy" title="复制">' + PR.icon("copy", "sm") + "</button>";
+      '<button data-s="highlight" data-color="' + c + '" class="dot-' + c + '" title="' + name + (pen === "underline" ? "色下劃線" : "色熒光筆") + (PR.keysOn ? "（" + (i + 1) + "）" : "") + '"></button>').join("") + "</span>" +
+      '<button data-s="note" title="寫筆記（N）">' + PR.icon("note", "sm") + "筆記</button>" +
+      '<button data-s="question" title="提問（Q）">' + PR.icon("question", "sm") + "提問</button>" +
+      (PR.canChat && PR.canChat() && PR.feature("chat") ? '<button data-s="chat" title="把這句引用到問 AI（可以引用多段）">' + PR.icon("sparkle", "sm") + (PR.chatOpen && PR.chatOpen() ? "引用到對話" : "問 AI") + "</button>" : "") +
+      '<button data-s="en" title="看這段英文">' + PR.icon("en", "sm") + "原文</button>" +
+      '<button data-s="copy" title="複製">' + PR.icon("copy", "sm") + "</button>";
     bar.classList.add("open");
     const r = pendingSel.rect, w = bar.offsetWidth;
     const x = Math.min(innerWidth - w - 8, Math.max(8, r.left + r.width / 2 - w / 2));
@@ -137,7 +137,7 @@
     getSelection().removeAllRanges();
     pendingSel = null;
     if (kind === "en") { PR.toggleEn(anchor, true); return; }
-    if (kind === "copy") { navigator.clipboard.writeText(quote).then(() => PR.toast("已复制")); return; }
+    if (kind === "copy") { navigator.clipboard.writeText(quote).then(() => PR.toast("已複製")); return; }
     if (kind === "chat") { PR.chatAsk({ anchor, quote }); return; }
     const note = { anchor, key, quote, prefix, suffix, kind, color: color || "yellow" };
     if (PR.prefs.pen === "underline") note.style = "underline";
@@ -145,13 +145,13 @@
       Object.assign(note, { id: PR.uid("n"), body: "", created: PR.nowIso() });
       PR.saveNote(note);
       PR.applyMarks(anchor);
-      PR.toast("已划线　点划线可以写笔记或改颜色", { label: "撤销", fn: () => { PR.commit({ op: "note_del", id: note.id }); PR.applyMarks(anchor); } }, 2600);
+      PR.toast("已劃線　點劃線可以寫筆記或改顏色", { label: "撤銷", fn: () => { PR.commit({ op: "note_del", id: note.id }); PR.applyMarks(anchor); } }, 2600);
     } else PR.startNote(note);
   };
-  selbar().addEventListener("mousedown", (e) => e.preventDefault()); // 点按钮时别丢掉选区
+  selbar().addEventListener("mousedown", (e) => e.preventDefault()); // 點按鈕時別丟掉選區
   selbar().addEventListener("click", (e) => {
     const p = e.target.closest("[data-pen]");
-    if (p) {  // 换笔：荧光笔 / 下划线，记住上次用的
+    if (p) {  // 換筆：熒光筆 / 下劃線，記住上次用的
       PR.prefs.pen = p.dataset.pen; PR.applyPrefs();
       PR.$$("[data-pen]", selbar()).forEach((x) => x.classList.toggle("on", x === p));
       PR.$(".dots", selbar()).className = "dots pen-" + p.dataset.pen;
@@ -160,7 +160,7 @@
     const b = e.target.closest("button[data-s]"); if (b) PR.selectionAction(b.dataset.s, b.dataset.color);
   });
 
-  /* 点划线：写笔记 / 换颜色 / 删掉 */
+  /* 點劃線：寫筆記 / 換顏色 / 刪掉 */
   document.addEventListener("click", (e) => {
     const m = e.target.closest("mark.hl[data-note]");
     if (!m || getSelection().toString()) return;
@@ -169,10 +169,10 @@
     e.stopPropagation();
     if (n.kind !== "highlight") { PR.openNoteEditor(n.id); return; }
     const ul = n.style === "underline";
-    PR.popover(m, '<div class="hd">我的划线</div><div class="hl-edit"><span class="pens"><button data-hl-style="marker" class="' + (ul ? "" : "on") + '" title="荧光笔">' + PR.icon("marker", "sm") + '</button><button data-hl-style="underline" class="' + (ul ? "on" : "") + '" title="下划线">' + PR.icon("underline", "sm") + "</button></span>" +
+    PR.popover(m, '<div class="hd">我的劃線</div><div class="hl-edit"><span class="pens"><button data-hl-style="marker" class="' + (ul ? "" : "on") + '" title="熒光筆">' + PR.icon("marker", "sm") + '</button><button data-hl-style="underline" class="' + (ul ? "on" : "") + '" title="下劃線">' + PR.icon("underline", "sm") + "</button></span>" +
       '<span class="dots pen-' + (ul ? "underline" : "marker") + '">' + PR.HL_COLORS.map(([c, name]) =>
       '<button data-hl-color="' + c + '" title="' + name + '" class="dot-' + c + ((n.color || "yellow") === c ? " on" : "") + '"></button>').join("") + "</span></div>" +
-      '<div style="display:flex;gap:6px"><button class="btn sm line" data-hl="note">写笔记</button><button class="btn sm line" data-hl="question">提问</button><button class="btn sm danger" data-hl="del">删除划线</button></div>', { sticky: true });
+      '<div style="display:flex;gap:6px"><button class="btn sm line" data-hl="note">寫筆記</button><button class="btn sm line" data-hl="question">提問</button><button class="btn sm danger" data-hl="del">刪除劃線</button></div>', { sticky: true });
     PR.$("#popover").onclick = (ev) => {
       const c = ev.target.closest("[data-hl-color]"), b = ev.target.closest("[data-hl]");
       if (c) { PR.saveNote(Object.assign({}, n, { color: c.dataset.hlColor })); PR.applyMarks(n.anchor); PR.hidePopover(); return; }

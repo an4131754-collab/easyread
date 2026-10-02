@@ -1,5 +1,5 @@
-/* 翻译和问 AI 的用量（job.json 的 usage / usage_total，对话里每条回答的 usage）。
-   样子学 Claude 桌面端：订阅额度用进度条 + 什么时候重置；token 数做成小号的明细。 */
+/* 翻譯和問 AI 的用量（job.json 的 usage / usage_total，對話裡每條回答的 usage）。
+   樣子學 Claude 桌面端：訂閱額度用進度條 + 什麼時候重置；token 數做成小號的明細。 */
 window.PR = window.PR || {};
 (function (PR) {
   "use strict";
@@ -7,11 +7,11 @@ window.PR = window.PR || {};
   function tokens(n) {
     n = Number(n) || 0;
     if (n < 10000) return n.toLocaleString();
-    return (n / 10000).toFixed(n < 1e6 ? 1 : 0).replace(/\.0$/, "") + " 万";
+    return (n / 10000).toFixed(n < 1e6 ? 1 : 0).replace(/\.0$/, "") + " 萬";
   }
   PR.fmtTokens = tokens;
 
-  const WINDOWS = [["five_hour", "5 小时额度"], ["seven_day", "本周额度"]];
+  const WINDOWS = [["five_hour", "5 小時額度"], ["seven_day", "本週額度"]];
   const pct = (x) => Math.round(x * 100) + "%";
   const level = (x) => (x >= 0.95 ? "full" : x >= 0.8 ? "high" : "");
 
@@ -20,20 +20,20 @@ window.PR = window.PR || {};
     const ms = ts * 1000 - Date.now();
     if (ms <= 0) return "已重置";
     const h = Math.floor(ms / 3.6e6), m = Math.round((ms % 3.6e6) / 6e4);
-    if (h < 24) return (h ? h + " 小时 " : "") + m + " 分钟后重置";
+    if (h < 24) return (h ? h + " 小時 " : "") + m + " 分鐘後重置";
     const d = new Date(ts * 1000);
     return (d.getMonth() + 1) + " 月 " + d.getDate() + " 日 周" + "日一二三四五六"[d.getDay()] + " " +
       String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0") + " 重置";
   }
 
-  /* 额度进度条（Claude 订阅才有），排版学 Claude 桌面端：名字在左，“几小时后重置 + 百分比”在右，下面一根细条。
-     额度是整个账号共用的，同时用 Claude Code 干别的也算在里面，所以不拿前后相减去算翻译用了多少 */
+  /* 額度進度條（Claude 訂閱才有），排版學 Claude 桌面端：名字在左，“幾小時後重置 + 百分比”在右，下面一根細條。
+     額度是整個賬號共用的，同時用 Claude Code 幹別的也算在裡面，所以不拿前後相減去算翻譯用了多少 */
   PR.usageBars = function (limits, title) {
     const rows = WINDOWS.filter(([k]) => limits && limits[k] && limits[k].used != null).map(([k, name]) => {
       const w = limits[k];
-      const stale = w.resets_at && w.resets_at * 1000 <= Date.now();  // 记下的是重置前的数，已经不准了
+      const stale = w.resets_at && w.resets_at * 1000 <= Date.now();  // 記下的是重置前的數，已經不準了
       return '<div class="us-limit ' + (stale ? "stale" : level(w.used)) + '"><div class="us-row"><span>' + name + "</span>" +
-        "<em>" + (stale ? "已重置，当时 " + pct(w.used) : resetText(w.resets_at) + "<b>" + pct(w.used) + "</b>") + "</em></div>" +
+        "<em>" + (stale ? "已重置，當時 " + pct(w.used) : resetText(w.resets_at) + "<b>" + pct(w.used) + "</b>") + "</em></div>" +
         '<div class="us-bar"><i style="width:' + (stale ? 0 : Math.min(100, w.used * 100)) + '%"></i></div></div>';
     });
     return rows.length ? '<div class="us-limits">' + (title ? '<div class="us-head">' + title + "</div>" : "") + rows.join("") + "</div>" : "";
@@ -41,33 +41,33 @@ window.PR = window.PR || {};
 
   function ago(at) {
     const m = Math.round((Date.now() / 1000 - at) / 60);
-    return m < 1 ? "刚刚" : m < 60 ? m + " 分钟前" : m < 1440 ? Math.round(m / 60) + " 小时前" : Math.round(m / 1440) + " 天前";
+    return m < 1 ? "剛剛" : m < 60 ? m + " 分鐘前" : m < 1440 ? Math.round(m / 60) + " 小時前" : Math.round(m / 1440) + " 天前";
   }
 
-  /* token 明细：右边大数字，下面一行小字 */
+  /* token 明細：右邊大數字，下面一行小字 */
   PR.usageTokens = function (label, u) {
     if (!u || !u.calls) return "";
     return '<div class="us-tokens"><div class="us-row"><span>' + label + "</span><b>" + tokens(u.input + u.output) + " token</b></div>" +
-      '<div class="us-split">输入 ' + tokens(u.input) + (u.cached ? "（缓存命中 " + tokens(u.cached) + "）" : "") + " · 输出 " + tokens(u.output) +
-      (u.cost_usd != null && !u.limits ? " · 按官方价约 $" + u.cost_usd.toFixed(2) : "") + "</div></div>";
+      '<div class="us-split">輸入 ' + tokens(u.input) + (u.cached ? "（快取命中 " + tokens(u.cached) + "）" : "") + " · 輸出 " + tokens(u.output) +
+      (u.cost_usd != null && !u.limits ? " · 按官方價約 $" + u.cost_usd.toFixed(2) : "") + "</div></div>";
   };
 
-  /* 翻译进度旁边的一句话：“已用 12.3 万 token · 5 小时额度用到 24%” */
+  /* 翻譯進度旁邊的一句話：“已用 12.3 萬 token · 5 小時額度用到 24%” */
   PR.usageShort = function (u) {
     if (!u || !u.calls) return "";
     const five = u.limits && u.limits.five_hour;
-    return "已用 " + tokens(u.input + u.output) + " token" + (five && five.used != null ? " · 5 小时额度用到 " + pct(five.used) : "");
+    return "已用 " + tokens(u.input + u.output) + " token" + (five && five.used != null ? " · 5 小時額度用到 " + pct(five.used) : "");
   };
 
-  /* 论文详情里的用量卡片：上次翻译、这篇累计、译完时的额度 */
+  /* 論文詳情裡的用量卡片：上次翻譯、這篇累計、譯完時的額度 */
   PR.usageCard = function (u, total) {
     if (!u || !u.calls) return "";
-    return '<div class="us-card">' + PR.usageTokens("上次翻译", u) +
-      (total && total.calls > u.calls ? PR.usageTokens("这篇累计", total) : "") +
-      PR.usageBars(u.limits, "Claude 订阅用量（译完时，整个账号共用）") + "</div>";
+    return '<div class="us-card">' + PR.usageTokens("上次翻譯", u) +
+      (total && total.calls > u.calls ? PR.usageTokens("這篇累計", total) : "") +
+      PR.usageBars(u.limits, "Claude 訂閱用量（譯完時，整個賬號共用）") + "</div>";
   };
 
-  /* 问 AI：整个对话的合计 */
+  /* 問 AI：整個對話的合計 */
   function threadSum(msgs) {
     const used = (msgs || []).map((m) => m.usage).filter((u) => u && u.calls);
     if (!used.length) return null;
@@ -76,8 +76,8 @@ window.PR = window.PR || {};
     return sum;
   }
 
-  /* 对话输入框底部的小圆环。latest：服务端记下的最近一次额度 {limits, at}，新对话也有；
-     没用过 Claude 订阅时只写这个对话的 token 数 */
+  /* 對話輸入框底部的小圓環。latest：服務端記下的最近一次額度 {limits, at}，新對話也有；
+     沒用過 Claude 訂閱時只寫這個對話的 token 數 */
   PR.usageChip = function (latest, msgs, open) {
     const five = latest && latest.limits && latest.limits.five_hour;
     const live = five && five.used != null && !(five.resets_at && five.resets_at * 1000 <= Date.now());
@@ -94,24 +94,24 @@ window.PR = window.PR || {};
     return latest && latest.limits ? '<button class="' + cls + '" data-c="usage" title="用量"><span>用量</span></button>' : "";
   };
 
-  /* 上下文条（学 Claude 的 Context window）：最近一次回答时发给模型的全部内容。每次提问都会连同之前的对话一起发，
-     所以看的是“当前对话多大”，不是累计。分三段：缓存命中的（系统提示、之前的对话）、这次新发的、模型的回答。
-     不知道模型上下文多大时（API、Codex），条按 20 万算，右边只写 token 数 */
+  /* 上下文條（學 Claude 的 Context window）：最近一次回答時發給模型的全部內容。每次提問都會連同之前的對話一起發，
+     所以看的是“當前對話多大”，不是累計。分三段：快取命中的（系統提示、之前的對話）、這次新發的、模型的回答。
+     不知道模型上下文多大時（API、Codex），條按 20 萬算，右邊只寫 token 數 */
   function contextHtml(msgs) {
     const last = (msgs || []).map((m) => m.usage).filter((u) => u && u.calls && u.context).pop();
-    if (!last) return '<div class="us-ctx"><div class="us-row"><span>上下文</span><em>还没提问</em></div><div class="us-bar"></div></div>';
+    if (!last) return '<div class="us-ctx"><div class="us-row"><span>上下文</span><em>還沒提問</em></div><div class="us-bar"></div></div>';
     const c = last.context, total = c.cached + c.fresh + c.output, win = last.context_window;
     const scale = win || Math.max(200000, total);
     const seg = (n, cls, name) => n > 0 ? '<i class="' + cls + '" style="width:' + Math.max(0.6, (n / scale) * 100) + '%" title="' + name + " " + tokens(n) + '"></i>' : "";
     return '<div class="us-ctx"><div class="us-row"><span>上下文</span><em>' + tokens(total) + (win ? " / " + tokens(win) + "（" + Math.max(1, Math.round((total / win) * 100)) + "%）" : " token") + "</em></div>" +
-      '<div class="us-bar us-stack">' + seg(c.cached, "cached", "缓存命中（系统提示、之前的对话）") + seg(c.fresh, "fresh", "这次新发的（问题、引用的段落）") + seg(c.output, "out", "回答") + "</div>" +
-      '<div class="us-legend"><span><i class="cached"></i>缓存命中</span><span><i class="fresh"></i>新发送</span><span><i class="out"></i>回答</span></div></div>';
+      '<div class="us-bar us-stack">' + seg(c.cached, "cached", "快取命中（系統提示、之前的對話）") + seg(c.fresh, "fresh", "這次新發的（問題、引用的段落）") + seg(c.output, "out", "回答") + "</div>" +
+      '<div class="us-legend"><span><i class="cached"></i>快取命中</span><span><i class="fresh"></i>新發送</span><span><i class="out"></i>回答</span></div></div>';
   }
 
-  /* 点圆环弹出的用量面板 */
+  /* 點圓環彈出的用量面板 */
   PR.usagePop = function (latest, msgs) {
-    const bars = latest && latest.limits ? PR.usageBars(latest.limits, "Claude 订阅用量") : "";
+    const bars = latest && latest.limits ? PR.usageBars(latest.limits, "Claude 訂閱用量") : "";
     return '<div class="us-pop">' + contextHtml(msgs) + bars +
-      (bars ? '<div class="us-foot">整个账号共用，含其他用途 · 更新于 ' + ago(latest.at) + "</div>" : "") + "</div>";
+      (bars ? '<div class="us-foot">整個賬號共用，含其他用途 · 更新於 ' + ago(latest.at) + "</div>" : "") + "</div>";
   };
 })(window.PR);

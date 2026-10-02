@@ -1,5 +1,5 @@
-"""后台任务：导入后的渲染与整篇翻译（一条队列，状态落在每篇的 job.json，重启后接着做），
-以及“让模型回答我的问题 / 重译这段”这类小任务（另一条队列，不用等整篇翻译）。"""
+"""背景任務：匯入後的渲染與整篇翻譯（一條佇列，狀態落在每篇的 job.json，重啟後接著做），
+以及“讓模型回答我的問題 / 重譯這段”這類小任務（另一條佇列，不用等整篇翻譯）。"""
 from __future__ import annotations
 
 import queue
@@ -15,14 +15,14 @@ from .store import Workspace, now_iso
 
 
 def engine_for(cfg: dict, model: str | None) -> dict:
-    """导入时选了“问 AI”名单里的模型就用它，否则用设置里的翻译引擎。名单里已经没有这个模型了，也用翻译引擎。"""
+    """匯入時選了“問 AI”名單裡的模型就用它，否則用設定裡的翻譯引擎。名單裡已經沒有這個模型了，也用翻譯引擎。"""
     m = next((x for x in chat_models.models(cfg) if x.get("id") == model), None) if model else None
     if not m:
         return cfg
     out, _ = chat_models.engine_cfg(cfg, model)
     o = cfg.get("openai") or {}
     if m["engine"] == "openai" and m.get("preset") == o.get("preset") and (m.get("model") or o.get("model")) == o.get("model"):
-        out["openai"]["vision"] = o.get("vision", False)  # 和翻译引擎是同一个模型：沿用“模型能看图”
+        out["openai"]["vision"] = o.get("vision", False)  # 和翻譯引擎是同一個模型：沿用“模型能看圖”
     return out
 
 
@@ -32,7 +32,7 @@ class Jobs:
         self.bulk: queue.Queue[str] = queue.Queue()
         self.small: queue.Queue[dict] = queue.Queue()
         self.cancels: dict[str, threading.Event] = {}
-        self.recent: list[dict] = []  # 小任务的状态，给页面轮询
+        self.recent: list[dict] = []  # 小任務的狀態，給頁面輪詢
         self.lock = threading.Lock()
         self._resume()
         for target in (self._bulk_loop, self._small_loop):
@@ -47,14 +47,14 @@ class Jobs:
 
     def enqueue(self, ws: Workspace, pages: list[int] | None = None, translate_after: bool = True, scope: str | None = None,
                 read: bool = False, model: str = ""):
-        """pages=None：按 scope（all / body / range:A-B / first:N）翻译还没译的页。
-        read：只读原文，用模型把页整理成段落、公式、表格，不翻译；之后再翻译时就地补中文。
-        model：用“问 AI”名单里的哪个模型（导入时选的）；空着用设置里的翻译引擎。"""
+        """pages=None：按 scope（all / body / range:A-B / first:N）翻譯還沒譯的頁。
+        read：只讀原文，用模型把頁整理成段落、公式、表格，不翻譯；之後再翻譯時就地補中文。
+        model：用“問 AI”名單裡的哪個模型（匯入時選的）；空著用設定裡的翻譯引擎。"""
         def apply(job):
             if job.get("state") in ("queued", "running"):
-                raise ValueError("这篇论文已有任务在排队或运行，请等它结束，或先取消再重试。")
+                raise ValueError("這篇論文已有任務在排隊或執行，請等它結束，或先取消再重試。")
             job.update(type="read" if read and translate_after else "translate" if translate_after else "prepare",
-                       state="queued", message="排队中", pages=pages, scope=scope or "all", translate=translate_after, read=read, model=model or "",
+                       state="queued", message="排隊中", pages=pages, scope=scope or "all", translate=translate_after, read=read, model=model or "",
                        done=0, total=0, error="", failed={}, updated=now_iso(), usage={})
         with self.lock:
             ws.update("job", apply)
@@ -73,7 +73,7 @@ class Jobs:
         for ws in self.lib.all():
             job = ws.load("job") or {}
             if job.get("state") in ("queued", "running"):
-                self._write(ws, state="queued", message="排队中（服务重启后继续）")
+                self._write(ws, state="queued", message="排隊中（服務重啟後繼續）")
                 self.bulk.put(ws.id)
 
     def _bulk_loop(self):
@@ -87,17 +87,17 @@ class Jobs:
                 if job.get("state") != "queued":
                     continue
                 cancel = self.cancels[pid] = threading.Event()
-                self._write(ws, state="running", message="正在开始任务")
+                self._write(ws, state="running", message="正在開始任務")
             try:
                 self._run_bulk(ws, job, cancel)
             except Cancelled:
-                self._write(ws, state="cancelled", message="已取消，已译的部分保留")
+                self._write(ws, state="cancelled", message="已取消，已譯的部分保留")
             except Exception as e:  # noqa: BLE001
                 msg = str(e) if isinstance(e, (EngineError, KeyError, ValueError)) else f"{type(e).__name__}: {e}"
-                self._write(ws, state="error", message="出错了", error=msg[:800])
-                log.exception("后台任务出错 %s", pid)
+                self._write(ws, state="error", message="出錯了", error=msg[:800])
+                log.exception("背景任務出錯 %s", pid)
                 try:
-                    translate.journal(ws, f"出错停止：{msg[:500]}")
+                    translate.journal(ws, f"出錯停止：{msg[:500]}")
                 except OSError:
                     pass
             finally:
@@ -109,23 +109,23 @@ class Jobs:
         if cancel.is_set():
             raise Cancelled()
         if not ws.load("paper").get("meta", {}).get("pages"):
-            self._write(ws, state="running", message="正在渲染原页、抽取文字")
+            self._write(ws, state="running", message="正在渲染原頁、抽取文字")
             translate.prepare(ws)
         if cancel.is_set():
             raise Cancelled()
         read = bool(job.get("read"))
         if not job.get("translate") or cfg.get("engine") == "none":
-            self._write(ws, state="done", message="已导入" + ("（没有可用的模型，先放原页）" if read else "（未开启自动翻译）" if job.get("translate") else ""))
+            self._write(ws, state="done", message="已匯入" + ("（沒有可用的模型，先放原頁）" if read else "（未開啟自動翻譯）" if job.get("translate") else ""))
             return
         paper = ws.load("paper")
         all_pages = [p["n"] for p in paper["meta"]["pages"]]
         tr = paper.get("translation", {})
-        # 只读原文：跳过已经整理过（或已经译过）的页；翻译：跳过已经有译文的页，只有原文的页会补译文
+        # 只讀原文：跳過已經整理過（或已經譯過）的頁；翻譯：跳過已經有譯文的頁，只有原文的頁會補譯文
         skip = set(tr.get("done_pages", [])) if read else set(tr.get("done_pages", [])) - set(tr.get("en_pages", []))
         wanted = job.get("pages") or translate.scope_pages(ws, job.get("scope")) or all_pages
         pages = wanted if job.get("pages") else [n for n in wanted if n not in skip]
         if not pages:
-            self._write(ws, state="done", message="选定范围已" + ("整理完" if read else "译完"))
+            self._write(ws, state="done", message="選定範圍已" + ("整理完" if read else "譯完"))
             return
 
         meter = usage.Meter(cfg.get("engine") or "")
@@ -138,7 +138,7 @@ class Jobs:
         started = time.time()
         try:
             failed = translate.translate_pages(ws, cfg, pages, cancel, report, meter, read)
-        finally:  # 取消、出错也把已经花掉的记上
+        finally:  # 取消、出錯也把已經花掉的記上
             run = meter.snapshot()
             if run["calls"]:
                 ws.update("job", lambda j: j.update(usage=run, usage_total=usage.merge(j.get("usage_total"), run)))
@@ -146,14 +146,14 @@ class Jobs:
         if failed:
             first = next(iter(failed.values()))
             self._write(ws, state="partial", failed={str(k): v for k, v in failed.items()}, error=first,
-                        message=(f"{len(pages) - len(failed)} 页好了，" if len(failed) < len(pages) else "") + f"{len(failed)} 页没" + ("整理" if read else "译") + "成功")
+                        message=(f"{len(pages) - len(failed)} 頁好了，" if len(failed) < len(pages) else "") + f"{len(failed)} 頁沒" + ("整理" if read else "譯") + "成功")
         else:
             self._write(ws, state="done", failed={}, error="",
-                        message=("原文整理完成" if read else "翻译完成") + f"（{len(pages)} 页，用时约 {minutes} 分钟）")
+                        message=("原文整理完成" if read else "翻譯完成") + f"（{len(pages)} 頁，用時約 {minutes} 分鐘）")
 
-    # ---------- 小任务 ----------
+    # ---------- 小任務 ----------
     def submit_small(self, kind: str, pid: str, **kw) -> dict:
-        job = {"id": "j" + uuid4().hex, "kind": kind, "pid": pid, "state": "queued", "message": "排队中",
+        job = {"id": "j" + uuid4().hex, "kind": kind, "pid": pid, "state": "queued", "message": "排隊中",
                "at": now_iso(), **kw}
         with self.lock:
             self.recent = ([job] + self.recent)[:50]
@@ -165,7 +165,7 @@ class Jobs:
             return [dict(j) for j in self.recent if not pid or j["pid"] == pid]
 
     def busy(self) -> bool:
-        """还有整篇翻译或小任务没做完（关页自动退出时要等它们）。"""
+        """還有整篇翻譯或小任務沒做完（關頁自動退出時要等它們）。"""
         if self.cancels or not self.bulk.empty() or not self.small.empty():
             return True
         with self.lock:
@@ -176,7 +176,7 @@ class Jobs:
             job = self.small.get()
             ws = self.lib.ws(job["pid"])
             if not ws:
-                job["state"], job["message"] = "error", "文献已移除，无法执行任务"
+                job["state"], job["message"] = "error", "文獻已移除，無法執行任務"
                 continue
             job["state"], job["message"] = "running", "模型思考中"
             try:
@@ -188,4 +188,4 @@ class Jobs:
                 job["state"], job["message"] = "done", "完成"
             except Exception as e:  # noqa: BLE001
                 job["state"], job["message"] = "error", str(e)[:500]
-                log.exception("小任务出错 %s", job.get("kind"))
+                log.exception("小任務出錯 %s", job.get("kind"))

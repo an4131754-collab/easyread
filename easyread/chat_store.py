@@ -1,9 +1,9 @@
-"""“问 AI”的对话记录：每篇论文一个 chat.json，里面可以有多个对话（像聊天客户端那样新建、切换、删除）。
+"""“問 AI”的對話記錄：每篇論文一個 chat.json，裡面可以有多個對話（像聊天客戶端那樣新建、切換、刪除）。
 
 {"threads": [{"id", "title", "model", "created", "updated",
               "messages": [{"role": "user", "content", "anchor", "quote", "note", "at"},
                            {"role": "assistant", "id", "content", "model", "anchor", "note", "at"}]}]}
-旧版只有一个顶层 "messages"，读的时候当成第一个对话。
+舊版只有一個頂層 "messages"，讀的時候當成第一個對話。
 """
 from __future__ import annotations
 
@@ -26,11 +26,11 @@ def _normalize(chat: dict) -> dict:
 
 def _title(q: str) -> str:
     q = " ".join((q or "").split())
-    return (q[:22] + "…") if len(q) > 22 else (q or "新对话")
+    return (q[:22] + "…") if len(q) > 22 else (q or "新對話")
 
 
 def threads(ws: Workspace) -> list[dict]:
-    """最近用过的在前。"""
+    """最近用過的在前。"""
     return sorted(_normalize(ws.load("chat")).get("threads", []), key=lambda t: t.get("updated", ""), reverse=True)
 
 
@@ -43,12 +43,12 @@ def new_id() -> str:
 
 
 def append(ws: Workspace, tid: str, user: dict, answer: str, model_id: str, model_name: str, used: dict | None = None) -> dict:
-    """存一问一答；对话不存在就新建（标题取第一个问题）。回答页边笔记里的问题时，同时写成那条笔记的回复。"""
+    """存一問一答；對話不存在就新建（標題取第一個問題）。回答頁邊筆記裡的問題時，同時寫成那條筆記的回覆。"""
     stamp = now_iso()
     msg = {"id": "m" + uuid4().hex, "role": "assistant", "content": answer, "at": stamp,
            "model": model_name, "anchor": user.get("anchor"), "note": user.get("note")}
     if used and used.get("calls"):
-        msg["usage"] = used  # 这条回答的 token 用量（usage.Meter 的快照）
+        msg["usage"] = used  # 這條回答的 token 用量（usage.Meter 的快照）
 
     def apply(chat):
         _normalize(chat)
@@ -83,7 +83,7 @@ def delete(ws: Workspace, tid: str) -> None:
 
 
 def pin(ws: Workspace, tid: str, mid: str) -> None:
-    """把一条回答放到页边，成为那段旁边的一条 AI 讨论。"""
+    """把一條回答放到頁邊，成為那段旁邊的一條 AI 討論。"""
     t = get(ws, tid)
     msgs = (t or {}).get("messages", [])
     i = next((k for k, m in enumerate(msgs) if m.get("id") == mid and m.get("role") == "assistant"), None)

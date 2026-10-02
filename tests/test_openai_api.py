@@ -1,4 +1,4 @@
-"""OpenAI 兼容接口的两种格式（chat / responses）、去掉 temperature 重试、模型列表。  python -m unittest tests.test_openai_api"""
+"""OpenAI 相容介面的兩種格式（chat / responses）、去掉 temperature 重試、模型列表。  python -m unittest tests.test_openai_api"""
 import json
 import threading
 import unittest
@@ -22,14 +22,14 @@ class FakeAPI(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def do_GET(self):
-        if self.headers.get("User-Agent", "").startswith("Python-urllib"):  # 像 Cloudflare 那样拦默认 UA（#10）
+        if self.headers.get("User-Agent", "").startswith("Python-urllib"):  # 像 Cloudflare 那樣攔預設 UA（#10）
             return self._send(403, b"error code: 1010", "text/plain")
         self._send(200, {"object": "list", "data": [{"id": "b-model"}, {"id": "a-model"}]})
 
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         SEEN.append((self.path, body))
-        if not self.headers.get("x-opencode-session"):  # 像 OpenCode Go 那样要求会话 ID（#10）
+        if not self.headers.get("x-opencode-session"):  # 像 OpenCode Go 那樣要求會話 ID（#10）
             return self._send(400, {"type": "error", "error": {"type": "MissingSessionID"}})
         if body.get("model") == "fixed-temp" and "temperature" in body:
             return self._send(400, {"error": {"message": "invalid temperature: only 1 is allowed for this model"}})
@@ -60,16 +60,16 @@ class OpenAIApiTest(unittest.TestCase):
         SEEN.clear()
 
     def test_responses_complete(self):
-        out = openai_api.complete({"base_url": self.base, "model": "m", "api": "responses"}, "问题", [])
-        self.assertEqual(out, '{"ok": true}')                 # 只要 message，不要推理过程
+        out = openai_api.complete({"base_url": self.base, "model": "m", "api": "responses"}, "問題", [])
+        self.assertEqual(out, '{"ok": true}')                 # 只要 message，不要推理過程
         path, body = SEEN[0]
         self.assertEqual(path, "/v1/responses")
         self.assertNotIn("temperature", body)
-        self.assertEqual(body["input"][0]["content"][0], {"type": "input_text", "text": "问题"})
+        self.assertEqual(body["input"][0]["content"][0], {"type": "input_text", "text": "問題"})
 
     def test_responses_stream(self):
         o = {"base_url": self.base, "model": "m", "api": "responses"}
-        self.assertEqual("".join(openai_api.stream(o, "问题", threading.Event())), "你好")
+        self.assertEqual("".join(openai_api.stream(o, "問題", threading.Event())), "你好")
 
     def test_chat_drops_temperature_when_rejected(self):
         self.assertEqual(openai_api.complete({"base_url": self.base, "model": "fixed-temp"}, "q", []), "chat-ok")

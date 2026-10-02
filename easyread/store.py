@@ -1,10 +1,10 @@
-"""文件读写：原子写、跨进程锁、用户修改的合并规则。
+"""檔案讀寫：原子寫、跨程序鎖、使用者修改的合併規則。
 
-一篇论文一个目录，文件按“谁写”分开，这是互不覆盖的根本保证：
-  paper.json       翻译方（对话里的 agent 或后台翻译任务）写：原文、译文、术语、参考文献
-  discussion.json  翻译方写：解释、问答、回复、原文核对提示
-  reader.json      只由页面经 /api/.../ops 写：用户改的译文、笔记、划线、论文笔记、进度
-  item.json        只由页面经 /api/items 写：标签、阅读状态、星标、打开时间
+一篇論文一個目錄，檔案按“誰寫”分開，這是互不覆蓋的根本保證：
+  paper.json       翻譯方（對話裡的 agent 或背景翻譯任務）寫：原文、譯文、術語、參考文獻
+  discussion.json  翻譯方寫：解釋、問答、回覆、原文核對提示
+  reader.json      只由頁面經 /api/.../ops 寫：使用者改的譯文、筆記、劃線、論文筆記、進度
+  item.json        只由頁面經 /api/items 寫：標籤、閱讀狀態、星標、開啟時間
 """
 from __future__ import annotations
 
@@ -42,14 +42,14 @@ def write_json_atomic(path: Path, data) -> None:
         try:
             os.replace(tmp, path)
             return
-        except PermissionError:  # Windows：别的进程正在读，稍等重试
+        except PermissionError:  # Windows：別的程序正在讀，稍等重試
             time.sleep(0.05 * (attempt + 1))
     os.replace(tmp, path)
 
 
 @contextmanager
 def dir_lock(folder: Path, name: str = ".write.lock", timeout: float = 15.0):
-    """O_EXCL 建锁文件做跨进程互斥；超过 30 秒的旧锁视为残留。"""
+    """O_EXCL 建鎖檔案做跨程序互斥；超過 30 秒的舊鎖視為殘留。"""
     lock = Path(folder) / name
     start = time.time()
     while True:
@@ -66,7 +66,7 @@ def dir_lock(folder: Path, name: str = ".write.lock", timeout: float = 15.0):
             except FileNotFoundError:
                 continue
             if time.time() - start > timeout:
-                raise TimeoutError(f"等锁超时：{lock}")
+                raise TimeoutError(f"等鎖超時：{lock}")
             time.sleep(0.05)
     try:
         yield
@@ -75,7 +75,7 @@ def dir_lock(folder: Path, name: str = ".write.lock", timeout: float = 15.0):
 
 
 def text_hash(s: str | None) -> str:
-    """和页面 util.js 的 hashText 一致：FNV-1a 32 位，按 UTF-16 码元。"""
+    """和頁面 util.js 的 hashText 一致：FNV-1a 32 位，按 UTF-16 碼元。"""
     h = 0x811C9DC5
     b = (s or "").encode("utf-16-le")
     for i in range(0, len(b), 2):
@@ -100,8 +100,8 @@ def empty_discussion() -> dict:
     return {"schema": SCHEMA, "entries": []}
 
 
-# ---------- reader.json 的操作合并 ----------
-# 每个操作幂等、带时间戳；同一对象以较新的为准。页面断网时操作留在浏览器，恢复后重发不会重复或倒退。
+# ---------- reader.json 的操作合併 ----------
+# 每個操作冪等、帶時間戳；同一物件以較新的為準。頁面斷網時操作留在瀏覽器，恢復後重發不會重複或倒退。
 
 def _newer(a: str | None, b: str | None) -> bool:
     return (a or "") >= (b or "")
@@ -120,7 +120,7 @@ def apply_ops(reader: dict, ops: list[dict]) -> list[str]:
             cur = edits.get(block)
             if cur and not _newer(at, cur.get("at")):
                 continue
-            if op.get("zh") is None:  # 恢复译者稿：留一条撤销记录
+            if op.get("zh") is None:  # 恢復譯者稿：留一條撤銷記錄
                 if cur:
                     edits[block] = {"reverted": True, "prev": cur.get("zh"), "at": at}
             else:
@@ -160,7 +160,7 @@ def apply_ops(reader: dict, ops: list[dict]) -> list[str]:
 
 
 class Workspace:
-    """一篇论文的目录。"""
+    """一篇論文的目錄。"""
 
     PARTS = ("paper", "discussion", "reader", "layout")
 
@@ -203,7 +203,7 @@ class Workspace:
                 f.write(json.dumps({"t": now_iso(), "client": client, **op}, ensure_ascii=False) + "\n")
 
     def _snapshot(self, every_seconds: int = 600):
-        """reader.json 每 10 分钟最多留一份快照，出事可以回滚。"""
+        """reader.json 每 10 分鐘最多留一份快照，出事可以回滾。"""
         hist = self.root / "history"
         hist.mkdir(exist_ok=True)
         snaps = sorted(hist.glob("reader-*.json"))
@@ -214,7 +214,7 @@ class Workspace:
             (hist / f"reader-{stamp}.json").write_bytes(self.reader_path.read_bytes())
 
     def update(self, name: str, fn):
-        """在锁内读-改-写一个翻译方的文件（paper / discussion / job / item）。"""
+        """在鎖內讀-改-寫一個翻譯方的檔案（paper / discussion / job / item）。"""
         with dir_lock(self.root):
             data = self.load(name)
             result = fn(data)

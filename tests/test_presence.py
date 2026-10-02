@@ -1,4 +1,4 @@
-"""关掉页面后自动退出：WebSocket 握手和断开、等待时间、有后台任务时不退。  python -m unittest tests.test_presence"""
+"""關掉頁面後自動退出：WebSocket 握手和斷開、等待時間、有背景任務時不退。  python -m unittest tests.test_presence"""
 import base64
 import os
 import socket
@@ -35,10 +35,10 @@ class PresenceRuleTest(unittest.TestCase):
         p.enter(); p.enter()
         self.assertFalse(p.should_stop(1000))
         p.leave()
-        self.assertFalse(p.should_stop(1001))  # 还有一个页面
+        self.assertFalse(p.should_stop(1001))  # 還有一個頁面
         p.leave()
-        self.assertFalse(p.should_stop(1002))  # 刚关，开始计时
-        p.enter()  # 刷新：新页面连上来
+        self.assertFalse(p.should_stop(1002))  # 剛關，開始計時
+        p.enter()  # 重新整理：新頁面連上來
         self.assertFalse(p.should_stop(1020))
         p.leave()
         self.assertFalse(p.should_stop(1021))
@@ -49,7 +49,7 @@ class PresenceRuleTest(unittest.TestCase):
         p.enter(); p.leave()
         self.assertFalse(p.should_stop(1000))
         self.assertFalse(p.should_stop(5000))
-        self.busy = False  # 任务做完，从这时起再等 grace
+        self.busy = False  # 任務做完，從這時起再等 grace
         self.assertFalse(p.should_stop(5001))
         self.assertTrue(p.should_stop(5012))
 
@@ -83,12 +83,12 @@ class ServerExitTest(unittest.TestCase):
         self.assertIn(b"101", resp_a.split(b"\r\n")[0])
         time.sleep(0.3)
         self.assertEqual(self.app.presence.pages, 2)
-        a.sendall(bytes([0x88, 0x80]) + os.urandom(4))  # 正常关闭帧（带掩码、无内容）
-        self.assertEqual(a.recv(16)[:1], b"\x88")  # 服务回了关闭帧
+        a.sendall(bytes([0x88, 0x80]) + os.urandom(4))  # 正常關閉幀（帶掩碼、無內容）
+        self.assertEqual(a.recv(16)[:1], b"\x88")  # 服務回了關閉幀
         a.close()
         time.sleep(1.0)
-        self.assertFalse(self.stopped.is_set())  # 还有一个页面开着
-        b.close()  # 直接断开（浏览器被杀掉）
+        self.assertFalse(self.stopped.is_set())  # 還有一個頁面開著
+        b.close()  # 直接斷開（瀏覽器被殺掉）
         self.assertTrue(self.stopped.wait(3))
 
     def test_other_site_rejected(self):

@@ -18,7 +18,7 @@ class NetcheckTest(unittest.TestCase):
         netcheck._ok.clear()
 
     def test_reachable_when_any_http_response(self):
-        srv = http.server.HTTPServer(("127.0.0.1", 0), http.server.BaseHTTPRequestHandler)  # 什么都 501
+        srv = http.server.HTTPServer(("127.0.0.1", 0), http.server.BaseHTTPRequestHandler)  # 什麼都 501
         threading.Thread(target=srv.serve_forever, daemon=True).start()
         try:
             self.assertIsNone(netcheck.problem(_api(f"http://127.0.0.1:{srv.server_port}/v1")))
@@ -31,7 +31,7 @@ class NetcheckTest(unittest.TestCase):
         port = s.getsockname()[1]
         s.close()
         msg = netcheck.problem(_api(f"http://127.0.0.1:{port}/v1"), timeout=2)
-        self.assertIn("先把它打开", msg)
+        self.assertIn("先把它開啟", msg)
         self.assertTrue(netcheck.offline(msg))
 
     def test_overseas_preset_mentions_vpn(self):
@@ -42,14 +42,14 @@ class NetcheckTest(unittest.TestCase):
     def test_explain_adds_hint_only_for_network_errors(self):
         cfg = {"engine": "codex"}
         self.assertIn("梯子", netcheck.explain(cfg, "stream disconnected before completion"))
-        self.assertIn("节点", netcheck.explain(cfg, "unsupported_country_region_territory"))
-        self.assertEqual(netcheck.explain(cfg, "模型输出里没有 JSON"), "模型输出里没有 JSON")
+        self.assertIn("節點", netcheck.explain(cfg, "unsupported_country_region_territory"))
+        self.assertEqual(netcheck.explain(cfg, "模型輸出裡沒有 JSON"), "模型輸出裡沒有 JSON")
 
     def test_certificate_failure_is_not_reported_as_vpn_problem(self):
         err = urllib.error.URLError(ssl.SSLCertVerificationError("CERTIFICATE_VERIFY_FAILED"))
         with patch("easyread.netcheck.http.urlopen", side_effect=err) as request:
             message = netcheck.problem({"engine": "codex"})
-        self.assertIn("证书校验失败", message)
+        self.assertIn("證書校驗失敗", message)
         self.assertNotIn("梯子", message)
         self.assertTrue(netcheck.offline(message))
         self.assertEqual(request.call_count, 1)

@@ -1,8 +1,8 @@
-/* 阅读页的数据与保存。
-   - paper / discussion / layout / job 来自翻译方，只读；
-   - reader（我的修改、笔记、论文笔记、进度）只通过“操作”改：先进浏览器里的待存队列，再发给本地服务，
-     服务确认写进 reader.json 后才从队列删。断网、服务没开、页面崩了，队列都还在，下次自动补发。
-   - 离线版（导出的单文件）没有服务，队列本身就是存储，可导出后并回。 */
+/* 閱讀頁的資料與儲存。
+   - paper / discussion / layout / job 來自翻譯方，只讀；
+   - reader（我的修改、筆記、論文筆記、進度）只通過“操作”改：先進瀏覽器裡的待存佇列，再發給本地服務，
+     服務確認寫進 reader.json 後才從佇列刪。斷網、服務沒開、頁面崩了，佇列都還在，下次自動補發。
+   - 離線版（匯出的單檔案）沒有服務，佇列本身就是儲存，可匯出後並回。 */
 (function (PR) {
   "use strict";
   const S = (PR.state = { paper: null, discussion: { entries: [] }, reader: {}, layout: {}, item: {}, job: {}, images: {}, versions: {}, engine: "none" });
@@ -17,7 +17,7 @@
 
   PR.store = { get mode() { return mode; }, get pending() { return outbox.length; } };
 
-  /* ---------- 和 Python store.apply_ops 同一套规则 ---------- */
+  /* ---------- 和 Python store.apply_ops 同一套規則 ---------- */
   function applyOps(reader, ops) {
     reader.edits = reader.edits || {};
     reader.notes = reader.notes || {};
@@ -51,17 +51,17 @@
   }
 
   function rebuildReader() { S.reader = applyOps(JSON.parse(JSON.stringify(serverReader || {})), outbox); }
-  function saveOutbox() { if (!PR.ls.set(outboxKey, outbox)) setStatus("error", "浏览器存储已满，修改只在内存里，请尽快导出"); }
+  function saveOutbox() { if (!PR.ls.set(outboxKey, outbox)) setStatus("error", "瀏覽器儲存已滿，修改只在記憶體裡，請儘快匯出"); }
   function setStatus(s, text) { PR.store.status = s; PR.emit("status", { s, text, pending: outbox.length }); }
   function statusIdle() {
-    if (mode === "static") setStatus("local", outbox.length ? "存在本浏览器" : "离线版");
-    else setStatus("saved", "已保存");
+    if (mode === "static") setStatus("local", outbox.length ? "存在本瀏覽器" : "離線版");
+    else setStatus("saved", "已儲存");
   }
 
-  /* 页面调用这个提交修改 */
+  /* 頁面呼叫這個提交修改 */
   PR.commit = function (op) {
     op.at = op.at || PR.nowIso();
-    // 同一目标还没发出去的旧操作合并掉，避免队列无限长
+    // 同一目標還沒發出去的舊操作合併掉，避免佇列無限長
     if (op.op === "note") outbox = outbox.filter((o) => !(o.op === "note" && o.note.id === op.note.id));
     if (op.op === "edit") outbox = outbox.filter((o) => !(o.op === "edit" && o.block === op.block));
     if (op.op === "progress" || op.op === "paper_note") outbox = outbox.filter((o) => o.op !== op.op);
@@ -69,7 +69,7 @@
     saveOutbox();
     rebuildReader();
     PR.emit("reader", op);
-    if (mode === "server") { if (op.op !== "progress") setStatus("saving", "保存中"); scheduleFlush(op.op === "progress" ? 3000 : 250); }
+    if (mode === "server") { if (op.op !== "progress") setStatus("saving", "儲存中"); scheduleFlush(op.op === "progress" ? 3000 : 250); }
     else statusIdle();
   };
 
@@ -87,7 +87,7 @@
       if (r.status === 403) { await reloadToken(); throw new Error("token"); }
       if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || r.status);
       const res = await r.json();
-      outbox = outbox.filter((o) => !batch.includes(o));   // 已落盘的删掉，期间新加的保留
+      outbox = outbox.filter((o) => !batch.includes(o));   // 已落盤的刪掉，期間新加的保留
       saveOutbox();
       serverReader = applyOps(JSON.parse(JSON.stringify(serverReader || {})), batch);
       serverReader.rev = res.rev;
@@ -96,7 +96,7 @@
       retryMs = 1500;
       if (outbox.length) scheduleFlush(50); else statusIdle();
     } catch (e) {
-      setStatus("offline", "未连上本地服务，" + outbox.length + " 条修改暂存在浏览器");
+      setStatus("offline", "未連上本地服務，" + outbox.length + " 條修改暫存在瀏覽器");
       clearTimeout(retryT);
       retryT = setTimeout(flush, retryMs);
       retryMs = Math.min(retryMs * 2, 15000);
@@ -107,10 +107,10 @@
   PR.flush = flush;
 
   async function reloadToken() {
-    try { PR.token = (await (await fetch(base() + "/state", { cache: "no-store" })).json()).token; } catch (e) { /* 下次重试 */ }
+    try { PR.token = (await (await fetch(base() + "/state", { cache: "no-store" })).json()).token; } catch (e) { /* 下次重試 */ }
   }
 
-  /* ---------- 载入 ---------- */
+  /* ---------- 載入 ---------- */
   PR.load = async function () {
     const embedded = document.getElementById("pr-data");
     if (embedded) {
@@ -120,9 +120,9 @@
       serverReader = d.reader || {};
       PR.pid = PR.pid || (S.paper.meta.source_sha256 || "paper").slice(0, 12);
     } else {
-      if (!PR.pid) throw new Error("地址里没有论文 id");
+      if (!PR.pid) throw new Error("地址裡沒有論文 id");
       const r = await fetch(base() + "/state", { cache: "no-store" });
-      if (!r.ok) throw new Error(r.status === 404 ? "文献库里没有这篇论文" : "读取数据失败：" + r.status);
+      if (!r.ok) throw new Error(r.status === 404 ? "文獻庫裡沒有這篇論文" : "讀取資料失敗：" + r.status);
       const d = await r.json();
       PR.token = d.token;
       Object.assign(S, { paper: d.paper, discussion: d.discussion, layout: d.layout || {}, item: d.item || {}, job: d.job || {}, versions: d.versions, engine: d.engine });
@@ -134,7 +134,7 @@
     PR.paperKey = PR.pid;
     outbox = PR.ls.get(outboxKey, []);
     rebuildReader();
-    if (mode === "server" && outbox.length) { setStatus("saving", "补存上次未保存的 " + outbox.length + " 条修改"); scheduleFlush(300); }
+    if (mode === "server" && outbox.length) { setStatus("saving", "補存上次未儲存的 " + outbox.length + " 條修改"); scheduleFlush(300); }
     else statusIdle();
   };
 
@@ -142,7 +142,7 @@
   PR.pdfUrl = (page) => (mode === "static" ? "" : "/p/" + PR.pid + "/source.pdf#page=" + page);
   PR.canAsk = () => mode === "server" && S.engine && S.engine !== "none";
 
-  /* ---------- 轮询：翻译方追加讨论/译文、后台翻译进度、另一个标签页改了笔记 ---------- */
+  /* ---------- 輪詢：翻譯方追加討論/譯文、背景翻譯進度、另一個標籤頁改了筆記 ---------- */
   async function poll() {
     if (mode !== "server" || document.hidden) return;
     let v;
@@ -150,14 +150,14 @@
       v = await (await fetch(base() + "/versions", { cache: "no-store" })).json();
       if (PR.store.status === "offline") flush();
     } catch (e) {
-      if (!outbox.length) setStatus("offline", "未连上本地服务（只读）");
+      if (!outbox.length) setStatus("offline", "未連上本地服務（只讀）");
       return;
     }
     const changed = [];
     for (const name of ["paper", "discussion", "layout", "reader", "job"]) if (v[name] && v[name] !== S.versions[name]) changed.push(name);
     if (!changed.length) return;
     for (const name of changed) {
-      if (name === "reader" && (flushing || outbox.length)) continue; // 自己正在写，等写完
+      if (name === "reader" && (flushing || outbox.length)) continue; // 自己正在寫，等寫完
       const d = await (await fetch(base() + "/part/" + name, { cache: "no-store" })).json();
       S.versions[name] = d.version;
       if (name === "reader") { serverReader = d.data; rebuildReader(); } else S[name] = d.data || {};
@@ -178,7 +178,7 @@
     if (mode === "server" && outbox.some((o) => o.op !== "progress")) { flush(); e.preventDefault(); e.returnValue = ""; }
   });
 
-  /* 让模型做事（回答问题、重译一段）：交给服务的小任务队列 */
+  /* 讓模型做事（回答問題、重譯一段）：交給服務的小任務佇列 */
   PR.ask = async function (kind, body) {
     const job = await PR.api(base() + "/" + kind, { method: "POST", body });
     PR.emit("job-started", job);
@@ -194,7 +194,7 @@
     return job;
   };
 
-  /* ---------- 导出 ---------- */
+  /* ---------- 匯出 ---------- */
   PR.exportOps = function () {
     const ops = [];
     for (const [block, e] of Object.entries(S.reader.edits || {})) if (e.zh != null) ops.push({ op: "edit", block, zh: e.zh, base: e.base, at: e.at });

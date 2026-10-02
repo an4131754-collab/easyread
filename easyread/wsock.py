@@ -1,7 +1,7 @@
-"""最小的 WebSocket 服务端：只用来知道页面还开着（握手、读到断开为止），不收发业务数据。
+"""最小的 WebSocket 服務端：只用來知道頁面還開著（握手、讀到斷開為止），不收發業務資料。
 
-为什么不用一直挂着的普通 HTTP 请求（SSE）：浏览器对同一个地址最多同时开 6 条 HTTP 连接，
-每个标签页占一条，开到五六个标签页所有请求都要排队。WebSocket 不占这 6 条的名额。
+為什麼不用一直掛著的普通 HTTP 請求（SSE）：瀏覽器對同一個地址最多同時開 6 條 HTTP 連線，
+每個標籤頁佔一條，開到五六個標籤頁所有請求都要排隊。WebSocket 不佔這 6 條的名額。
 """
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ def is_upgrade(headers) -> bool:
 
 
 def accept(handler) -> None:
-    """回 101，连接从此是 WebSocket。"""
+    """回 101，連線從此是 WebSocket。"""
     key = handler.headers["Sec-WebSocket-Key"].strip()
     digest = base64.b64encode(hashlib.sha1((key + _GUID).encode()).digest()).decode()
     handler.send_response(101, "Switching Protocols")
@@ -36,12 +36,12 @@ def _read(rfile, n: int) -> bytes:
 
 
 def _send(wfile, opcode: int, payload: bytes = b"") -> None:
-    wfile.write(bytes([0x80 | opcode, len(payload)]) + payload)  # 只发控制帧，长度不会超过 125
+    wfile.write(bytes([0x80 | opcode, len(payload)]) + payload)  # 只發控制幀，長度不會超過 125
     wfile.flush()
 
 
 def hold(handler) -> None:
-    """一直读，直到页面关掉（收到关闭帧或连接断开）。ping 回 pong，其余消息忽略。"""
+    """一直讀，直到頁面關掉（收到關閉幀或連線斷開）。ping 回 pong，其餘訊息忽略。"""
     rfile, wfile = handler.rfile, handler.wfile
     try:
         while True:
@@ -55,7 +55,7 @@ def hold(handler) -> None:
             payload = _read(rfile, n) if n else b""
             if mask:
                 payload = bytes(c ^ mask[i % 4] for i, c in enumerate(payload))
-            if opcode == 0x8:  # 关闭：回一个关闭帧
+            if opcode == 0x8:  # 關閉：回一個關閉幀
                 _send(wfile, 0x8, payload[:2])
                 return
             if opcode == 0x9:

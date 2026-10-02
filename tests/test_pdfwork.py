@@ -53,7 +53,7 @@ def _loc(box, src="text", page=1):
 
 
 class TwoColumnLayoutTest(unittest.TestCase):
-    """双栏页：撑框、截重叠、补公式都只看同一栏。"""
+    """雙欄頁：撐框、截重疊、補公式都只看同一欄。"""
 
     def base(self):
         return {
@@ -65,18 +65,18 @@ class TwoColumnLayoutTest(unittest.TestCase):
 
     def test_caption_extends_within_its_column(self):
         layout = self.base()
-        layout["tab"] = _loc([0.53, 0.66, 0.90, 0.70])  # 右栏表格的题注，表格在它上方
+        layout["tab"] = _loc([0.53, 0.66, 0.90, 0.70])  # 右欄表格的題注，表格在它上方
         pdfwork._extend_captioned([{"id": "tab", "type": "table"}], layout)
-        self.assertEqual(layout["tab"]["box"], [0.52, 0.305, 0.92, 0.70])  # 撑到右栏 r1 下沿，不受左栏影响
+        self.assertEqual(layout["tab"]["box"], [0.52, 0.305, 0.92, 0.70])  # 撐到右欄 r1 下沿，不受左欄影響
         pdfwork._clamp_overlaps(layout)
-        self.assertEqual(layout["tab"]["box"][3], 0.70)  # 撑过的框不再被截
+        self.assertEqual(layout["tab"]["box"][3], 0.70)  # 撐過的框不再被截
 
     def test_clamp_ignores_other_column(self):
         layout = self.base()
         layout["l1"]["src"] = "head"
-        layout["l1"]["box"][3] = 0.50  # 按长度估长了，压到同栏 l2
+        layout["l1"]["box"][3] = 0.50  # 按長度估長了，壓到同欄 l2
         pdfwork._clamp_overlaps(layout)
-        self.assertEqual(layout["l1"]["box"][3], 0.448)  # 截到 l2 上沿，而不是右栏 r1 的 0.10
+        self.assertEqual(layout["l1"]["box"][3], 0.448)  # 截到 l2 上沿，而不是右欄 r1 的 0.10
         self.assertEqual(layout["r1"]["box"][3], 0.30)
 
     def test_formula_gap_stays_in_column(self):
@@ -92,7 +92,7 @@ class TwoColumnLayoutTest(unittest.TestCase):
 
 
 def _chars(lines):
-    """每行 (文字, top)，逐字给出字符框。"""
+    """每行 (文字, top)，逐字給出字元框。"""
     out = []
     for text, top in lines:
         for k, ch in enumerate(text):
@@ -111,7 +111,7 @@ class LocateTest(unittest.TestCase):
         paper = {"blocks": [{"id": "h", "type": "heading", "page": 1, "num": "3.2.1", "en": "Scaled Dot-Product Attention"}]}
         (root / "paper.json").write_text(json.dumps(paper), encoding="utf-8")
         layout = pdfwork.locate(root)
-        self.assertAlmostEqual(layout["h"]["box"][1], 0.45)  # 不是图里 0.10 那行同名标签
+        self.assertAlmostEqual(layout["h"]["box"][1], 0.45)  # 不是圖裡 0.10 那行同名標籤
         self.assertEqual((root / "extract" / "locate.version").read_text(encoding="utf-8"), pdfwork.LOCATE_VERSION)
 
     def test_refresh_layout_recomputes_stale(self):
@@ -120,13 +120,13 @@ class LocateTest(unittest.TestCase):
         (root / "extract").mkdir()
         (root / "extract" / "page-001.chars.json").write_text(json.dumps(_chars([("Hello world", 0.2)])), encoding="utf-8")
         (root / "paper.json").write_text(json.dumps({"blocks": [{"id": "p", "type": "para", "page": 1, "en": "Hello world"}]}), encoding="utf-8")
-        (root / "layout.json").write_text("{}", encoding="utf-8")  # 旧规则算的
+        (root / "layout.json").write_text("{}", encoding="utf-8")  # 舊規則算的
         pdfwork.refresh_layout(root)
         self.assertIn("p", json.loads((root / "layout.json").read_text(encoding="utf-8")))
 
 
 class PdfReleasedTest(unittest.TestCase):
-    """用完 PDF 要关掉：不然 Windows 上 source.pdf 一直被占着，论文移不进回收站。"""
+    """用完 PDF 要關掉：不然 Windows 上 source.pdf 一直被佔著，論文移不進回收站。"""
 
     def test_directory_can_be_moved_after_rendering(self):
         tmp = Path(tempfile.mkdtemp())
@@ -136,7 +136,7 @@ class PdfReleasedTest(unittest.TestCase):
         pdfwork.engine_image(ws, 1)
         pdfwork.render_pages(ws / "source.pdf", ws / "pages")
         pdfwork.extract_text(ws / "source.pdf", ws / "extract")
-        ws.rename(tmp / "moved")  # 文件还开着的话 Windows 上这里报 PermissionError
+        ws.rename(tmp / "moved")  # 檔案還開著的話 Windows 上這裡報 PermissionError
         self.assertTrue((tmp / "moved" / "source.pdf").exists())
 
 

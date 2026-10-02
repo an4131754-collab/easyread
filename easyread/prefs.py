@@ -1,17 +1,17 @@
-"""界面偏好（字号、版心、主题、快捷键……）存在数据目录的 prefs.json。
+"""介面偏好（字號、版心、主題、快捷鍵……）存在資料目錄的 prefs.json。
 
-以前放在浏览器 localStorage 里，换个浏览器或清一下缓存就没了；现在以这份文件为准，浏览器里只留一份缓存。
+以前放在瀏覽器 localStorage 裡，換個瀏覽器或清一下快取就沒了；現在以這份檔案為準，瀏覽器裡只留一份快取。
 """
 from __future__ import annotations
 
 from . import config
 from .store import read_json, write_json_atomic
 
-ALLOWED = {"reader", "keys", "ui", "library", "import"}  # ui：功能开关 features、快捷键总开关 keys_on
+ALLOWED = {"reader", "keys", "ui", "library", "import"}  # ui：功能開關 features、快捷鍵總開關 keys_on
 
 
 def path():
-    # 测试用的临时文献库各自带一份，不碰真实偏好
+    # 測試用的臨時文獻庫各自帶一份，不碰真實偏好
     return config.library_dir() / ".prefs.json" if config.temp_library() else config.HOME / "prefs.json"
 
 

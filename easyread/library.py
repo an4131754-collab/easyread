@@ -1,4 +1,4 @@
-"""文献库：一个目录里放多篇论文，每篇一个子目录（目录名就是 id，取 PDF 的 SHA-256 前 12 位）。"""
+"""文獻庫：一個目錄裡放多篇論文，每篇一個子目錄（目錄名就是 id，取 PDF 的 SHA-256 前 12 位）。"""
 from __future__ import annotations
 
 import hashlib
@@ -70,11 +70,11 @@ class Library:
     def list(self) -> list[dict]:
         return [self.summary(ws) for ws in self.all()]
 
-    # ---------- 导入 ----------
+    # ---------- 匯入 ----------
     def create_from_pdf(self, data: bytes, filename: str, meta: dict | None = None) -> tuple[Workspace, bool]:
-        """建目录、落 PDF 和空数据文件。渲染原页、抽文字放到后台任务里做。返回 (目录, 是否新建)。"""
+        """建目錄、落 PDF 和空資料檔案。渲染原頁、抽文字放到背景任務裡做。返回 (目錄, 是否新建)。"""
         if not data.startswith(b"%PDF"):
-            raise ValueError("不是 PDF 文件")
+            raise ValueError("不是 PDF 檔案")
         digest = sha256_bytes(data)
         pid = digest[:12]
         ws = Workspace(self.root / pid)
@@ -88,7 +88,7 @@ class Library:
             base_meta["title_en"] = _pdf_title(ws.root / "source.pdf") or Path(filename).stem
         write_json_atomic(ws.paper_path, {
             "schema": SCHEMA, "meta": base_meta,
-            "translation": {"scope": "未开始", "done_pages": [], "note": ""},
+            "translation": {"scope": "未開始", "done_pages": [], "note": ""},
             "glossary": [], "references": [], "blocks": [],
         })
         write_json_atomic(ws.discussion_path, empty_discussion())
@@ -97,11 +97,11 @@ class Library:
         return ws, True
 
     def fetch(self, ref: str) -> tuple[bytes, str, dict]:
-        """链接、arXiv 编号、DOI、标题 → (PDF, 文件名, 元数据)。见 sources.py。"""
+        """連結、arXiv 編號、DOI、標題 → (PDF, 檔名, 後設資料)。見 sources.py。"""
         try:
             return sources.fetch(ref)
         except sources.SourceError as e:
-            log.warning("导入失败 %s：%s", ref[:200], e)  # 用户说“某个链接导不进来”时能查到原因
+            log.warning("匯入失敗 %s：%s", ref[:200], e)  # 使用者說“某個連結導不進來”時能查到原因
             raise
 
     def trash(self, pid: str) -> Path:
@@ -110,15 +110,15 @@ class Library:
             raise KeyError(pid)
         dest = self.root / ".trash" / f"{pid}-{datetime.now():%Y%m%d%H%M%S}"
         dest.parent.mkdir(exist_ok=True)
-        # 只整体改名，不用 shutil.move：改名失败时它会退回“复制再删”，删到一半出错就剩半个目录。
-        # 刚取消的翻译要零点几秒才停下（Claude Code 进程的工作目录就在这里），多等几次
+        # 只整體改名，不用 shutil.move：改名失敗時它會退回“複製再刪”，刪到一半出錯就剩半個目錄。
+        # 剛取消的翻譯要零點幾秒才停下（Claude Code 程序的工作目錄就在這裡），多等幾次
         for attempt in range(20):
             try:
                 ws.root.rename(dest)
                 return dest
             except PermissionError:
                 if attempt == 19:
-                    raise ValueError("这篇论文的文件还被占用着（可能正在翻译或生成图片），等几秒再删") from None
+                    raise ValueError("這篇論文的檔案還被佔用著（可能正在翻譯或生成圖片），等幾秒再刪") from None
                 time.sleep(0.25)
         return dest
 
@@ -141,13 +141,13 @@ def _pdf_title(path: Path) -> str:
 
 
 def migrate_folder(src: Path, lib: Library) -> Workspace:
-    """把旧版技能生成的“xxx-共读”目录搬进文献库。"""
+    """把舊版技能生成的“xxx-共讀”目錄搬進文獻庫。"""
     src = Path(src)
     data = (src / "source.pdf").read_bytes()
     pid = sha256_bytes(data)[:12]
     dest = lib.root / pid
     if not dest.exists():
-        shutil.copytree(src, dest, ignore=shutil.ignore_patterns("server.json", "*.html", "打开共读.cmd", ".write.lock"))
+        shutil.copytree(src, dest, ignore=shutil.ignore_patterns("server.json", "*.html", "開啟共讀.cmd", ".write.lock"))
     ws = Workspace(dest)
     if not ws.item_path.exists():
         write_json_atomic(ws.item_path, {"added": now_iso(), "tags": [], "status": "reading", "starred": False})
@@ -159,15 +159,15 @@ def migrate_folder(src: Path, lib: Library) -> Workspace:
 
 
 def _link(meta: dict) -> str:
-    """论文主页链接：填了就用；否则由 arXiv 编号或 DOI 推出来。"""
+    """論文主頁連結：填了就用；否則由 arXiv 編號或 DOI 推出來。"""
     if meta.get("url"):
         return meta["url"]
     m = sources.ARXIV_RE.search(meta.get("arxiv") or meta.get("source") or "")
     if m and (meta.get("arxiv") or re.fullmatch(r"\d{4}\.\d{4,5}(v\d+)?\.pdf", meta.get("source") or "")):
-        aid = re.sub(r"v\d+$", "", m.group(1))  # f-string 里不能有反斜杠（Python 3.10/3.11）
+        aid = re.sub(r"v\d+$", "", m.group(1))  # f-string 裡不能有反斜槓（Python 3.10/3.11）
         return f"https://arxiv.org/abs/{aid}"
     return f"https://doi.org/{meta['doi']}" if meta.get("doi") else ""
 
-if __name__ == "__main__":  # 调试用：打印库摘要
+if __name__ == "__main__":  # 除錯用：列印庫摘要
     import sys
     print(json.dumps(Library(Path(sys.argv[1])).list(), ensure_ascii=False, indent=1))

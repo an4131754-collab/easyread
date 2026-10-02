@@ -1,8 +1,8 @@
-"""“问 AI”用哪些模型：设置里一张短名单（默认 Claude Opus 5.5、Claude Sonnet 5.5、GPT），可以增删改。
+"""“問 AI”用哪些模型：設定裡一張短名單（預設 Claude Opus 5.5、Claude Sonnet 5.5、GPT），可以增刪改。
 
-每一项：{"id", "name", "engine": "claude" | "codex" | "openai", "model", "preset"（API 服务商）, "base_url"（自定义地址时）,
-         "api"（chat | responses，不填跟服务商默认）}
-API 的 Key 用翻译引擎那边按服务商存的同一份（openai.keys），不用填两次。
+每一項：{"id", "name", "engine": "claude" | "codex" | "openai", "model", "preset"（API 服務商）, "base_url"（自定義地址時）,
+         "api"（chat | responses，不填跟服務商預設）}
+API 的 Key 用翻譯引擎那邊按服務商存的同一份（openai.keys），不用填兩次。
 """
 from __future__ import annotations
 
@@ -13,14 +13,14 @@ from pathlib import Path
 from . import engines
 from .presets import PRESETS
 
-# opus / sonnet 是 Claude Code 的别名：它会用自己支持的最新版（升级 Claude Code 后自动变成 Opus 5.5 等），
-# 实际用的是哪个版本，第一次回答时记下来显示在名单上。
+# opus / sonnet 是 Claude Code 的別名：它會用自己支援的最新版（升級 Claude Code 後自動變成 Opus 5.5 等），
+# 實際用的是哪個版本，第一次回答時記下來顯示在名單上。
 DEFAULT_MODELS = [
     {"id": "opus", "name": "Claude Opus", "engine": "claude", "model": "opus"},
     {"id": "sonnet", "name": "Claude Sonnet", "engine": "claude", "model": "sonnet"},
     {"id": "gpt", "name": "GPT", "engine": "codex", "model": ""},
 ]
-_SEEN_PATH = None  # config.HOME / ".models-seen.json"，懒加载避免循环导入
+_SEEN_PATH = None  # config.HOME / ".models-seen.json"，懶載入避免迴圈匯入
 
 
 def _seen_path():
@@ -37,7 +37,7 @@ def pretty(model_id: str) -> str:
 
 
 def remember(alias: str, actual: str) -> None:
-    """记下别名实际对应的模型（Claude Code 在每次回答开头会报）。"""
+    """記下別名實際對應的模型（Claude Code 在每次回答開頭會報）。"""
     if not alias or not actual or alias == actual:
         return
     from .store import read_json, write_json_atomic
@@ -54,7 +54,7 @@ DEFAULT_CHAT = {"models": DEFAULT_MODELS, "default": "opus"}
 
 
 def codex_default_model() -> str:
-    """Codex CLI 没指定模型时用它自己配置里的（~/.codex/config.toml 的 model）。"""
+    """Codex CLI 沒指定模型時用它自己配置裡的（~/.codex/config.toml 的 model）。"""
     try:
         text = (Path.home() / ".codex" / "config.toml").read_text(encoding="utf-8")
     except OSError:
@@ -82,7 +82,7 @@ def _key(cfg: dict, preset: str) -> str:
 
 
 def engine_cfg(cfg: dict, mid: str | None) -> tuple[dict, dict]:
-    """名单里的一项 → (engines 认的配置, 这一项)。"""
+    """名單裡的一項 → (engines 認的配置, 這一項)。"""
     m = find(cfg, mid)
     out = copy.deepcopy(cfg)
     out["engine"] = m["engine"]
@@ -95,12 +95,12 @@ def engine_cfg(cfg: dict, mid: str | None) -> tuple[dict, dict]:
                          "model": m.get("model") or (p["model"] if p else ""), "api_key": _key(cfg, m.get("preset") or ""),
                          "api": m.get("api") or (p or {}).get("api") or "chat"}
     else:
-        raise engines.EngineError(f"不认识的模型来源：{m.get('engine')}")
+        raise engines.EngineError(f"不認識的模型來源：{m.get('engine')}")
     return out, m
 
 
 def translation_id(cfg: dict) -> str:
-    """名单里哪一张就是翻译用的那个模型（设置里标着“翻译”的卡片）；对不上返回空。"""
+    """名單裡哪一張就是翻譯用的那個模型（設定裡標著“翻譯”的卡片）；對不上返回空。"""
     e = cfg.get("engine")
     for m in models(cfg):
         if m.get("engine") != e:
@@ -115,18 +115,18 @@ def translation_id(cfg: dict) -> str:
 
 
 def label(m: dict) -> str:
-    """面板上显示的名字：Claude 别名显示实际版本（Claude Opus 5），Codex 没填模型时带上它实际用的模型。"""
+    """面板上顯示的名字：Claude 別名顯示實際版本（Claude Opus 5），Codex 沒填模型時帶上它實際用的模型。"""
     if m.get("engine") == "claude" and m.get("model") in ("opus", "sonnet", "haiku") and actual_of(m["model"]):
         return pretty(actual_of(m["model"]))
     if m.get("engine") == "codex" and (not m.get("name") or m.get("name") in ("GPT", m.get("model"))):
-        from . import cli_models  # 用 Codex 里 /model 显示的名字，比如 GPT-6-Astra
+        from . import cli_models  # 用 Codex 裡 /model 顯示的名字，比如 GPT-6-Astra
         slug = m.get("model") or codex_default_model()
         return next((x["name"] for x in cli_models.codex()["models"] if x["id"] == slug), slug or "GPT")
     return m.get("name") or m.get("model") or "模型"
 
 
 def listing(cfg: dict) -> dict:
-    """给页面：名单 + 每项能不能用、来源说明。"""
+    """給頁面：名單 + 每項能不能用、來源說明。"""
     from .detect import detect, needs_key
     found = detect(cfg)
     out = []
@@ -135,21 +135,21 @@ def listing(cfg: dict) -> dict:
         if e in ("claude", "codex"):
             ready = bool(found.get(e, {}).get("found"))
             source = "Claude Code" if e == "claude" else "Codex CLI"
-            hint = "" if ready else f"本机没找到 {source}"
+            hint = "" if ready else f"本機沒找到 {source}"
         else:
             p = next((x for x in PRESETS if x["id"] == m.get("preset")), None)
             ready = bool(_key(cfg, m.get("preset") or "")) or not needs_key({"preset": m.get("preset"), "base_url": m.get("base_url", "")})
-            source = p["name"] if p else "自定义地址"
-            hint = "" if ready else f"还没填 {source} 的 Key（设置 → 模型 → 点这张卡片 → 修改）"
+            source = p["name"] if p else "自定義地址"
+            hint = "" if ready else f"還沒填 {source} 的 Key（設定 → 模型 → 點這張卡片 → 修改）"
         out.append({**m, "label": label(m), "source": source, "ready": ready, "hint": hint,
                     "detail": (actual_of(m.get("model", "")) or m.get("model") or _claude_default()) if e == "claude"
-                    else m.get("model") or ((codex_default_model() + "（跟随 Codex 默认）") if e == "codex" and codex_default_model() else "")})
+                    else m.get("model") or ((codex_default_model() + "（跟隨 Codex 預設）") if e == "codex" and codex_default_model() else "")})
     default = (cfg.get("chat") or {}).get("default") or (out[0]["id"] if out else "")
     return {"models": out, "default": default, "translate": translation_id(cfg), "presets": [{"id": p["id"], "name": p["name"], "models": p.get("models", []), "api": p.get("api", "chat")} for p in PRESETS]}
 
 
 def sanitize(items: list[dict]) -> list[dict]:
-    """设置页提交的名单：去掉空项、补 id。"""
+    """設定頁提交的名單：去掉空項、補 id。"""
     out, seen = [], set()
     for k, m in enumerate(items or []):
         e = m.get("engine")
@@ -166,7 +166,7 @@ def sanitize(items: list[dict]) -> list[dict]:
 
 
 def _claude_default() -> str:
-    """“跟随 Claude Code 默认”的卡片下面写出实际是哪个：跟随默认（Claude Opus 5.5）"""
-    from .cli_models import claude_default  # cli_models 引用了本文件，放这里免得循环导入
+    """“跟隨 Claude Code 預設”的卡片下面寫出實際是哪個：跟隨預設（Claude Opus 5.5）"""
+    from .cli_models import claude_default  # cli_models 引用了本檔案，放這裡免得迴圈匯入
     d = claude_default()
-    return f"跟随默认（{d}）" if d else "跟随默认"
+    return f"跟隨預設（{d}）" if d else "跟隨預設"

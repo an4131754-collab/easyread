@@ -1,5 +1,5 @@
-/* 阅读页快捷键的执行。键位、总开关和功能开关在 common/features.js，改键在“设置 → 快捷键”。
-   选中文字后的 1–4 划线、N 笔记、Q 提问，和 Esc 关闭，只受总开关控制。 */
+/* 閱讀頁快捷鍵的執行。鍵位、總開關和功能開關在 common/features.js，改鍵在“設定 → 快捷鍵”。
+   選中文字後的 1–4 劃線、N 筆記、Q 提問，和 Esc 關閉，只受總開關控制。 */
 (function (PR) {
   "use strict";
   PR.runAction = function (id) {

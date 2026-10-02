@@ -1,4 +1,4 @@
-# 每次推送和 PR：在 Windows / macOS / Linux 上装一遍、跑单元测试、真的启动一次服务看页面能不能打开。
+# 每次推送和 PR：在 Windows / macOS / Linux 上裝一遍、跑單元測試、真的啟動一次服務看頁面能不能開啟。
 name: test
 on:
   push:
@@ -24,16 +24,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - name: 安装（非 editable，顺便检查网页文件打进了包）
+      - name: 安裝（非 editable，順便檢查網頁檔案打進了包）
         run: python -m pip install .
-      - name: 单元测试
+      - name: 單元測試
         run: python -m unittest discover tests -v
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: 桌面、原页和笔记保存
+      - name: 桌面、原頁和筆記儲存
         run: node --test tests/test_*.cjs
-      - name: 启动服务，打开文献库页
+      - name: 啟動服務，開啟文獻庫頁
         run: |
           cd "$RUNNER_TEMP"
           python -m easyread serve --port 8799 > serve.log 2>&1 &
@@ -45,7 +45,7 @@ jobs:
           echo OK
 
   start-sh:
-    # macOS / Linux 的一键启动脚本
+    # macOS / Linux 的一鍵啟動指令碼
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]

@@ -1,9 +1,9 @@
-"""把一篇读好的论文做成网站上的在线演示（GitHub Pages 这类静态托管）。
+"""把一篇讀好的論文做成網站上的線上演示（GitHub Pages 這類靜態託管）。
 
-和“导出离线 HTML”一样是单页，区别是：图片另存成文件、按需加载；带上问 AI 的对话记录（只能看）；
-顶栏有“在线演示”标记和回主页、去 GitHub 的链接。读者在演示里做的划线和笔记只存在他自己的浏览器。
+和“匯出離線 HTML”一樣是單頁，區別是：圖片另存成檔案、按需載入；帶上問 AI 的對話記錄（只能看）；
+頂欄有“線上演示”標記和回主頁、去 GitHub 的連結。讀者在演示裡做的劃線和筆記只存在他自己的瀏覽器。
 
-    easyread demo <论文 id> --out docs/demo
+    easyread demo <論文 id> --out docs/demo
 """
 from __future__ import annotations
 
@@ -17,10 +17,10 @@ REPO = "https://github.com/Edwardxlai/easyread"
 
 
 def build_demo(ws: Workspace, out_dir: Path, name: str = "index.html", credit: str = "") -> Path:
-    """credit：署名和许可（比如 CC BY 4.0 要求写明作者、出处、许可，并说明是译文），显示在论文标题下面。"""
+    """credit：署名和許可（比如 CC BY 4.0 要求寫明作者、出處、許可，並說明是譯文），顯示在論文標題下面。"""
     out_dir.mkdir(parents=True, exist_ok=True)
     reader = ws.load("reader")
-    reader.pop("progress", None)  # 别让看演示的人从我读到的地方开始
+    reader.pop("progress", None)  # 別讓看演示的人從我讀到的地方開始
     extra = {"reader": reader, "chat": {"threads": chat_store.threads(ws)},
              "demo": {"home": "../", "repo": REPO, "credit": credit}}
     return build(ws, out_dir / name, assets=out_dir / "assets", extra=extra)

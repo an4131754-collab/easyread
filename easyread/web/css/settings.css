@@ -1,4 +1,4 @@
-/* 设置对话框（文献库页和阅读页共用） */
+/* 設定對話方塊（文獻庫頁和閱讀頁共用） */
 label.check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-2); margin-top: 16px; }
 label.check input { accent-color: var(--accent); width: 15px; height: 15px; margin: 0; }
 .dialog.wide { width: min(640px, 94vw); }
@@ -30,11 +30,11 @@ label.check input { accent-color: var(--accent); width: 15px; height: 15px; marg
 .preset-group > span { flex-basis: 100%; font-size: 11.5px; color: var(--ink-3); letter-spacing: .04em; }
 .ok-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--ok); vertical-align: middle; margin-left: 2px; }
 
-/* 分页外壳 */
-/* 每一页都一样大：高度固定，内容多了在中间滚动 */
+/* 分頁外殼 */
+/* 每一頁都一樣大：高度固定，內容多了在中間滾動 */
 #settingsDlg .dialog { width: min(760px, 95vw); height: min(720px, 90vh); max-height: none; padding: 0; display: flex; flex-direction: column; }
 .set-head { display: flex; align-items: flex-end; gap: 22px; padding: 14px 24px 0; border-bottom: 1px solid var(--rule); flex: none; }
-.set-head h2 { margin: 0 0 -1px; height: 40px; line-height: 38px; font-size: 20px; }  /* 和右边的分页按钮同高、同一条底线 */
+.set-head h2 { margin: 0 0 -1px; height: 40px; line-height: 38px; font-size: 20px; }  /* 和右邊的分頁按鈕同高、同一條底線 */
 .set-tabs { display: flex; gap: 4px; }
 .set-tabs button { height: 40px; line-height: 38px; padding: 0 12px; font-size: 14px; color: var(--ink-3); border-bottom: 2px solid transparent; margin-bottom: -1px; }
 .set-tabs button:hover { color: var(--ink); }
@@ -45,7 +45,7 @@ label.check input { accent-color: var(--accent); width: 15px; height: 15px; marg
 .set-foot .grow { flex: 1; }
 .linkish { font-size: 12.5px; color: var(--accent); }
 
-/* 问 AI 模型名单 */
+/* 問 AI 模型名單 */
 .cm-list { display: grid; gap: 6px; margin-bottom: 12px; }
 .cm-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; box-shadow: inset 0 0 0 1px var(--rule); background: var(--surface); }
 .cm-row.off .cm-main b { color: var(--ink-3); }
@@ -59,7 +59,7 @@ label.check input { accent-color: var(--accent); width: 15px; height: 15px; marg
 .cm-form .field { margin-bottom: 8px; }
 .cm-form-acts { display: flex; align-items: center; gap: 6px; }
 
-/* 开关 */
+/* 開關 */
 .switch-list { display: grid; gap: 2px; margin-bottom: 8px; }
 .switch-row { display: flex; align-items: center; gap: 14px; padding: 10px 2px; border-bottom: 1px solid var(--rule); cursor: pointer; }
 .switch-row > span { flex: 1; }
@@ -71,7 +71,7 @@ label.check input { accent-color: var(--accent); width: 15px; height: 15px; marg
 .switch:checked { background: var(--accent); }
 .switch:checked::after { transform: translateX(16px); }
 
-/* 快捷键 */
+/* 快捷鍵 */
 .keys-list { display: grid; grid-template-columns: 1fr auto auto; gap: 6px 10px; align-items: center; font-size: 13.5px; }
 .keys-list.dim { opacity: .45; pointer-events: none; }
 .keys-list .kcap { min-width: 64px; height: 28px; padding: 0 10px; border-radius: 7px; font: 12.5px var(--mono); color: var(--ink); box-shadow: inset 0 0 0 1px var(--rule-2); background: var(--bg); }
@@ -90,7 +90,7 @@ label.check input { accent-color: var(--accent); width: 15px; height: 15px; marg
 .set-h { font-size: 12px; font-weight: 500; letter-spacing: .1em; color: var(--ink-3); margin: 16px 0 6px; }
 .set-h:first-of-type { margin-top: 4px; }
 .cm-row .input { flex: 1; height: 30px; }
-/* 设置 → 侧边栏 */
+/* 設定 → 側邊欄 */
 .sb-list { display: grid; margin-bottom: 6px; }
 .sb-row { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 6px 2px; border-bottom: 1px solid var(--rule); }
 .sb-row .input { flex: 1; height: 30px; }
@@ -104,7 +104,7 @@ label.check input { accent-color: var(--accent); width: 15px; height: 15px; marg
 .sb-pin.on { color: var(--accent); background: var(--accent-soft-2); }
 .sb-row .switch { margin-left: 6px; }
 
-/* 问 AI：名单里的模型做成和“翻译”页一样的卡片（settings-chat.js） */
+/* 問 AI：名單裡的模型做成和“翻譯”頁一樣的卡片（settings-chat.js） */
 .mc-cards { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
 .mc-cards .mc { position: relative; display: flex; flex-direction: column; align-items: flex-start; text-align: left; padding: 12px; border-radius: 10px; box-shadow: inset 0 0 0 1px var(--rule-2); font-size: 12.5px; color: var(--ink-3); line-height: 1.55; cursor: pointer; min-width: 0; overflow-wrap: anywhere; }
 .mc-cards .mc b { display: block; font-size: 13.5px; color: var(--ink); margin-bottom: 3px; font-weight: 600; padding-right: 22px; }
@@ -129,7 +129,7 @@ label.check input { accent-color: var(--accent); width: 15px; height: 15px; marg
 .engine-cards .mc-more { padding: 0; min-height: 0; box-shadow: none; border-radius: 6px; }
 .cm-form-acts .btn:first-of-type { margin-left: auto; }
 
-/* API 表单（settings-api.js） */
+/* API 表單（settings-api.js） */
 .engine-cards:not(.mc-cards) { grid-template-columns: repeat(3, 1fr); }
 .free-tag { font-style: normal; font-size: 10.5px; color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); padding: 0 5px; border-radius: 7px; margin-left: 5px; line-height: 16px; display: inline-block; }
 .preset-group > em.hint { font-style: normal; font-size: 12px; color: var(--ink-3); margin-left: 2px; }

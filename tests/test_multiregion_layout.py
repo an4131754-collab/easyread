@@ -85,9 +85,9 @@ class MultiregionLayoutTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / "extract").mkdir()
-            paper = {"blocks": [{"id": "p", "page": 1, "type": "para", "en": "Original paragraph", "zh": "已有译文"}]}
+            paper = {"blocks": [{"id": "p", "page": 1, "type": "para", "en": "Original paragraph", "zh": "已有譯文"}]}
             write_json_atomic(root / "paper.json", paper)
-            write_json_atomic(root / "reader.json", {"notes": {"n1": {"body": "保留的笔记"}}})
+            write_json_atomic(root / "reader.json", {"notes": {"n1": {"body": "保留的筆記"}}})
             write_json_atomic(root / "layout.json", {"p": loc([0.08, 0.10, 0.92, 0.90])})
             (root / "extract/locate.version").write_text("2")
             write_json_atomic(root / "extract/page-001.chars.json", chars("Original paragraph", 0.08, 0.10))

@@ -1,10 +1,10 @@
-"""关掉页面后自动退出（只在 start.cmd / start.sh 启动时开）。
+"""關掉頁面後自動退出（只在 start.cmd / start.sh 啟動時開）。
 
-每个文献库页、阅读页都连着一条 WebSocket（见 wsock.py）。最后一个页面关掉后，
-等一会儿（刷新、在文献库和阅读页之间跳转时，新页面几秒内就会连上来）还是没有页面，
-并且没有翻译、回答问题之类的后台任务在跑，就退出服务。后台任务没做完时先不退，做完再退。
+每個文獻庫頁、閱讀頁都連著一條 WebSocket（見 wsock.py）。最後一個頁面關掉後，
+等一會兒（重新整理、在文獻庫和閱讀頁之間跳轉時，新頁面幾秒內就會連上來）還是沒有頁面，
+並且沒有翻譯、回答問題之類的背景任務在跑，就退出服務。背景任務沒做完時先不退，做完再退。
 
-命令行 `easyread serve`（agent 用的）和桌面版不开这个，服务一直跑。
+命令列 `easyread serve`（agent 用的）和桌面版不開這個，服務一直跑。
 """
 from __future__ import annotations
 
@@ -14,8 +14,8 @@ from collections.abc import Callable
 
 from .log import log
 
-GRACE = 15        # 最后一个页面断开后再等多久
-FIRST_WAIT = 120  # 启动后一直没有页面连上来（浏览器没打开之类），等多久
+GRACE = 15        # 最後一個頁面斷開後再等多久
+FIRST_WAIT = 120  # 啟動後一直沒有頁面連上來（瀏覽器沒開啟之類），等多久
 
 
 class Presence:
@@ -24,7 +24,7 @@ class Presence:
         self.busy, self.stop, self.enabled = busy, stop, enabled
         self.grace, self.first_wait, self.tick = grace, first_wait, tick
         self.pages = 0
-        self.seen = False  # 有没有页面连上来过
+        self.seen = False  # 有沒有頁面連上來過
         self.lock = threading.Lock()
         self.idle_since: float | None = time.monotonic()
         if enabled:
@@ -40,9 +40,9 @@ class Presence:
             self.pages = max(0, self.pages - 1)
 
     def keep(self) -> None:
-        """有人用 `easyread serve` 要一个常驻的服务、却复用了这个会自动退出的：从此不再自动退出。"""
+        """有人用 `easyread serve` 要一個常駐的服務、卻複用了這個會自動退出的：從此不再自動退出。"""
         if self.enabled:
-            log.info("改为常驻，不再在页面关掉后自动退出")
+            log.info("改為常駐，不再在頁面關掉後自動退出")
         self.enabled = False
 
     def should_stop(self, now: float) -> bool:
@@ -60,6 +60,6 @@ class Presence:
         while self.enabled:
             time.sleep(self.tick)
             if self.enabled and self.should_stop(time.monotonic()):
-                log.info("页面都关了，后台没有任务在跑，退出服务")
+                log.info("頁面都關了，背景沒有任務在跑，退出服務")
                 self.stop()
                 return

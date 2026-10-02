@@ -1,4 +1,4 @@
-"""流式 API：不把推理文本或中途失败的回答当成最终答案。"""
+"""流式 API：不把推理文本或中途失敗的回答當成最終答案。"""
 import io
 import json
 import threading
@@ -20,26 +20,26 @@ class APIStreamErrorsTest(unittest.TestCase):
     def run_stream(self, response, api="chat"):
         options = {"base_url": "http://example.invalid/v1", "model": "fake", "api": api}
         with patch.object(openai_api, "_open", return_value=response):
-            return "".join(openai_api.stream(options, "问题", threading.Event()))
+            return "".join(openai_api.stream(options, "問題", threading.Event()))
 
     def test_think_tags_at_every_chunk_boundary(self):
-        text = "前文<think>不应显示</think>回答<think>第二次思考</think>后文"
-        expected = "前文回答后文"
+        text = "前文<think>不應顯示</think>回答<think>第二次思考</think>後文"
+        expected = "前文回答後文"
         for split in range(len(text) + 1):
             with self.subTest(split=split):
                 self.assertEqual("".join(openai_api._strip_think(iter([text[:split], text[split:]]))), expected)
         self.assertEqual("".join(openai_api._strip_think(iter(text))), expected)
 
     def test_unclosed_think_is_hidden_but_plain_angles_survive(self):
-        for chunks, expected in [(["答", "<think>私密", "内容"], "答"), (["x <", " y", "<thi"], "x < y<thi")]:
+        for chunks, expected in [(["答", "<think>私密", "內容"], "答"), (["x <", " y", "<thi"], "x < y<thi")]:
             self.assertEqual("".join(openai_api._strip_think(iter(chunks))), expected)
 
     def test_chat_terminal_errors_and_unexpected_eof(self):
         first = {"choices": [{"delta": {"content": "部分回答"}}]}
-        for end, message in [({"choices": [{"finish_reason": "length"}]}, "截断"),
-                             ({"choices": [{"finish_reason": "content_filter"}]}, "过滤"),
+        for end, message in [({"choices": [{"finish_reason": "length"}]}, "截斷"),
+                             ({"choices": [{"finish_reason": "content_filter"}]}, "過濾"),
                              ({"error": {"message": "quota exceeded"}}, "quota exceeded"),
-                             (None, "提前结束")]:
+                             (None, "提前結束")]:
             response = sse([first] + ([end] if end else []), done=bool(end))
             with self.subTest(end=end), self.assertRaisesRegex(EngineError, message):
                 self.run_stream(response)
@@ -47,11 +47,11 @@ class APIStreamErrorsTest(unittest.TestCase):
 
     def test_responses_terminal_errors_and_unexpected_eof(self):
         first = {"type": "response.output_text.delta", "delta": "部分回答"}
-        for end, message in [({"type": "response.incomplete", "response": {"incomplete_details": {"reason": "max_output_tokens"}}}, "截断"),
+        for end, message in [({"type": "response.incomplete", "response": {"incomplete_details": {"reason": "max_output_tokens"}}}, "截斷"),
                              ({"type": "response.incomplete", "response": {"incomplete_details": {"reason": "content_filter"}}}, "未完成"),
                              ({"type": "response.failed", "response": {"error": {"message": "upstream failed"}}}, "upstream failed"),
                              ({"type": "error", "message": "bad request"}, "bad request"),
-                             (None, "提前结束")]:
+                             (None, "提前結束")]:
             response = sse([first] + ([end] if end else []), done=bool(end))
             with self.subTest(end=end), self.assertRaisesRegex(EngineError, message):
                 self.run_stream(response, "responses")
@@ -74,9 +74,9 @@ class APIStreamErrorsTest(unittest.TestCase):
     def test_relay_framing_without_blank_lines(self):
         delta = b'data: {"choices": [{"delta": {"content": "ok"}}]}'
         stop = b'data: {"choices": [{"delta": {}, "finish_reason": "stop"}]}'
-        for name, payload in [("事件之间只隔一个换行", delta + b"\n" + stop + b"\ndata: [DONE]\n"),
-                              ("最后一条后面没有空行就断开", delta + b"\n\n" + stop + b"\n"),
-                              ("最后一条连换行都没有", delta + b"\n\n" + stop)]:
+        for name, payload in [("事件之間只隔一個換行", delta + b"\n" + stop + b"\ndata: [DONE]\n"),
+                              ("最後一條後面沒有空行就斷開", delta + b"\n\n" + stop + b"\n"),
+                              ("最後一條連換行都沒有", delta + b"\n\n" + stop)]:
             with self.subTest(name):
                 self.assertEqual(self.run_stream(io.BytesIO(payload)), "ok")
 

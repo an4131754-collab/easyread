@@ -1,4 +1,4 @@
-"""翻译调度：一批失败会重试，重试还失败就跳过，别的页照常译完。  python -m unittest tests.test_translate"""
+"""翻譯排程：一批失敗會重試，重試還失敗就跳過，別的頁照常譯完。  python -m unittest tests.test_translate"""
 import json
 import shutil
 import tempfile
@@ -24,11 +24,11 @@ def make_ws(n_pages: int) -> Workspace:
 
 def fake_engine(fail_pages: set, calls: list):
     def run(cfg, prompt, cwd, images=None, cancel=None, meter=None):
-        page = int(prompt.split("这次只处理第 ")[1].split(" ")[0].split(",")[0])
+        page = int(prompt.split("這次只處理第 ")[1].split(" ")[0].split(",")[0])
         calls.append(page)
         if page in fail_pages:
             raise engines.EngineError(f"boom {page}")
-        return json.dumps({"blocks": [{"id": f"p{page}-1", "type": "para", "page": page, "en": "x", "zh": "译文"}]})
+        return json.dumps({"blocks": [{"id": f"p{page}-1", "type": "para", "page": page, "en": "x", "zh": "譯文"}]})
     return run
 
 
@@ -51,26 +51,26 @@ class TranslateTest(unittest.TestCase):
         with mock.patch.object(engines, "run", fake_engine({3}, calls)):
             failed = translate.translate_pages(self.ws, self.cfg, [1, 2, 3, 4, 5, 6], threading.Event(), lambda *a: None)
         self.assertEqual(list(failed), [3])
-        self.assertEqual(calls.count(3), 2)  # 重试了一次
+        self.assertEqual(calls.count(3), 2)  # 重試了一次
         paper = self.ws.load("paper")
         self.assertEqual(paper["translation"]["done_pages"], [1, 2, 4, 5, 6])
-        self.assertEqual([b["page"] for b in paper["blocks"]], [1, 2, 4, 5, 6])  # 并发也按页码排好
-        self.assertIn("第 3 页 第 2 次失败", (self.ws.root / "job.log").read_text(encoding="utf-8"))
+        self.assertEqual([b["page"] for b in paper["blocks"]], [1, 2, 4, 5, 6])  # 併發也按頁碼排好
+        self.assertIn("第 3 頁 第 2 次失敗", (self.ws.root / "job.log").read_text(encoding="utf-8"))
 
     def test_quota_error_stops_remaining_batches(self):
         calls = []
 
         def run(cfg, prompt, cwd, images=None, cancel=None, meter=None):
-            page = int(prompt.split("这次只处理第 ")[1].split(" ")[0].split(",")[0])
+            page = int(prompt.split("這次只處理第 ")[1].split(" ")[0].split(",")[0])
             calls.append(page)
             if page >= 3:
-                raise engines.EngineError("Claude Code 出错：You've hit your session limit")
+                raise engines.EngineError("Claude Code 出錯：You've hit your session limit")
             return json.dumps({"blocks": [{"id": f"p{page}-1", "type": "para", "page": page, "en": "x", "zh": "y"}]})
         cfg = dict(self.cfg, concurrency=1)
         with mock.patch.object(engines, "run", run):
             failed = translate.translate_pages(self.ws, cfg, [1, 2, 3, 4, 5, 6], threading.Event(), lambda *a: None)
         self.assertEqual(sorted(failed), [3, 4, 5, 6])
-        self.assertEqual(calls, [1, 2, 3])  # 额度用完后不再调用模型
+        self.assertEqual(calls, [1, 2, 3])  # 額度用完後不再呼叫模型
 
     def test_cancel_stops(self):
         ev = threading.Event()
@@ -87,15 +87,15 @@ class TranslateTest(unittest.TestCase):
 
     def test_checks_saved_and_replaced_on_retranslate(self):
         self.ws.update("paper", lambda p: p.__setitem__("blocks", [{"id": "tab1", "type": "table", "page": 2}]))
-        chk = [{"anchor": "tab1", "title": "两张表数字对不上", "body": "表 1 写 87.7%，表 2 写 86.7%。"}, {"anchor": "nope", "body": "锚点不存在的丢掉"}]
+        chk = [{"anchor": "tab1", "title": "兩張表數字對不上", "body": "表 1 寫 87.7%，表 2 寫 86.7%。"}, {"anchor": "nope", "body": "錨點不存在的丟掉"}]
         translate._save_checks(self.ws, chk, [2])
-        translate._save_checks(self.ws, chk[:1], [2])  # 重译同一页：不重复
+        translate._save_checks(self.ws, chk[:1], [2])  # 重譯同一頁：不重複
         entries = self.ws.load("discussion").get("entries", [])
         self.assertEqual([(e["kind"], e["anchor"]) for e in entries], [("check", "tab1")])
 
     def test_json_with_code_fence_inside_string(self):
-        # 附录里的代码块原样放进译文：输出里有 ``` 围栏套着 JSON，JSON 字符串里又有 ```python
-        text = '```json\n{"blocks": [{"id": "c1", "type": "para", "zh": "代码如下：\\n```python\\nloss = -F.logsigmoid(x)\\n```"}]}\n```'
+        # 附錄裡的程式碼塊原樣放進譯文：輸出裡有 ``` 圍欄套著 JSON，JSON 字串裡又有 ```python
+        text = '```json\n{"blocks": [{"id": "c1", "type": "para", "zh": "程式碼如下：\\n```python\\nloss = -F.logsigmoid(x)\\n```"}]}\n```'
         self.assertEqual(engines.parse_json(text)["blocks"][0]["id"], "c1")
 
 
@@ -109,12 +109,12 @@ class ScopePagesTest(unittest.TestCase):
                 return {"meta": {"page_count": 20}}
         ws = WS()
         self.assertEqual(scope_pages(ws, "range:3-5"), [3, 4, 5])
-        self.assertEqual(scope_pages(ws, "range:18-30"), [18, 19, 20])   # 超出总页数就截到最后一页
+        self.assertEqual(scope_pages(ws, "range:18-30"), [18, 19, 20])   # 超出總頁數就截到最後一頁
         self.assertEqual(scope_pages(ws, "range:5-3"), [3, 4, 5])        # 填反了也行
         self.assertEqual(scope_pages(ws, "range:30-18"), [18, 19, 20])
-        with self.assertRaisesRegex(ValueError, "超出了论文范围"):
+        with self.assertRaisesRegex(ValueError, "超出了論文範圍"):
             scope_pages(ws, "range:30-40")
-        self.assertEqual(scope_pages(ws, "first:2"), [1, 2])              # 旧写法还认
+        self.assertEqual(scope_pages(ws, "first:2"), [1, 2])              # 舊寫法還認
 
 
 if __name__ == "__main__":

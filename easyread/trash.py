@@ -1,4 +1,4 @@
-"""回收站：删掉的论文整个文件夹挪到 文献库/.trash/<id>-<时间>，可以恢复、彻底删除、清空。"""
+"""回收站：刪掉的論文整個資料夾挪到 文獻庫/.trash/<id>-<時間>，可以恢復、徹底刪除、清空。"""
 from __future__ import annotations
 
 import re
@@ -17,10 +17,10 @@ def _dir(root: Path) -> Path:
 
 def _entry(root: Path, name: str) -> Path:
     if not _NAME.match(name or ""):
-        raise ValueError("回收站里没有这一项")
+        raise ValueError("回收站裡沒有這一項")
     p = _dir(root) / name
     if not p.is_dir():
-        raise ValueError("回收站里没有这一项")
+        raise ValueError("回收站裡沒有這一項")
     return p
 
 
@@ -40,19 +40,19 @@ def restore(root: Path, name: str) -> str:
     src = _entry(root, name)
     pid = _NAME.match(name).group(1)
     if (root / pid).exists():
-        raise ValueError("文献库里已经有这篇论文了（可能后来又导入过一次）")
+        raise ValueError("文獻庫裡已經有這篇論文了（可能後來又匯入過一次）")
     shutil.move(str(src), root / pid)
     return pid
 
 
 def purge(root: Path, name: str) -> int:
-    """彻底删掉回收站里的一篇。"""
+    """徹底刪掉回收站裡的一篇。"""
     shutil.rmtree(_entry(root, name))
     return 1
 
 
 def empty(root: Path) -> int:
-    """清空回收站，返回删掉了几篇。"""
+    """清空回收站，返回刪掉了幾篇。"""
     targets = [p for p in _dir(root).glob("*") if p.is_dir() and _NAME.match(p.name)] if _dir(root).is_dir() else []
     for p in targets:
         shutil.rmtree(p)

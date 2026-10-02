@@ -1,4 +1,4 @@
-/* 文献库页 */
+/* 文獻庫頁 */
 .topbar .search {
   display: flex; align-items: center; gap: 8px; width: min(520px, 46vw); height: 34px; margin-left: 28px;
   padding: 0 10px; border-radius: 9px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--rule);
@@ -11,7 +11,7 @@
 .lib { display: grid; grid-template-columns: 216px minmax(0, 1fr) 0; height: 100vh; padding-top: var(--bar-h); transition: grid-template-columns .25s ease; }
 .lib.has-detail { grid-template-columns: 216px minmax(0, 1fr) 400px; }
 
-/* 侧栏 */
+/* 側欄 */
 .side { border-right: 1px solid var(--rule); padding: 16px 10px 40px; overflow-y: auto; }
 .side h3 { font-size: 11.5px; font-weight: 500; letter-spacing: .14em; color: var(--ink-3); margin: 18px 10px 6px; }
 .side h3:first-child { margin-top: 2px; }
@@ -59,7 +59,7 @@
 .empty-state .big { font: 600 20px/1.5 var(--serif-zh); color: var(--ink-2); margin-bottom: 8px; }
 .empty-state .btn { margin-top: 18px; }
 
-/* 详情 */
+/* 詳情 */
 .detail { border-left: 1px solid var(--rule); background: var(--surface); overflow-y: auto; overflow-x: hidden; }
 .detail-inner { padding: 22px 24px 50px; width: 400px; }
 .detail .cover { display: flex; gap: 16px; }
@@ -97,7 +97,7 @@
 .counts b { font: 600 18px/1 var(--ui); font-variant-numeric: lining-nums tabular-nums; color: var(--ink); display: block; margin-bottom: 4px; }
 .pnote { font: 13.5px/1.8 var(--serif-zh); color: var(--ink-2); white-space: pre-wrap; max-height: 10em; overflow: hidden; }
 
-/* 拖放、导入、设置 */
+/* 拖放、匯入、設定 */
 .drop-overlay { position: fixed; inset: 10px; z-index: 85; border: 2px dashed var(--accent); border-radius: 18px; background: color-mix(in srgb, var(--bg) 88%, transparent); display: grid; place-items: center; text-align: center; opacity: 0; pointer-events: none; transition: opacity .15s; }
 .drop-overlay.on { opacity: 1; }
 .drop-overlay .big { font: 600 26px/1.4 var(--serif-zh); color: var(--accent); }
@@ -111,7 +111,7 @@
 @media (max-width: 1100px) {
   .lib, .lib.has-detail { grid-template-columns: 0 minmax(0, 1fr) 0; }
   .side { display: none; }
-  .lib > .main { grid-column: 2; }  /* 侧栏 display:none 后不占格子，不钉住的话 main 会掉进 0 宽的第一列，整页空白 */
+  .lib > .main { grid-column: 2; }  /* 側欄 display:none 後不佔格子，不釘住的話 main 會掉進 0 寬的第一列，整頁空白 */
   .lib.has-detail .detail { position: fixed; right: 0; top: var(--bar-h); bottom: 0; width: min(400px, 100vw); box-shadow: var(--shadow-lg); z-index: 20; }
 }
 @media (max-width: 640px) {
@@ -124,7 +124,7 @@
   .list { padding: 0 6px 60px; }
 }
 
-/* 顶栏引擎状态 */
+/* 頂欄引擎狀態 */
 .engine-chip { display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 11px; border-radius: 15px; font-size: 12.5px; color: var(--ink-3); box-shadow: inset 0 0 0 1px var(--rule); max-width: 240px; }
 .engine-chip span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .engine-chip:hover { color: var(--ink); background: var(--accent-soft); }
@@ -146,21 +146,21 @@
 .steps li .btn { grid-column: 3; grid-row: 1 / 3; }
 .welcome .try { font-size: 13px; color: var(--ink-3); margin-top: 18px; }
 
-/* 设置 */
+/* 設定 */
 
-/* 导入选项 */
+/* 匯入選項 */
 .imp-opts { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
 .imp-opts .check { margin: 0; }
 .imp-opts[hidden] { display: none; }
 .imp-lbl { font-size: 13px; color: var(--ink-3); min-width: 3em; }
 #impModel { width: auto; max-width: 340px; height: 30px; font-size: 13px; }
-.imp-opts.dim { opacity: .4; pointer-events: none; }  /* 先不处理：范围用不上，留着位置不让对话框跳 */
+.imp-opts.dim { opacity: .4; pointer-events: none; }  /* 先不處理：範圍用不上，留著位置不讓對話方塊跳 */
 .seg button:disabled { opacity: .45; cursor: not-allowed; }
 .first-n { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-3); }
 .first-n .input { width: 64px; height: 28px; }
 .first-n[hidden] { display: none; }
 
-/* 帮助 */
+/* 幫助 */
 .help-head { display: flex; gap: 14px; align-items: center; margin-bottom: 8px; }
 .help-head .hero { width: 44px; height: 44px; }
 .help-head h2 { margin: 0 0 2px; font-family: var(--ui); }
@@ -178,7 +178,7 @@
   .steps li .btn { grid-column: 2; grid-row: auto; justify-self: start; margin-top: 8px; }
 }
 
-/* 侧栏：最近阅读 */
+/* 側欄：最近閱讀 */
 .side a.recent { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; border-radius: 8px; color: var(--ink-2); font-size: 13.5px; text-decoration: none; }
 .side a.recent span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .side a.recent em { font-style: normal; font-size: 11.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
@@ -190,12 +190,12 @@
   .lib.has-detail { grid-template-columns: var(--side-w, 248px) minmax(0, 1fr) 400px; }
 }
 
-/* 列表行上的“+ 标签” */
+/* 列表行上的“+ 標籤” */
 .row .add-tag { height: 20px; padding: 0 8px; border-radius: 10px; font-size: 11.5px; color: var(--ink-3); box-shadow: inset 0 0 0 1px var(--rule-2); opacity: 0; transition: opacity .12s; }
 .row:hover .add-tag, .row.on .add-tag { opacity: 1; }
 .row .add-tag:hover { color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
 
-/* 详情：顶上一条标题栏，关闭按钮放显眼处 */
+/* 詳情：頂上一條標題欄，關閉按鈕放顯眼處 */
 .detail-head { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; justify-content: space-between; height: 46px; padding: 0 12px 0 24px; background: var(--surface); border-bottom: 1px solid var(--rule); font-size: 13px; color: var(--ink-3); letter-spacing: .06em; }
 .detail-close { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; color: var(--ink-2); background: var(--bg); box-shadow: inset 0 0 0 1px var(--rule-2); }
 .detail-close:hover { color: var(--ink); background: var(--accent-soft-2); }
@@ -205,7 +205,7 @@
 .detail .seg { margin-bottom: 4px; }
 .mine-line { font-size: 13px; color: var(--ink-2); margin: 10px 0 0; }
 
-/* 侧栏（sidebar.js）：置顶 / 分类 / 最近阅读 */
+/* 側欄（sidebar.js）：置頂 / 分類 / 最近閱讀 */
 .side h3 { display: flex; align-items: center; justify-content: space-between; }
 .side .h-add { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; color: var(--ink-3); }
 .side .h-add:hover { background: var(--accent-soft-2); color: var(--ink); }
@@ -223,14 +223,14 @@
 .side .srow.on { background: var(--accent-soft-2); color: var(--ink); font-weight: 500; }
 .side .srow.on svg.i { color: var(--accent); }
 .side .srow.paper svg.i { color: var(--accent); }
-.side .srow.editing { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); cursor: text; }  /* 和普通行同高同缩进，只多一圈细框 */
+.side .srow.editing { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); cursor: text; }  /* 和普通行同高同縮排，只多一圈細框 */
 .side .side-input { flex: 1; min-width: 0; height: 100%; padding: 0; margin: 0; border: 0; outline: 0; background: none; font: inherit; color: var(--ink); caret-color: var(--accent); }
 .side .hint-row, .side .toggle-more { color: var(--ink-3); font-size: 12.5px; }
-.side .toggle-more { height: 28px; }  /* 和上面的论文标题左对齐 */
+.side .toggle-more { height: 28px; }  /* 和上面的論文標題左對齊 */
 .side.dragging [data-drop-zone] .srow:is([data-cat], [data-view="starred"], [data-view="reading"], [data-view="unread"], [data-view="done"]) { outline: 1px dashed var(--rule-2); outline-offset: -1px; }
 .side .srow.drop { background: var(--accent-soft-2); box-shadow: inset 0 0 0 1.5px var(--accent); color: var(--ink); }
 
-/* 列表行上的分类、详情里的分类开关 */
+/* 列表行上的分類、詳情裡的分類開關 */
 .row .chip.cat { display: inline-flex; align-items: center; gap: 3px; }
 .row .chip.cat svg { width: 11px; height: 11px; color: var(--ink-3); }
 .row[draggable="true"] { -webkit-user-drag: element; }

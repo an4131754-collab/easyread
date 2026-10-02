@@ -22,7 +22,7 @@ jobs:
           - name: macOS
             os: macos-latest
           - name: Linux
-            os: ubuntu-22.04  # 用老系统打包：24.04 上打的 libpython 要新 glibc，22.04 及更老的机器打不开（AppImage 目录测试就挂在这）
+            os: ubuntu-22.04  # 用老系統打包：24.04 上打的 libpython 要新 glibc，22.04 及更老的機器打不開（AppImage 目錄測試就掛在這）
     steps:
       - name: Check out source
         uses: actions/checkout@v4
@@ -50,7 +50,7 @@ jobs:
       - name: Check glibc floor of the bundled libpython
         if: runner.os == 'Linux'
         shell: bash
-        # 冒烟测试和打包在同一台机器上，查不出"打包机 glibc 比用户新"；1.2.5 就是这样在 22.04 上打不开
+        # 冒煙測試和打包在同一臺機器上，查不出"打包機 glibc 比使用者新"；1.2.5 就是這樣在 22.04 上打不開
         run: |
           lib="$(python -c "import sysconfig, os; print(os.path.join(sysconfig.get_config_var('LIBDIR'), sysconfig.get_config_var('LDLIBRARY')))")"
           need="$(objdump -T "$lib" | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -1)"
@@ -60,7 +60,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: easyread-${{ matrix.name }}
-          # 只要安装包本身；dist/electron 里还有解包后的程序目录（Mac 的 .app 里有上百个文件）
+          # 只要安裝包本身；dist/electron 裡還有解包後的程式目錄（Mac 的 .app 裡有上百個檔案）
           path: |
             dist/electron/*.exe
             dist/electron/*.dmg
@@ -86,4 +86,4 @@ jobs:
             release-assets/**/*.exe
             release-assets/**/*.dmg
             release-assets/**/*.AppImage
-          generate_release_notes: false  # 发版说明手写，只往已有的 Release 上挂安装包
+          generate_release_notes: false  # 發版說明手寫，只往已有的 Release 上掛安裝包

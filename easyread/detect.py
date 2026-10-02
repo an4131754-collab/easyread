@@ -1,4 +1,4 @@
-"""看看这台机器上有哪些现成能用的翻译引擎：Claude Code、Codex CLI、本机 Ollama。给设置页和首次引导用。"""
+"""看看這臺機器上有哪些現成能用的翻譯引擎：Claude Code、Codex CLI、本機 Ollama。給設定頁和首次引導用。"""
 from __future__ import annotations
 
 import json
@@ -22,7 +22,7 @@ def _ollama() -> dict:
 
 
 def detect(cfg: dict, fresh: bool = False) -> dict:
-    """查一次要 1–2 秒（要跑 claude --version）。有缓存就直接给，过期了在后台刷新，页面不用等。"""
+    """查一次要 1–2 秒（要跑 claude --version）。有快取就直接給，過期了在背景重新整理，頁面不用等。"""
     with _lock:
         cached = _cache.get("data")
         if cached and not fresh:
@@ -34,7 +34,7 @@ def detect(cfg: dict, fresh: bool = False) -> dict:
 
 
 def warm(cfg: dict) -> None:
-    """服务启动时先在后台查一遍，第一次打开设置就不用等。"""
+    """服務啟動時先在背景查一遍，第一次開啟設定就不用等。"""
     threading.Thread(target=_refresh, args=(cfg,), daemon=True).start()
 
 
@@ -69,7 +69,7 @@ def needs_key(o: dict) -> bool:
 
 
 def ready(cfg: dict, found: dict) -> bool:
-    """当前选的引擎看起来能用吗（首次引导据此提示）。"""
+    """當前選的引擎看起來能用嗎（首次引導據此提示）。"""
     e = cfg.get("engine")
     if e in ("claude", "codex"):
         return bool(found.get(e, {}).get("found"))

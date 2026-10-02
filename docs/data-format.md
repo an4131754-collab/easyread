@@ -1,4 +1,4 @@
-# 数据格式
+# 資料格式
 
 ## paper.json
 
@@ -6,101 +6,101 @@
 {
   "schema": 2,
   "meta": {
-    "title_zh": "给评测加上误差条：语言模型评测的统计学方法",
-    "short_zh": "给评测加上误差条",
+    "title_zh": "給評測加上誤差條：語言模型評測的統計學方法",
+    "short_zh": "給評測加上誤差條",
     "title_en": "Adding Error Bars to Evals: ...",
     "authors": "Evan Miller", "affiliation": "Anthropic",
     "date": "2024 年 11 月 4 日", "arxiv": "arXiv:2411.00640v1 [stat.AP]",
     "pdf": "source.pdf", "source_sha256": "…", "pages": [{"n": 1, "w": 612, "h": 792, "img": "pages/page-001.webp"}]
   },
-  "translation": { "scope": "全文", "done_pages": [1, 2, 3], "note": "参考文献保留原文" },
-  "glossary": [{ "en": "standard error", "zh": "标准误", "note": "可选" }],
-  "references": [{ "id": "1", "text": "原文条目" }],
+  "translation": { "scope": "全文", "done_pages": [1, 2, 3], "note": "參考文獻保留原文" },
+  "glossary": [{ "en": "standard error", "zh": "標準誤", "note": "可選" }],
+  "references": [{ "id": "1", "text": "原文條目" }],
   "blocks": [ … ]
 }
 ```
 
-`translation.en_pages`：用“只读原文”整理过、还没翻译的页（这些页的块只有 `en`，没有 `zh`；页面直接排英文）。翻译它们时就地补 `zh`，块 id 不变，补齐的页从 `en_pages` 去掉。`done_pages` 包含这些页。
+`translation.en_pages`：用“只讀原文”整理過、還沒翻譯的頁（這些頁的塊只有 `en`，沒有 `zh`；頁面直接排英文）。翻譯它們時就地補 `zh`，塊 id 不變，補齊的頁從 `en_pages` 去掉。`done_pages` 包含這些頁。
 
-`meta.pages`、`page_count`、`source_sha256`、`pdf` 由导入时写，不要手改。文献库页里改的标题、作者等存在 `item.json` 的 `meta_override`，不改 paper.json。
+`meta.pages`、`page_count`、`source_sha256`、`pdf` 由匯入時寫，不要手改。文獻庫頁裡改的標題、作者等存在 `item.json` 的 `meta_override`，不改 paper.json。
 
-### 块
+### 塊
 
-每块必须有唯一 `id`（后续讨论、笔记都锚在它上面，定下后不要改）、`type`、`page`（这块在原 PDF 从哪页开始）。
+每塊必須有唯一 `id`（後續討論、筆記都錨在它上面，定下後不要改）、`type`、`page`（這塊在原 PDF 從哪頁開始）。
 
-| type | 字段 | 说明 |
+| type | 欄位 | 說明 |
 |---|---|---|
-| `heading` | `level`(1/2)、`num`、`zh`、`en`、`appendix` | 章节标题。`num` 如 "2.1"、"A"；附录的标题加 `"appendix": true` |
-| `para` | `zh`、`en`、`role`、`cont` | 段落。`role: "abstract"` 用摘要样式；`cont: true` 表示接着公式的半句（如 “其中 …”） |
+| `heading` | `level`(1/2)、`num`、`zh`、`en`、`appendix` | 章節標題。`num` 如 "2.1"、"A"；附錄的標題加 `"appendix": true` |
+| `para` | `zh`、`en`、`role`、`cont` | 段落。`role: "abstract"` 用摘要樣式；`cont: true` 表示接著公式的半句（如 “其中 …”） |
 | `list` | `ordered`、`items: [{zh, en}]` | 列表 |
-| `math` | `tex`、`tag` | 行间公式。`tag` 是原文编号（"1"），无编号不写。多行用 `aligned` / `gathered` |
-| `table` | `num`、`head: [[…]]`、`rows: [[…]]`、`align`、`caption_zh`、`caption_en`、`caption_pos` | 表格。单元格支持行内标记，`\n` 换行（第二行括号内容自动变灰，适合“均值\n(标准误)”）。`align` 如 "lrrr" |
-| `figure` | `num`、`src`、`caption_zh`、`caption_en` | 图。`src` 是论文目录下的图片（如 `figures/fig1.webp`），留空时页面显示“图见原文第 N 页” |
-| `references` | `zh`、`en` | 放参考文献列表的位置（内容取 `references`） |
-| `note` | `zh` | 正文流里的“阅读批注（非原文）”。尽量不用，解释放 discussion.json |
+| `math` | `tex`、`tag` | 行間公式。`tag` 是原文編號（"1"），無編號不寫。多行用 `aligned` / `gathered` |
+| `table` | `num`、`head: [[…]]`、`rows: [[…]]`、`align`、`caption_zh`、`caption_en`、`caption_pos` | 表格。單元格支援行內標記，`\n` 換行（第二行括號內容自動變灰，適合“均值\n(標準誤)”）。`align` 如 "lrrr" |
+| `figure` | `num`、`src`、`caption_zh`、`caption_en` | 圖。`src` 是論文目錄下的圖片（如 `figures/fig1.webp`），留空時頁面顯示“圖見原文第 N 頁” |
+| `references` | `zh`、`en` | 放參考文獻列表的位置（內容取 `references`） |
+| `note` | `zh` | 正文流裡的“閱讀批註（非原文）”。儘量不用，解釋放 discussion.json |
 
-可选 `box: [x0, y0, x1, y1]`（按页宽高归一化）手工指定原页高亮区域，覆盖自动定位。
+可選 `box: [x0, y0, x1, y1]`（按頁寬高歸一化）手工指定原頁高亮區域，覆蓋自動定位。
 
-浮动体（表、图）放在正文第一次提到它的段落之后，`page` 仍写它实际所在页。
+浮動體（表、圖）放在正文第一次提到它的段落之後，`page` 仍寫它實際所在頁。
 
-新增一批块（`easyread blocks ID --from 批次.json --done 4-6`）时可带 `"_after": "某块id"` 指定插入位置，否则追加到末尾；同 id 的块整块替换。
+新增一批塊（`easyread blocks ID --from 批次.json --done 4-6`）時可帶 `"_after": "某塊id"` 指定插入位置，否則追加到末尾；同 id 的塊整塊替換。
 
-### 行内标记（zh、en、单元格、讨论正文通用）
+### 行內標記（zh、en、單元格、討論正文通用）
 
-- `$...$` 行内公式（KaTeX）；字面美元符写 `\$`
-- `**粗体**`、`*斜体*`、`` `代码` ``
-- `[7]`、`[2, 5]` 自动链到参考文献
-- 中文里的“公式 (4)”“公式 (9) 和 (10)”“表 2”“图 3”“第 2.2 节”“附录 A”，英文里的 “Equation 4”“Table 2”“Section 2.2”“Appendix A”，自动变成可悬停预览、点击跳转的链接（目标要存在）
-- 讨论正文里空行分段；单独一段 `$$...$$` 是行间公式
+- `$...$` 行內公式（KaTeX）；字面美元符寫 `\$`
+- `**粗體**`、`*斜體*`、`` `程式碼` ``
+- `[7]`、`[2, 5]` 自動鏈到參考文獻
+- 中文裡的“公式 (4)”“公式 (9) 和 (10)”“表 2”“圖 3”“第 2.2 節”“附錄 A”，英文裡的 “Equation 4”“Table 2”“Section 2.2”“Appendix A”，自動變成可懸停預覽、點選跳轉的連結（目標要存在）
+- 討論正文裡空行分段；單獨一段 `$$...$$` 是行間公式
 
-JSON 里 TeX 的反斜杠要写两个（`\\frac`）。`\f` `\b` `\t` `\n` `\r` 开头的命令（`\frac`、`\bar`、`\text`、`\nu`、`\right`）写错会被 JSON 悄悄吃掉，`paper.py check` 会报“含控制字符”。
+JSON 裡 TeX 的反斜槓要寫兩個（`\\frac`）。`\f` `\b` `\t` `\n` `\r` 開頭的命令（`\frac`、`\bar`、`\text`、`\nu`、`\right`）寫錯會被 JSON 悄悄吃掉，`paper.py check` 會報“含控制字元”。
 
 ## discussion.json
 
 ```json
 { "schema": 2, "entries": [
-  { "id": "d001-ab12c", "anchor": "s2-1-p4", "quote": "对它（即“真实”的平均评测分数）进行推断",
-    "kind": "check", "title": "原句漏了一个符号", "body": "…", "at": "…" }
+  { "id": "d001-ab12c", "anchor": "s2-1-p4", "quote": "對它（即“真實”的平均評測分數）進行推斷",
+    "kind": "check", "title": "原句漏了一個符號", "body": "…", "at": "…" }
 ]}
 ```
 
-| 字段 | 说明 |
+| 欄位 | 說明 |
 |---|---|
-| `anchor` | 块 id；不写表示整篇（显示在题头旁） |
-| `quote` | 可选，锚点块**译文**里的一段原话（纯文字，不能含 `$` 公式），页面会给它加下划线 |
-| `kind` | `explain` 解释 / `qa` 问答 / `insight` 感悟 / `reply` 回复用户问题 / `check` 原文核对提示 |
-| `title`、`q`、`body` | 标题、问题（问答用）、正文（必填，支持行内标记） |
-| `reply_to` | 回复用户笔记时填笔记 id（`easyread status` 里能看到），锚点自动跟随那条笔记 |
+| `anchor` | 塊 id；不寫表示整篇（顯示在題頭旁） |
+| `quote` | 可選，錨點塊**譯文**裡的一段原話（純文字，不能含 `$` 公式），頁面會給它加下劃線 |
+| `kind` | `explain` 解釋 / `qa` 問答 / `insight` 感悟 / `reply` 回覆使用者問題 / `check` 原文核對提示 |
+| `title`、`q`、`body` | 標題、問題（問答用）、正文（必填，支援行內標記） |
+| `reply_to` | 回覆使用者筆記時填筆記 id（`easyread status` 裡能看到），錨點自動跟隨那條筆記 |
 
-用 `easyread discuss ID --from 文件.json` 追加（数组或单个对象）；带已有 `id` 是修改；`--delete ID` 删除。`id`、`at` 不写会自动生成。
+用 `easyread discuss ID --from 檔案.json` 追加（陣列或單個物件）；帶已有 `id` 是修改；`--delete ID` 刪除。`id`、`at` 不寫會自動生成。
 
-## reader.json（只读）
+## reader.json（只讀）
 
 ```json
 { "rev": 12,
-  "edits": { "s1-p3": { "zh": "用户版本", "base": "改时译者稿的哈希", "at": "…" },
+  "edits": { "s1-p3": { "zh": "使用者版本", "base": "改時譯者稿的雜湊", "at": "…" },
              "tab1#caption": { … }, "s1-recs#2": { … } },
   "notes": { "n…": { "id": "n…", "anchor": "s1-p2", "key": "s1-p2", "quote": "…", "prefix": "…", "suffix": "…",
                     "kind": "note | question | highlight", "color": "yellow | green | blue | pink",
                     "body": "…", "created": "…", "updated": "…", "deleted": false } },
-  "paper_note": { "body": "整篇的论文笔记", "at": "…" },
+  "paper_note": { "body": "整篇的論文筆記", "at": "…" },
   "progress": { "block": "s3-1-p2", "ratio": 0.35, "at": "…" } }
 ```
 
-编辑的键：普通块是块 id，表/图题注是 `id#caption`，列表项是 `id#序号`。页面只通过 `/api/p/ID/ops` 发操作（`edit`、`note`、`note_del`、`paper_note`、`progress`），每个操作幂等、带时间戳，同一对象以较新的为准；服务端加锁、原子写、记日志。离线版导出的修改用 `easyread merge ID --from 导出.json` 并回。
+編輯的鍵：普通塊是塊 id，表/圖題注是 `id#caption`，列表項是 `id#序號`。頁面只通過 `/api/p/ID/ops` 發操作（`edit`、`note`、`note_del`、`paper_note`、`progress`），每個操作冪等、帶時間戳，同一物件以較新的為準；服務端加鎖、原子寫、記日誌。離線版匯出的修改用 `easyread merge ID --from 匯出.json` 並回。
 
-## item.json（只读）
+## item.json（只讀）
 
 ```json
-{ "added": "…", "tags": ["统计"], "status": "unread | reading | done", "starred": false,
+{ "added": "…", "tags": ["統計"], "status": "unread | reading | done", "starred": false,
   "last_opened": "…", "meta_override": { "title_zh": "…" } }
 ```
 
-## job.json（后台任务状态）
+## job.json（背景任務狀態）
 
-`{"type": "translate", "state": "queued | running | done | partial | error | cancelled", "message": "…", "done": 4, "total": 14, "error": "", "failed": {"7": "原因"}, "scope": "all | body | first:N"}`。服务重启后 queued / running 的任务会自动继续。`partial` 表示有页没译成功（`failed` 里是页码和原因），页面上可以一键重试。每篇的翻译过程记在 `job.log`。
+`{"type": "translate", "state": "queued | running | done | partial | error | cancelled", "message": "…", "done": 4, "total": 14, "error": "", "failed": {"7": "原因"}, "scope": "all | body | first:N"}`。服務重啟後 queued / running 的任務會自動繼續。`partial` 表示有頁沒譯成功（`failed` 裡是頁碼和原因），頁面上可以一鍵重試。每篇的翻譯過程記在 `job.log`。
 
-## layout.json（自动生成的原页定位）
+## layout.json（自動生成的原頁定位）
 
 ```json
 { "s1-p3": {
@@ -109,30 +109,30 @@ JSON 里 TeX 的反斜杠要写两个（`\\frac`）。`\f` `\b` `\t` `\n` `\r` �
 } }
 ```
 
-每个坐标框都是按原页宽高归一化的 `[x0, y0, x1, y1]`。跨栏段落的可选 `boxes` 保存各栏的独立区域，按从左到右排列；原页高亮和点击定位逐个使用这些区域，保留栏间空白。`box` 保留整体外接框以兼容旧数据；没有 `boxes` 时只使用 `box`。图表仍使用包含图像的完整区域。
+每個座標框都是按原頁寬高歸一化的 `[x0, y0, x1, y1]`。跨欄段落的可選 `boxes` 儲存各欄的獨立區域，按從左到右排列；原頁高亮和點選定位逐個使用這些區域，保留欄間空白。`box` 保留整體外接框以相容舊資料；沒有 `boxes` 時只使用 `box`。圖表仍使用包含影像的完整區域。
 
-服务首次打开已有文献时会用本地字符坐标重算定位，无需重新翻译；离线导出会包含同样的定位数据和高亮逻辑。
+服務首次開啟已有文獻時會用本地字元座標重算定位，無需重新翻譯；離線匯出會包含同樣的定位資料和高亮邏輯。
 
-## chat.json（“问 AI”的对话记录，只有服务写）
+## chat.json（“問 AI”的對話記錄，只有服務寫）
 
 ```json
 { "threads": [
-  { "id": "t…", "title": "我标红的那些公式有什么联系", "model": "opus", "created": "…", "updated": "…",
+  { "id": "t…", "title": "我標紅的那些公式有什麼聯絡", "model": "opus", "created": "…", "updated": "…",
     "messages": [
       { "role": "user", "content": "…", "anchor": "s1-recs", "quote": "", "note": null, "at": "…" },
       { "id": "m…", "role": "assistant", "content": "……", "model": "Claude Opus 5", "anchor": "s1-recs", "note": null, "at": "…" } ] } ] }
 ```
 
-一篇论文可以有多个对话。`note` 不为空时，这次是在回答页边那条笔记里的问题，回答同时写进 discussion.json（`reply_to` 那条笔记，`live: true`）。“放到页边”把一条回答写成 discussion.json 里的 `qa` 条目。提问时会把读者的全部标记（按颜色分组）一起交给模型。
+一篇論文可以有多個對話。`note` 不為空時，這次是在回答頁邊那條筆記裡的問題，回答同時寫進 discussion.json（`reply_to` 那條筆記，`live: true`）。“放到頁邊”把一條回答寫成 discussion.json 裡的 `qa` 條目。提問時會把讀者的全部標記（按顏色分組）一起交給模型。
 
-## 数据目录里的其他文件
+## 資料目錄裡的其他檔案
 
-| 文件 | 内容 |
+| 檔案 | 內容 |
 |---|---|
-| `config.json` | 设置：翻译引擎、各家 API Key（`openai.keys`，按服务商分开存）、问 AI 的模型名单和默认模型（`chat.models`、`chat.default`） |
-| `prefs.json` | 界面偏好：阅读页字号、版心、主题、划线笔（`reader`），功能开关和快捷键总开关（`ui`），改过的键位（`keys`） |
-| `easyread.log` | 服务日志，设置底部“查看运行日志”能看到 |
+| `config.json` | 設定：翻譯引擎、各家 API Key（`openai.keys`，按服務商分開存）、問 AI 的模型名單和預設模型（`chat.models`、`chat.default`） |
+| `prefs.json` | 介面偏好：閱讀頁字號、版心、主題、劃線筆（`reader`），功能開關和快捷鍵總開關（`ui`），改過的鍵位（`keys`） |
+| `easyread.log` | 服務日誌，設定底部“檢視執行日誌”能看到 |
 
-## 为什么用 JSON 文件而不是数据库
+## 為什麼用 JSON 檔案而不是資料庫
 
-EasyRead 是个人工具：一个人、一台电脑、几十到几百篇论文。每篇一个文件夹、几个 JSON，好处是能直接看、能直接备份和同步（网盘、git 都行），agent 在对话里也能直接读写；按“谁写哪个文件”分开之后，也不需要数据库的并发控制。文献库列表每次扫描各文件夹生成，几百篇以内是毫秒级。浏览器 localStorage 只用来暂存还没写进文件的修改和缓存偏好，不是数据的正本。
+EasyRead 是個人工具：一個人、一臺電腦、幾十到幾百篇論文。每篇一個資料夾、幾個 JSON，好處是能直接看、能直接備份和同步（網盤、git 都行），agent 在對話裡也能直接讀寫；按“誰寫哪個檔案”分開之後，也不需要資料庫的併發控制。文獻庫列表每次掃描各資料夾生成，幾百篇以內是毫秒級。瀏覽器 localStorage 只用來暫存還沒寫進檔案的修改和快取偏好，不是資料的正本。

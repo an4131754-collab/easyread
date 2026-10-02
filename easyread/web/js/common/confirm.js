@@ -1,8 +1,8 @@
-/* 页面内的确认框和输入框，代替浏览器自带的 confirm() / prompt()（那种灰框太丑，也不跟主题）。
+/* 頁面內的確認框和輸入框，代替瀏覽器自帶的 confirm() / prompt()（那種灰框太醜，也不跟主題）。
    PR.confirm({title, body, ok, danger, at}) → Promise<boolean>
    PR.promptText({title, value, placeholder, ok, at}) → Promise<string|null>
-   at：贴着哪个元素或哪个点弹出；不给就用刚才菜单弹出的位置，再没有就放在屏幕中间。
-   Enter 确定，Esc 或点外面取消。 */
+   at：貼著哪個元素或哪個點彈出；不給就用剛才選單彈出的位置，再沒有就放在螢幕中間。
+   Enter 確定，Esc 或點外面取消。 */
 (function (PR) {
   "use strict";
   let cur = null;
@@ -35,7 +35,7 @@
         '<div class="cf-title">' + PR.esc(o.title || "") + "</div>" +
         (o.body ? '<div class="cf-body">' + PR.esc(o.body) + "</div>" : "") +
         (withInput ? '<input class="input cf-input" maxlength="' + (o.max || 60) + '" placeholder="' + PR.esc(o.placeholder || "") + '">' : "") +
-        '<div class="cf-acts"><button class="btn sm" data-cf="no">取消</button><button class="btn sm ' + (o.danger ? "danger-fill" : "accent") + '" data-cf="ok">' + PR.esc(o.ok || "确定") + "</button></div>");
+        '<div class="cf-acts"><button class="btn sm" data-cf="no">取消</button><button class="btn sm ' + (o.danger ? "danger-fill" : "accent") + '" data-cf="ok">' + PR.esc(o.ok || "確定") + "</button></div>");
       document.body.appendChild(box);
       const inp = box.querySelector(".cf-input");
       if (inp) inp.value = o.value || "";

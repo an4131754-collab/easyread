@@ -1,6 +1,6 @@
-/* 阅读页 · 面板与浮层：抽屉、右侧面板（原页 / 笔记）、设置、操作条、选区条、悬浮卡 */
+/* 閱讀頁 · 面板與浮層：抽屜、右側面板（原頁 / 筆記）、設定、操作條、選區條、懸浮卡 */
 
-/* 左侧抽屉 */
+/* 左側抽屜 */
 #drawer { position: fixed; top: 0; bottom: 0; left: 0; z-index: 70; width: 320px; max-width: 86vw; background: var(--surface); box-shadow: var(--shadow); transform: translateX(-102%); transition: transform .22s cubic-bezier(.2, .8, .2, 1); display: flex; flex-direction: column; }
 body.drawer-open #drawer { transform: none; }
 #scrim { position: fixed; inset: 0; z-index: 65; background: rgba(20, 18, 15, .18); opacity: 0; pointer-events: none; transition: opacity .25s; }
@@ -26,11 +26,11 @@ body.drawer-open #scrim { opacity: 1; pointer-events: auto; }
 .about p { margin: 0 0 8px; line-height: 1.8; color: var(--ink-2); }
 .about .row { display: flex; gap: 6px; flex-wrap: wrap; }
 
-/* 右侧面板（原页 / 笔记，一次一个） */
+/* 右側面板（原頁 / 筆記，一次一個） */
 .side-panel { position: fixed; top: var(--bar-h); right: 0; bottom: 0; z-index: 40; width: var(--side-w); background: var(--surface); border-left: 1px solid var(--rule); transform: translateX(102%); transition: transform .22s cubic-bezier(.2, .8, .2, 1); display: flex; flex-direction: column; }
 body.pv-open #pageview, body.np-open #notespanel { transform: none; }
 @media (min-width: 1180px) {
-  /* 右侧开着面板：边注收进正文（页边的小数字），版心在剩下的地方居中，放不下就变窄 */
+  /* 右側開著面板：邊注收進正文（頁邊的小數字），版心在剩下的地方居中，放不下就變窄 */
   body.side-open #stage { grid-template-columns: var(--gutter) minmax(0, var(--measure)) var(--gutter); width: min(calc(var(--measure) + 2 * var(--gutter)), calc(100vw - var(--side-w) - 24px));
     margin-right: calc(var(--side-w) + 8px); margin-left: max(12px, calc((100vw - var(--side-w) - var(--measure) - 2 * var(--gutter)) / 2)); }
 }
@@ -49,12 +49,12 @@ body.pv-zoom .pv-page { width: 165%; max-width: none; }
 .pv-region { position: absolute; border-radius: 3px; background: rgba(236, 196, 92, .22); box-shadow: 0 0 0 2px rgba(214, 160, 40, .55); }
 .pv-hl.on { opacity: 1; }
 .pv-page.pickable { cursor: pointer; }
-/* 正文里和原页框对应的段：同一个琥珀色，左边一道竖条 + 很淡的底色，不抢正文 */
+/* 正文裡和原頁框對應的段：同一個琥珀色，左邊一道豎條 + 很淡的底色，不搶正文 */
 body.pv-open .blk.pv-pair { background: rgba(236, 196, 92, .09); box-shadow: 0 0 0 6px rgba(236, 196, 92, .09); }
 body.pv-open .blk.pv-pair::before { background: rgba(214, 160, 40, .8); opacity: 1; }
 
-/* 笔记面板 */
-/* 笔记、问 AI 和原页一样宽（约占右侧 44%）；窄屏时盖在正文上 */
+/* 筆記面板 */
+/* 筆記、問 AI 和原頁一樣寬（約佔右側 44%）；窄屏時蓋在正文上 */
 @media (max-width: 1179px) { #notespanel, #chatpanel { width: min(600px, 100vw); } }
 @media (max-width: 760px) { #pageview { width: 100vw; } .pv-follow { white-space: nowrap; } }
 .np-head { display: flex; align-items: center; gap: 6px; height: 50px; padding: 0 10px 0 14px; border-bottom: 1px solid var(--rule); flex: none; }
@@ -90,7 +90,7 @@ body.pv-open .blk.pv-pair::before { background: rgba(214, 160, 40, .8); opacity:
 .np-preview { flex: 1; overflow-y: auto; font: 15px/1.9 var(--serif-zh); color: var(--ink); padding: 4px 4px 30px; }
 .np-preview p { margin: 0 0 .9em; }
 
-/* 阅读设置 */
+/* 閱讀設定 */
 #settings { top: calc(var(--bar-h) + 6px); right: 12px; width: 300px; padding: 14px 16px; font-size: 13px; }
 #settings .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 12px; }
 #settings .row:last-child { margin-bottom: 0; }
@@ -100,7 +100,7 @@ body.pv-open .blk.pv-pair::before { background: rgba(214, 160, 40, .8); opacity:
 #settings .hintrow .grow { flex: 1; }
 #settings .hintrow { justify-content: flex-start; gap: 4px; color: var(--ink-3); font-size: 12px; border-top: 1px solid var(--rule); padding-top: 10px; }
 
-/* 段落操作条、选区条 */
+/* 段落操作條、選區條 */
 #blockbar, #selbar { display: flex; align-items: center; padding: 3px; gap: 1px; border-radius: 10px; }
 #blockbar button, #selbar > button { height: 30px; padding: 0 9px; border-radius: 7px; font-size: 12.5px; color: var(--ink-2); display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
 #blockbar button:hover, #selbar > button:hover { background: var(--accent-soft); color: var(--ink); }
@@ -108,7 +108,7 @@ body.pv-open .blk.pv-pair::before { background: rgba(214, 160, 40, .8); opacity:
 #selbar .dots button { width: 17px; height: 17px; }
 #selbar .dots button:hover { transform: scale(1.15); }
 
-/* 悬浮卡 */
+/* 懸浮卡 */
 .popover#popover { max-width: min(520px, 92vw); padding: 12px 16px; font: 13.5px/1.7 var(--ui); color: var(--ink-2); }
 #popover.wide { width: min(460px, 92vw); }
 #popover .ref { font: 13px/1.65 var(--serif-en); color: var(--ink); overflow-wrap: anywhere; }
@@ -121,7 +121,7 @@ body.pv-open .blk.pv-pair::before { background: rgba(214, 160, 40, .8); opacity:
 .pv-page.loading { min-height: 60vh; background: linear-gradient(100deg, var(--surface) 30%, var(--surface-2) 50%, var(--surface) 70%) 0 0 / 300% 100%; animation: pv-shimmer 1.2s linear infinite; }
 @keyframes pv-shimmer { to { background-position: -300% 0; } }
 
-/* 跳转后的“返回刚才读的地方” */
+/* 跳轉後的“返回剛才讀的地方” */
 .jump-back { position: fixed; left: 20px; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 45; display: inline-flex; align-items: center; gap: 7px; max-width: min(420px, calc(100vw - 40px)); height: 38px; padding: 0 14px 0 11px; border-radius: 19px; font-size: 13px; color: #fff; background: var(--accent); box-shadow: var(--shadow); }
 .jump-back span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .jump-back em { font-style: normal; font-size: 11px; min-width: 18px; height: 18px; line-height: 18px; border-radius: 9px; background: rgba(255,255,255,.25); text-align: center; }

@@ -7,7 +7,7 @@ from easyread.store import Workspace
 
 class ReaderOpsTest(unittest.TestCase):
     def test_deletion_wins_over_delayed_creation_in_both_orders(self):
-        note = {"op": "note", "note": {"id": "n1", "body": "旧笔记", "updated": "2026-10-01T00:01:00Z"}}
+        note = {"op": "note", "note": {"id": "n1", "body": "舊筆記", "updated": "2026-10-01T00:01:00Z"}}
         delete = {"op": "note_del", "id": "n1", "at": "2026-10-01T00:02:00Z"}
         for ops in [[note, delete], [delete, note]]:
             with self.subTest(ops=ops), tempfile.TemporaryDirectory() as d:

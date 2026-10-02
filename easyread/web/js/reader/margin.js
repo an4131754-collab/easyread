@@ -1,19 +1,19 @@
-/* 边注：共读讨论（discussion.json）和我的笔记（reader.json）。
-   宽屏排在正文右侧、贴着对应段落；窄屏或开着侧面板时收成段尾角标，点开在段落下方。 */
+/* 邊注：共讀討論（discussion.json）和我的筆記（reader.json）。
+   寬屏排在正文右側、貼著對應段落；窄屏或開著側面板時收成段尾角標，點開在段落下方。 */
 (function (PR) {
   "use strict";
   const S = PR.state;
-  const KIND_LABEL = { explain: "AI · 解释", qa: "AI · 问答", insight: "AI · 补充", reply: "AI · 回答你的问题", check: "原文核对提示" };
+  const KIND_LABEL = { explain: "AI · 解釋", qa: "AI · 問答", insight: "AI · 補充", reply: "AI · 回答你的問題", check: "原文核對提示" };
   const expanded = new Set();
   PR.editingNote = null;
-  PR.asking = new Set();   // 正在等模型回答的问题
+  PR.asking = new Set();   // 正在等模型回答的問題
 
   PR.myNotes = () => Object.values(S.reader.notes || {}).filter((n) => !n.deleted);
   PR.repliesTo = (nid) => (S.discussion.entries || []).filter((e) => e.reply_to === nid);
   const anchorOf = (a) => (a && (a === "head" || PR.blockById[a]) ? a : "head");
   PR.anchorOfEntry = (e) => anchorOf(e.anchor || (((S.reader.notes || {})[e.reply_to] || {}).anchor));
 
-  /* 按锚点分组：组内按时间，agent 的回复紧跟在被回复的笔记后面 */
+  /* 按錨點分組：組內按時間，agent 的回覆緊跟在被回覆的筆記後面 */
   function collect() {
     const groups = {};
     const push = (anchor, item) => { item.anchor = anchor; (groups[anchor] = groups[anchor] || []).push(item); };
@@ -42,22 +42,22 @@
         (d.q ? '<div class="q">' + PR.md(d.q) + "</div>" : "") +
         '<div class="body">' + PR.mdBlocks(d.body) + "</div>" +
         (PR.store.mode !== "server" ? "" : '<div class="acts">' + (d.reply_to && (S.reader.notes || {})[d.reply_to] && PR.canChat && PR.canChat() ? '<button data-a="regen">重新回答</button>' : "") +
-        '<button data-a="adel">删除</button></div>') + "</div>";
+        '<button data-a="adel">刪除</button></div>') + "</div>";
     }
     const answered = PR.repliesTo(d.id).length > 0;
     const asking = PR.asking.has(d.id);
-    const lbl = d.kind === "question" ? "我的问题 · " + (answered ? "已回复" : asking ? "模型思考中" : "待回答") : d.kind === "highlight" ? "我的划线" : "我的笔记";
+    const lbl = d.kind === "question" ? "我的問題 · " + (answered ? "已回覆" : asking ? "模型思考中" : "待回答") : d.kind === "highlight" ? "我的劃線" : "我的筆記";
     const lost = d.quote && PR.quoteLost && PR.quoteLost(d.id) ? " lost" : "";
     const editing = (editingId !== undefined ? editingId : PR.editingNote) === d.id;
-    const askLabel = d.kind === "question" ? (answered ? "追问 AI" : "让 AI 回答") : "让 AI 点评";
+    const askLabel = d.kind === "question" ? (answered ? "追問 AI" : "讓 AI 回答") : "讓 AI 點評";
     const ask = d.kind !== "highlight" && d.body && PR.canChat && PR.canChat() && PR.feature("chat")
       ? '<button data-a="ask" class="ask"' + (asking ? " disabled" : "") + ">" + (asking ? '<span class="spin"></span> 正在回答' : PR.icon("sparkle", "sm") + askLabel) + "</button>" : "";
     const body = editing
-      ? '<textarea placeholder="' + (d.kind === "question" ? "想问什么？可以点“让模型回答”，也可以留给下次和 agent 讨论" : "写下你的理解、疑问或联想…（支持 $公式$、**粗体**）") + '">' + PR.esc(d.body || "") + "</textarea>" +
-        '<div class="kinds"><button data-k="note" class="' + (d.kind !== "question" ? "on" : "") + '">笔记</button><button data-k="question" class="' + (d.kind === "question" ? "on" : "") + '">问题</button>' +
-        colorDots(d) + '<span class="hint">自动保存 · Esc 收起</span></div>'
+      ? '<textarea placeholder="' + (d.kind === "question" ? "想問什麼？可以點“讓模型回答”，也可以留給下次和 agent 討論" : "寫下你的理解、疑問或聯想…（支援 $公式$、**粗體**）") + '">' + PR.esc(d.body || "") + "</textarea>" +
+        '<div class="kinds"><button data-k="note" class="' + (d.kind !== "question" ? "on" : "") + '">筆記</button><button data-k="question" class="' + (d.kind === "question" ? "on" : "") + '">問題</button>' +
+        colorDots(d) + '<span class="hint">自動儲存 · Esc 收起</span></div>'
       : '<div class="body">' + PR.mdBlocks(d.body) + "</div>" + (ask ? '<div class="ask-row">' + ask + "</div>" : "") +
-        '<div class="acts"><button data-a="edit">编辑</button><button data-a="kind">' + (d.kind === "question" ? "改成笔记" : "改成问题") + '</button><button data-a="del">删除</button></div>';
+        '<div class="acts"><button data-a="edit">編輯</button><button data-a="kind">' + (d.kind === "question" ? "改成筆記" : "改成問題") + '</button><button data-a="del">刪除</button></div>';
     return '<div class="card mine' + (editing ? " editing" : "") + (d.color ? " c-" + d.color : "") + '" data-note="' + PR.esc(d.id) + '" data-anchor="' + PR.esc(item.anchor) + '">' +
       '<div class="lbl"><span>' + lbl + '</span><span class="meta">' + PR.shortTime(d.updated || d.created) + "</span></div>" +
       (d.quote ? '<div class="quote' + lost + '">「' + PR.md(d.quote, { cite: false, xref: false }) + "」</div>" : "") + body + "</div>";
@@ -67,7 +67,7 @@
   function colorDots(d) {
     if (!d.quote) return "";
     return '<span class="dots">' + ["yellow", "green", "blue", "pink"].map((c) =>
-      '<button data-color="' + c + '" class="dot-' + c + ((d.color || "yellow") === c ? " on" : "") + '" title="换颜色"></button>').join("") + "</span>";
+      '<button data-color="' + c + '" class="dot-' + c + ((d.color || "yellow") === c ? " on" : "") + '" title="換顏色"></button>').join("") + "</span>";
   }
 
   PR.marginWide = () => window.matchMedia("(min-width: 1240px)").matches &&
@@ -87,7 +87,7 @@
       if (wide) margin.insertAdjacentHTML("beforeend", html);
       else {
         const mine = items.every((i) => i.src === "mine");
-        host.appendChild(PR.el("button", { class: "note-pin" + (mine ? " mine" : ""), title: "讨论与笔记", "data-t": "pin", text: String(items.length) }));
+        host.appendChild(PR.el("button", { class: "note-pin" + (mine ? " mine" : ""), title: "討論與筆記", "data-t": "pin", text: String(items.length) }));
         host.appendChild(PR.el("div", { class: "inline-notes" }, html));
       }
     }
@@ -101,13 +101,13 @@
     const id = card.dataset.card || card.dataset.note;
     if (body && !expanded.has(id) && body.scrollHeight > 220) {
       card.classList.add("clamp");
-      card.insertAdjacentHTML("beforeend", '<button class="more" data-a="more">展开全文</button>');
+      card.insertAdjacentHTML("beforeend", '<button class="more" data-a="more">展開全文</button>');
     }
     const ta = card.querySelector("textarea");
     if (ta) PR.autosize(ta);
   }
 
-  /* 宽屏：卡片贴着锚点，放不下就往下顺延 */
+  /* 寬屏：卡片貼著錨點，放不下就往下順延 */
   PR.layoutMargin = function () {
     if (!PR.marginWide()) return;
     const margin = PR.$("#margin");
@@ -129,7 +129,7 @@
     margin.style.minHeight = Math.max(0, bottom) + "px";
   };
 
-  /* ---------- 笔记的增删改 ---------- */
+  /* ---------- 筆記的增刪改 ---------- */
   const noteById = (id) => (S.reader.notes || {})[id];
   PR.saveNote = function (note) { note.updated = PR.nowIso(); PR.commit({ op: "note", note }); };
 
@@ -167,7 +167,7 @@
     PR.renderMargin();
     PR.applyMarks && PR.applyMarks();
   };
-  /* 结束编辑：空笔记有原话就退回成划线，没有就删掉 */
+  /* 結束編輯：空筆記有原話就退回成劃線，沒有就刪掉 */
   PR.finishNote = function (n, value) {
     const body = value.trim();
     if (!body && n.kind !== "highlight") {
@@ -187,23 +187,23 @@
     }
   }, 600);
 
-  /* 笔记卡片上的“让 AI 回答 / 点评 / 追问”：在右侧“问 AI”面板里实时回答，答案同时成为这条笔记的回复 */
+  /* 筆記卡片上的“讓 AI 回答 / 點評 / 追問”：在右側“問 AI”面板裡實時回答，答案同時成為這條筆記的回覆 */
   PR.askModel = function (nid) {
     const n = noteById(nid);
     if (!n) return;
     const answered = PR.repliesTo(nid).length > 0;
     if (n.kind === "question" && answered) return PR.chatAsk({ anchor: n.anchor, quote: n.quote, draft: "" });
-    const text = n.kind === "question" ? n.body : "这是我读这里时写的笔记，请点评：我理解得对不对、有没有漏掉或想错的地方、还可以往哪想。\n\n我的笔记：" + n.body;
+    const text = n.kind === "question" ? n.body : "這是我讀這裡時寫的筆記，請點評：我理解得對不對、有沒有漏掉或想錯的地方、還可以往哪想。\n\n我的筆記：" + n.body;
     PR.chatAsk({ anchor: n.anchor, quote: n.quote, text, note: nid });
   };
   PR.on("job-finished", (j) => {
     if (j.kind !== "answer") return;
     PR.asking.delete(j.note);
-    if (j.state === "error") PR.toast("模型回答失败：" + PR.esc(j.message));
+    if (j.state === "error") PR.toast("模型回答失敗：" + PR.esc(j.message));
     PR.renderMargin(); PR.notesPanelOpen && PR.notesPanelOpen() && PR.renderNotesPanel();
   });
 
-  /* ---------- 卡片上的交互（边注和笔记面板共用） ---------- */
+  /* ---------- 卡片上的互動（邊注和筆記面板共用） ---------- */
   document.addEventListener("input", (e) => {
     if (e.target.matches("#margin .card textarea, .inline-notes .card textarea")) { PR.autosize(e.target); PR.autosaveNote(); PR.layoutMargin(); }
   });
@@ -216,7 +216,7 @@
     if (!e.target.matches("#margin .card textarea, .inline-notes .card textarea")) return;
     setTimeout(() => {
       const card = e.target.closest(".card");
-      if (!card || !card.isConnected) return;   // 卡片被重排替换掉了，新卡片已接手编辑
+      if (!card || !card.isConnected) return;   // 卡片被重排替換掉了，新卡片已接手編輯
       if (card.contains(document.activeElement)) return;
       if (PR.editingNote === card.dataset.note) { PR.autosaveNote.flush(); PR.closeNoteEditor(); }
     }, 150);
@@ -238,7 +238,7 @@
       else if (a.dataset.a === "del") {
         PR.commit({ op: "note_del", id: nid });
         PR.renderMargin(); PR.applyMarks(); inPanel && PR.renderNotesPanel();
-        PR.toast("已删除这条笔记", { label: "撤销", fn: () => { PR.saveNote(Object.assign({}, n, { deleted: false })); PR.renderMargin(); PR.applyMarks(); inPanel && PR.renderNotesPanel(); } });
+        PR.toast("已刪除這條筆記", { label: "撤銷", fn: () => { PR.saveNote(Object.assign({}, n, { deleted: false })); PR.renderMargin(); PR.applyMarks(); inPanel && PR.renderNotesPanel(); } });
       }
       return true;
     }
@@ -257,14 +257,14 @@
   };
   document.addEventListener("click", (e) => { if (e.target.closest("#margin, .inline-notes")) PR.cardClick(e, false); });
 
-  /* AI 写的卡片：删除；回答类的还能重新回答（删掉旧的，再问一次） */
+  /* AI 寫的卡片：刪除；回答類的還能重新回答（刪掉舊的，再問一次） */
   async function delAgent(id, regen, btn) {
     const e = (S.discussion.entries || []).find((x) => x.id === id);
     if (!e) return;
-    if (!regen && !(await PR.confirm({ title: "删除这条 AI 内容？", body: "删了不能撤销。", ok: "删除", danger: true, at: btn }))) return;
+    if (!regen && !(await PR.confirm({ title: "刪除這條 AI 內容？", body: "刪了不能撤銷。", ok: "刪除", danger: true, at: btn }))) return;
     try {
       await PR.api("/api/p/" + PR.pid + "/discussion_del", { method: "POST", body: { id } });
-    } catch (err) { return PR.toast("删除失败：" + PR.esc(err.message)); }
+    } catch (err) { return PR.toast("刪除失敗：" + PR.esc(err.message)); }
     S.discussion.entries = S.discussion.entries.filter((x) => x.id !== id);
     PR.renderMargin(); PR.applyMarks();
     if (PR.notesPanelOpen && PR.notesPanelOpen()) PR.renderNotesPanel();
