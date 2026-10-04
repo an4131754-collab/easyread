@@ -29,6 +29,32 @@ body { font-size: 15px; }
 .save-state[data-s="offline"] i, .save-state[data-s="error"] i { background: var(--danger); }
 .save-state[data-s="local"] i { background: var(--ink-3); }
 
+/* 對照模式的主次語言選擇 */
+.mode-control { display: inline-flex; align-items: center; gap: 3px; flex: none; }
+body.en-only #bar .mode-control { display: none; }
+.compare-order { position: relative; display: none; }
+body.mode-bi .compare-order { display: inline-flex; }
+.compare-order-trigger {
+  height: 30px; padding: 0 8px; border: 1px solid var(--rule); border-radius: 8px;
+  display: inline-flex; align-items: center; gap: 5px; background: color-mix(in srgb, var(--surface) 72%, transparent);
+  color: var(--ink-2); font-size: 12px; white-space: nowrap;
+}
+.compare-order-trigger:hover, .compare-order-trigger[aria-expanded="true"] { background: var(--accent-soft); color: var(--ink); }
+.compare-order-trigger:focus-visible, .compare-order-menu button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.compare-order-caret { color: var(--ink-3); font-size: 11px; }
+.compare-order-menu {
+  position: absolute; top: calc(100% + 7px); right: 0; z-index: 70; width: 174px; padding: 5px;
+  border: 1px solid var(--rule); border-radius: 10px; background: var(--surface); box-shadow: var(--shadow);
+}
+.compare-order-menu[hidden] { display: none; }
+.compare-order-menu button {
+  display: flex; align-items: center; width: 100%; height: 34px; padding: 0 9px; border-radius: 7px;
+  color: var(--ink-2); font-size: 12.5px; text-align: left; white-space: nowrap;
+}
+.compare-order-menu button:hover, .compare-order-menu button[aria-checked="true"] { background: var(--accent-soft); color: var(--ink); }
+.compare-order-menu button::after { content: "✓"; margin-left: auto; color: var(--accent); visibility: hidden; }
+.compare-order-menu button[aria-checked="true"]::after { visibility: visible; }
+
 /* ---------------- 版心 ---------------- */
 #stage {
   position: relative;
@@ -87,15 +113,20 @@ body.font-sans #paper { font-family: var(--sans-zh); letter-spacing: .01em; }
 body.mode-bi .en, .blk.show-en .en { display: block; }
 .translation-pair { display: flex; flex-direction: column; }
 body:not(.mode-bi) .blk.show-en .translation-pair { flex-direction: column-reverse; }
-body.mode-bi .translation-pair .en {
+body.mode-bi:not(.compare-zh-primary) .translation-pair .en {
   margin: 0; padding: 0; border: 0;
   font: 1em/var(--lh) var(--serif-en); color: var(--ink);
   letter-spacing: 0; text-align: left; hyphens: auto;
 }
-body.mode-bi .translation-pair .en + .translation {
+body.mode-bi:not(.compare-zh-primary) .translation-pair .en + .translation {
   display: block; margin: .55em 0 .2em; padding: 0 0 0 .9em; border-left: 2px solid var(--rule);
   font: .84em/1.66 var(--serif-zh); color: var(--ink-2); letter-spacing: 0; text-align: left;
 }
+body.mode-bi.compare-zh-primary .translation-pair { flex-direction: column-reverse; }
+body.mode-bi.compare-zh-primary .translation-pair .translation:not(.en-main) {
+  margin: 0; padding: 0; border: 0; font-size: 1em; line-height: var(--lh); color: var(--ink);
+}
+body.mode-bi.compare-zh-primary .caption.translation-pair .zh.translation:not(.en-main) { display: table; margin: 0 auto; }
 .en .katex { font-size: 1.04em; }
 
 /* 只讀原文（不翻譯）：沒譯的地方正文直接是英文，用英文襯線、左對齊、斷詞 */

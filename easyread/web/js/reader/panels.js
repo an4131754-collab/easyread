@@ -5,18 +5,37 @@
   const body = document.body;
 
   /* ---------- 偏好 ---------- */
-  const DEF = Object.assign({ theme: "auto" }, PR.TYPE_DEFAULTS);
+  const DEF = Object.assign({ theme: "auto", comparePrimary: "en" }, PR.TYPE_DEFAULTS);
   PR.prefs = Object.assign({}, DEF, PR.ls.get("easyread-prefs", {}));
+  function syncCompareOrder() {
+    const primary = PR.prefs.comparePrimary === "zh" ? "zh" : "en";
+    const label = PR.$("[data-compare-label]");
+    const compare = PR.$('[data-mode="bi"]');
+    if (label) label.textContent = primary === "zh" ? "中文為主" : "英文為主";
+    if (compare) compare.title = primary === "zh" ? "譯文在上、原文在下（B）" : "原文在上、譯文在下（B）";
+    PR.$$("[data-compare-primary]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.comparePrimary === primary)));
+  }
+  function closeCompareOrder(restoreFocus) {
+    const menu = PR.$("#compareOrderMenu"), trigger = PR.$("[data-compare-menu]");
+    if (!menu || !trigger) return;
+    menu.hidden = true;
+    trigger.setAttribute("aria-expanded", "false");
+    if (restoreFocus) trigger.focus();
+  }
   PR.applyPrefs = function () {
     const p = PR.prefs, root = document.documentElement;
+    if (p.comparePrimary !== "zh") p.comparePrimary = "en";
     root.style.setProperty("--fs", p.fs + "px");
     root.style.setProperty("--lh", p.lh);
     root.style.setProperty("--measure", p.measure + "em");
     PR.applyTheme(p.theme);
     body.classList.toggle("font-sans", p.font === "sans");
     body.classList.toggle("mode-bi", p.mode === "bi");
+    body.classList.toggle("compare-zh-primary", p.mode === "bi" && p.comparePrimary === "zh");
     body.classList.toggle("no-margin", !p.margin);
+    if (p.mode !== "bi") closeCompareOrder(false);
     PR.$$("#bar .seg button").forEach((b) => b.classList.toggle("on", b.dataset.mode === p.mode));
+    syncCompareOrder();
     PR.ls.set("easyread-prefs", Object.assign(PR.ls.get("easyread-prefs", {}), p));
     if (PR.store.mode === "server") PR.savePrefs("reader", p);
   };
@@ -101,6 +120,20 @@
   };
   PR.on("ui-changed", () => { PR.applyFeatures(); PR.hideBlockbar && PR.hideBlockbar(); PR.renderMargin && PR.renderMargin(); });
   PR.$("#bar").addEventListener("click", (e) => {
+    const choice = e.target.closest("[data-compare-primary]");
+    if (choice) {
+      PR.setPref("comparePrimary", choice.dataset.comparePrimary);
+      closeCompareOrder(true);
+      return;
+    }
+    const compareMenu = e.target.closest("[data-compare-menu]");
+    if (compareMenu) {
+      const menu = PR.$("#compareOrderMenu"), open = menu.hidden;
+      menu.hidden = !open;
+      compareMenu.setAttribute("aria-expanded", String(open));
+      if (open) requestAnimationFrame(() => PR.$('[data-compare-primary][aria-checked="true"]')?.focus());
+      return;
+    }
     const m = e.target.closest("[data-mode]");
     if (m) return PR.setPref("mode", m.dataset.mode);
     const a = e.target.closest("[data-act]");
@@ -115,7 +148,30 @@
   });
   document.addEventListener("mousedown", (e) => {
     if (!e.target.closest("#settings, [data-act=settings]")) PR.$("#settings").classList.remove("open");
+    if (!e.target.closest("#compareOrder")) closeCompareOrder(false);
     if (!e.target.closest("#popover, a.cite, a.xref, mark.hl, .stale-tag, #blockbar")) PR.hidePopover();
+  });
+  PR.$("#compareOrder").addEventListener("keydown", (e) => {
+    const items = Array.from(PR.$$("[data-compare-primary]"));
+    const item = e.target.closest("[data-compare-primary]");
+    if (e.key === "Escape" && !PR.$("#compareOrderMenu").hidden) {
+      e.preventDefault(); e.stopPropagation(); closeCompareOrder(true); return;
+    }
+    if (e.target.closest("[data-compare-menu]") && ["ArrowDown", "ArrowUp"].includes(e.key)) {
+      e.preventDefault();
+      PR.$("#compareOrderMenu").hidden = false;
+      PR.$("[data-compare-menu]").setAttribute("aria-expanded", "true");
+      PR.$('[data-compare-primary][aria-checked="true"]')?.focus();
+      return;
+    }
+    if (!item) return;
+    let index = items.indexOf(item);
+    if (e.key === "ArrowDown") index = (index + 1) % items.length;
+    else if (e.key === "ArrowUp") index = (index - 1 + items.length) % items.length;
+    else if (e.key === "Home") index = 0;
+    else if (e.key === "End") index = items.length - 1;
+    else return;
+    e.preventDefault(); items[index].focus();
   });
   PR.on("status", ({ s, text }) => {
     const el = PR.$(".save-state");

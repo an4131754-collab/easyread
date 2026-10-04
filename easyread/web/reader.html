@@ -26,9 +26,20 @@
   </div>
   <span class="grow"></span>
   <span class="job-state" id="jobState"></span>
-  <div class="seg" role="group" aria-label="顯示">
-    <button data-mode="zh" title="只看譯文">譯文</button>
-    <button data-mode="bi" title="原文在上、譯文在下（B）">對照</button>
+  <div class="mode-control">
+    <div class="seg" role="group" aria-label="顯示">
+      <button data-mode="zh" title="只看譯文">譯文</button>
+      <button data-mode="bi" title="原文在上、譯文在下（B）">對照</button>
+    </div>
+    <div class="compare-order" id="compareOrder">
+      <button class="compare-order-trigger" type="button" data-compare-menu aria-haspopup="menu" aria-expanded="false" aria-controls="compareOrderMenu" title="選擇對照文字的主次">
+        <span data-compare-label>英文為主</span><span class="compare-order-caret" aria-hidden="true">⌄</span>
+      </button>
+      <div class="compare-order-menu" id="compareOrderMenu" role="menu" aria-label="對照文字主次" hidden>
+        <button type="button" role="menuitemradio" data-compare-primary="en" aria-checked="true">英文原文為主</button>
+        <button type="button" role="menuitemradio" data-compare-primary="zh" aria-checked="false">中文譯文為主</button>
+      </div>
+    </div>
   </div>
   <button class="btn" data-act="pages" title="原文頁，跟隨閱讀位置（O）"></button>
   <button class="btn" data-act="notes" title="筆記面板（M）"></button>
