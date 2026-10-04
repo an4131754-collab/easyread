@@ -51,6 +51,40 @@ Runs locally. Your papers and notes never leave your computer.</p>
 
 Settings auto-detect what's installed; "Test one sentence" tells you right away whether an engine works. A failed page (rate limit, network, quota) is retried automatically, then skipped so the rest keeps going, and you can retry all failed pages in one click at the end.
 
+### If EasyRead says “Codex CLI not found on this computer”
+
+EasyRead looks for `codex` using the system path it received when it started. First, check whether Codex CLI is installed:
+
+**macOS** (Terminal):
+
+```bash
+command -v codex
+codex --version
+```
+
+If `codex` is not found, follow the [official Codex CLI installation guide](https://developers.openai.com/codex/cli). On macOS, run this in Terminal:
+
+```bash
+curl -fsSL https://chatgpt.com/codex/install.sh | sh
+```
+
+**Windows** (PowerShell):
+
+```powershell
+where.exe codex
+codex --version
+```
+
+If `codex` is not found, install Node.js first, then run:
+
+```powershell
+npm install -g @openai/codex@latest
+```
+
+After installation, run `codex` in the terminal and sign in with your ChatGPT account when prompted. Then fully quit and reopen EasyRead so it can read the updated command path.
+
+If `codex` works in the terminal but EasyRead still cannot find it, open **Settings → Models**, edit the Codex CLI model, expand **Advanced**, and set **Codex command** to the full path shown by `command -v codex` (macOS) or `where.exe codex` (Windows). Save and restart EasyRead.
+
 ## Install
 
 **Easiest: download the installer** (no Python needed). From [Releases](https://github.com/an4131754-collab/easyread/releases/latest):

@@ -51,6 +51,40 @@
 
 設定裡會自動檢測本機裝了什麼，點“試譯一句”馬上知道能不能用。某一頁翻譯失敗（限流、網路、額度）會自動重試，還不行就先跳過、接著譯後面的頁，最後一鍵“重試失敗的頁”。
 
+### EasyRead 顯示「本機沒找到 Codex CLI」時
+
+EasyRead 會依照啟動時取得的系統路徑尋找 `codex`。先在終端機確認 Codex CLI 是否安裝：
+
+**macOS**（終端機）：
+
+```bash
+command -v codex
+codex --version
+```
+
+如果找不到 `codex`，請依 [Codex CLI 官方安裝說明](https://developers.openai.com/codex/cli)安裝。macOS 可在終端機執行：
+
+```bash
+curl -fsSL https://chatgpt.com/codex/install.sh | sh
+```
+
+**Windows**（PowerShell）：
+
+```powershell
+where.exe codex
+codex --version
+```
+
+如果找不到 `codex`，請先安裝 Node.js，然後執行：
+
+```powershell
+npm install -g @openai/codex@latest
+```
+
+安裝後在終端機執行 `codex`，依畫面使用 ChatGPT 帳號登入。接著完全關閉並重新開啟 EasyRead，讓它重新讀取命令路徑。
+
+如果終端機能執行 `codex`，但 EasyRead 仍找不到，請在 EasyRead 開啟「設定 → 模型」，編輯 Codex CLI 模型，展開「高階」，把「Codex 命令」設為 `command -v codex`（macOS）或 `where.exe codex`（Windows）顯示的完整路徑，再儲存並重新啟動 EasyRead。
+
 <p align="center"><img src="docs/images/settings.jpg" width="640" alt="設定"></p>
 
 ## 安裝
