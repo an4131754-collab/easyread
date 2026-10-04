@@ -15,7 +15,7 @@ from . import __version__, config, http
 from .log import log
 from .store import read_json, write_json_atomic
 
-REPO = "Edwardxlai/easyread"
+REPO = "an4131754-collab/easyread"
 API = f"https://api.github.com/repos/{REPO}/releases/latest"
 EVERY = 24 * 3600   # 成功問到後多久再問
 RETRY = 3 * 3600    # 沒問到（沒網）多久後再試

