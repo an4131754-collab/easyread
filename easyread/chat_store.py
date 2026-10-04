@@ -24,8 +24,10 @@ def _normalize(chat: dict) -> dict:
     return chat
 
 
-def _title(q: str) -> str:
+def _title(q: str, attachments: list[dict] | None = None) -> str:
     q = " ".join((q or "").split())
+    if not q and attachments and all(a.get("kind") == "image" for a in attachments):
+        q = str(attachments[0].get("name") or "")
     return (q[:22] + "…") if len(q) > 22 else (q or "新對話")
 
 
@@ -42,11 +44,13 @@ def new_id() -> str:
     return "t" + uuid4().hex
 
 
-def append(ws: Workspace, tid: str, user: dict, answer: str, model_id: str, model_name: str, used: dict | None = None) -> dict:
+def append(ws: Workspace, tid: str, user: dict, answer: str, model_id: str, model_name: str, used: dict | None = None, pending: bool = False) -> dict:
     """存一問一答；對話不存在就新建（標題取第一個問題）。回答頁邊筆記裡的問題時，同時寫成那條筆記的回覆。"""
     stamp = now_iso()
     msg = {"id": "m" + uuid4().hex, "role": "assistant", "content": answer, "at": stamp,
            "model": model_name, "anchor": user.get("anchor"), "note": user.get("note")}
+    if pending:
+        msg["pending"] = True
     if used and used.get("calls"):
         msg["usage"] = used  # 這條回答的 token 用量（usage.Meter 的快照）
 
@@ -54,12 +58,17 @@ def append(ws: Workspace, tid: str, user: dict, answer: str, model_id: str, mode
         _normalize(chat)
         t = next((x for x in chat["threads"] if x["id"] == tid), None)
         if not t:
-            t = {"id": tid, "title": _title(user["content"]), "created": stamp, "messages": []}
+            t = {"id": tid, "title": _title(user["content"], user.get("attachments")), "created": stamp, "messages": []}
             chat["threads"].append(t)
         t["messages"] += [{**user, "role": "user", "at": stamp}, msg]
         t.update(updated=stamp, model=model_id)
     ws.update("chat", apply)
-    note_id = user.get("note")
+    if not pending:
+        _reply(ws, user.get("note"), answer, model_name)
+    return msg
+
+
+def _reply(ws, note_id, answer, model_name):
     if note_id and answer.strip():
         disc = ws.load("discussion").get("entries", [])
         old = next((d for d in disc if d.get("reply_to") == note_id and d.get("kind") == "reply" and d.get("live")), None)
@@ -67,7 +76,30 @@ def append(ws: Workspace, tid: str, user: dict, answer: str, model_id: str, mode
         if old:
             entry["id"] = old["id"]
         add_discussion(ws, [entry])
-    return msg
+
+
+def finish(ws: Workspace, tid: str, mid: str, answer: str, used: dict | None = None, error: str = "") -> dict:
+    """Finish the already saved turn, without adding another user message."""
+    result = {}
+    def apply(data):
+        t = next((t for t in _normalize(data)["threads"] if t["id"] == tid), None)
+        if not t:  # A deleted conversation must not be resurrected.
+            return
+        msg = next((m for m in t["messages"] if m.get("id") == mid), None)
+        if not msg:
+            return
+        msg.pop("pending", None)
+        msg.update(content=answer)
+        if error:
+            msg["error"] = error
+        if used and used.get("calls"):
+            msg["usage"] = used
+        t["updated"] = now_iso()
+        result.update(msg)
+    ws.update("chat", apply)
+    if result and not error:
+        _reply(ws, result.get("note"), answer, result.get("model", ""))
+    return result
 
 
 def rename(ws: Workspace, tid: str, title: str) -> None:

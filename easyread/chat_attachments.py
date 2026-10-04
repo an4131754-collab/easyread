@@ -147,6 +147,25 @@ def selected(ws: Workspace, ids) -> list[dict]:
     return out
 
 
+def conversation(ws: Workspace, past: list[dict], current: list[dict], vision: bool) -> list[dict]:
+    """Current attachments first, then recent history, within one request's limits."""
+    out, seen, total = [], set(), 0
+    candidates = current + [a for msg in reversed(past) for a in msg.get("attachments", []) if isinstance(a, dict)]
+    for candidate in candidates:
+        aid = candidate.get("id")
+        if aid in seen:
+            continue
+        seen.add(aid)
+        item = get(ws, aid)
+        if not item or (item["kind"] == "image" and not vision):
+            continue
+        if len(out) >= MAX_FILES or total + item["size"] > MAX_MESSAGE_BYTES:
+            continue
+        total += item["size"]
+        out.append(item)
+    return out
+
+
 def path(ws: Workspace, item: dict) -> Path:
     ext = Path(item.get("name") or "").suffix.lower()
     paths = _paths(ws, item.get("id", ""), ext)

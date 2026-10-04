@@ -92,19 +92,23 @@ class Handler(BaseHTTPRequestHandler):
         attachments = chat_attachments.selected(ws, attachment_ids)
         if not text and not attachments:
             raise ValueError("請輸入問題或附加檔案")
+        photo_only = bool(attachments) and all(a["kind"] == "image" for a in attachments) and not text
         if not text:
             text = ("請協助分析這些附件，並參考本篇論文的摘要、目前所在章節、附近段落與已引用內容"
                     "來辨認附件內容，再用簡單的方式解釋它想表達什麼。")
-            user["content"] = text
+            if not photo_only:
+                user["content"] = text
         if any(a["kind"] == "image" for a in attachments) and not chat_models.supports_images(m):
             raise ValueError("目前選用的模型不支援圖片，請切換到可看圖片的模型後再送出。")
         if attachments:
             user["attachments"] = attachments
         past = (thread or {}).get("messages", [])
-        convo = [{"role": x["role"], "content": x["content"]} for x in past] + [{"role": "user", "content": text}]
-        attachment_context = chat_attachments.context(ws, attachments, ecfg["engine"])
+        convo = [{"role": x["role"], "content": x["content"]} for x in past if not x.get("error") and not x.get("pending")] + [{"role": "user", "content": text}]
+        context_items = chat_attachments.conversation(ws, past, attachments, chat_models.supports_images(m))
+        attachment_context = chat_attachments.context(ws, context_items, ecfg["engine"])
         prompt_text = chat.prompt(ws, convo, user["anchor"], user["quote"], ecfg["engine"], refs, attachment_context)
-        image_paths = chat_attachments.images(ws, attachments)
+        image_paths = chat_attachments.images(ws, context_items)
+        pending = chat_store.append(ws, tid, user, "", m["id"], model, pending=True)
         self.send_response(200)
         self.send_header("Content-Type", "application/x-ndjson; charset=utf-8")
         self.send_header("Cache-Control", "no-store")
@@ -127,15 +131,15 @@ class Handler(BaseHTTPRequestHandler):
             for piece in chat.stream(ecfg, prompt_text, ws.root, cancel, seen, meter, image_paths):
                 pieces.append(piece)
                 send({"t": piece})
-            msg = chat_store.append(ws, tid, user, "".join(pieces), m["id"], model, meter.snapshot())
-            send({"done": True, "id": msg["id"], "usage": msg.get("usage")})
+            msg = chat_store.finish(ws, tid, pending["id"], "".join(pieces), meter.snapshot())
+            send({"done": True, "id": pending["id"], "usage": msg.get("usage")})
         except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
             cancel.set()  # 讀者點了停止或關了頁面
-            if pieces:
-                chat_store.append(ws, tid, {**user, "note": None}, "".join(pieces) + "\n\n（已停止）", m["id"], model, meter.snapshot())
+            chat_store.finish(ws, tid, pending["id"], "".join(pieces), meter.snapshot(), "回答已停止，請重新提問。")
         except engines.Cancelled:
-            pass
+            chat_store.finish(ws, tid, pending["id"], "".join(pieces), meter.snapshot(), "回答已停止，請重新提問。")
         except Exception as e:  # noqa: BLE001
+            chat_store.finish(ws, tid, pending["id"], "".join(pieces), meter.snapshot(), str(e)[:500])
             log.exception("對話出錯 %s", ws.id)
             try:
                 send({"error": str(e)[:500]})

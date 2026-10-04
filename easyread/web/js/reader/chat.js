@@ -153,14 +153,15 @@
   }
   function msgHtml(m) {
     if (m.role === "user") {
-      return '<div class="cm user">' + messageFilesHtml(m.attachments) + '<div class="bubble">' + PR.esc(m.content).replace(/\n/g, "<br>") + "</div>" +
+      const bubble = m.content ? '<div class="bubble">' + PR.esc(m.content).replace(/\n/g, "<br>") + "</div>" : "";
+      return '<div class="cm user">' + messageFilesHtml(m.attachments) + bubble +
         ((m.refs && m.refs.length ? m.refs : m.anchor ? [m] : []).filter((r) => PR.blockById[r.anchor])
           .map((r) => '<button class="cm-ctx" data-c="go" data-anchor="' + PR.esc(r.anchor) + '">' + PR.icon("link", "sm") + "<span>" + PR.esc(ctxLabel(r)) + "</span></button>").join("")) + "</div>";
     }
     const live = st.streaming && st.streaming.msg === m;
     return '<div class="cm ai' + (m.error ? " err" : "") + '" data-id="' + PR.esc(m.id || "") + '"><div class="who"><span class="av">' + PR.icon("sparkle", "sm") + "</span>" + PR.esc(m.model || "AI") + (live ? ' <span class="spin"></span>' : "") + "</div>" +
-      '<div class="body">' + (m.error ? PR.esc(m.error) : m.content ? PR.mdBlocks(m.content) : '<p class="thinking"><i></i><i></i><i></i></p>') + "</div>" +
-      (!live && !m.error && m.id ? '<div class="acts"><button data-c="copy">' + PR.icon("copy", "sm") + "複製</button>" + (PR.canChat() ? '<button data-c="pin" title="作為 AI 討論放到這段旁邊">' + PR.icon("note", "sm") + "放到頁邊</button>" : "") +
+      '<div class="body">' + (m.error ? PR.esc(m.error) : m.content ? PR.mdBlocks(m.content) : m.pending && !live ? '回答尚未完成，請重新提問。' : '<p class="thinking"><i></i><i></i><i></i></p>') + "</div>" +
+      (!live && !m.error && !m.pending && m.id ? '<div class="acts"><button data-c="copy">' + PR.icon("copy", "sm") + "複製</button>" + (PR.canChat() ? '<button data-c="pin" title="作為 AI 討論放到這段旁邊">' + PR.icon("note", "sm") + "放到頁邊</button>" : "") +
         (m.usage && m.usage.calls ? '<span class="cm-usage" title="輸入 ' + PR.fmtTokens(m.usage.input) + "（快取命中 " + PR.fmtTokens(m.usage.cached) + "），輸出 " + PR.fmtTokens(m.usage.output) + '">' + PR.fmtTokens(m.usage.input + m.usage.output) + " token</span>" : "") + "</div>" : "") + "</div>";
   }
   function emptyHtml() {
@@ -237,11 +238,16 @@
       }
       st.uploading = false; st.uploadProgress = "";
     }
-    if (!text && saved.length) text = attachmentPrompt;
+    const photoOnly = !text && saved.length > 0 && saved.every((a) => a.kind === "image");
+    if (!text && saved.length && !photoOnly) text = attachmentPrompt;
     const refs = only || sendRefs();
     const c = refs[0] || null;
     let t = thread();
-    if (!t) { t = { id: null, title: text.slice(0, 22), messages: [], updated: PR.nowIso() }; st.threads.unshift(t); }
+    if (!t) {
+      const title = photoOnly ? saved[0].name : text;
+      t = { id: null, title: title.length > 22 ? title.slice(0, 22) + "…" : title, messages: [], updated: PR.nowIso() };
+      st.threads.unshift(t);
+    }
     const user = { role: "user", content: text, anchor: c ? c.anchor : null, quote: c ? c.quote : "", note: noteId || null, refs, attachments: saved };
     const msg = { role: "assistant", content: "", model: modelOf(st.model).label };
     t.messages.push(user, msg);
