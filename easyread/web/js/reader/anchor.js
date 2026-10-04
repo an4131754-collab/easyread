@@ -66,6 +66,24 @@
     return PR.$$(".zh", host).find((z) => fullText(z).includes(item.quote)) || host.querySelector(".zh");
   }
 
+  function targetFor(item) {
+    const host = document.getElementById("b-" + item.anchor);
+    if (!host) return null;
+    if (item.lang === "en" && item.key) {
+      return host.querySelector('.en[data-key="' + CSS.escape(item.key) + '"]') ||
+        host.querySelector('.zh.en-main[data-key="' + CSS.escape(item.key) + '"]');
+    }
+    return zhFor(item);
+  }
+
+  function counterpartFor(root) {
+    const pair = root && root.closest(".translation-pair");
+    if (!pair) return null;
+    if (root.matches(".en")) return pair.querySelector(".zh");
+    if (root.matches(".zh")) return pair.querySelector(".en");
+    return null;
+  }
+
   PR.applyMarks = function (onlyBlock) {
     const scope = onlyBlock ? document.getElementById("b-" + onlyBlock) : PR.$("#paper");
     if (!scope) return;
@@ -77,11 +95,17 @@
     for (const e of S.discussion.entries || []) if (e.quote && e.anchor) items.push({ n: e, attrs: { class: "hl agent", "data-card": e.id } });
     for (const { n, attrs } of items) {
       if (onlyBlock && n.anchor !== onlyBlock) continue;
-      const zh = zhFor(n);
-      const i = zh ? findQuote(fullText(zh), n.quote, n.prefix, n.suffix) : -1;
+      const target = targetFor(n);
+      const text = target ? fullText(target) : "";
+      const i = target ? findQuote(text, n.quote, n.prefix, n.suffix) : -1;
       if (i < 0) { lost.add(n.id); continue; }
       lost.delete(n.id);
-      wrap(zh, i, i + n.quote.length, attrs);
+      wrap(target, i, i + n.quote.length, attrs);
+      if (n.kind === "highlight") {
+        const counterpart = counterpartFor(target);
+        const pairedText = counterpart && fullText(counterpart);
+        if (counterpart && pairedText) wrap(counterpart, 0, pairedText.length, attrs);
+      }
     }
   };
 
@@ -94,14 +118,17 @@
     if (!sel || sel.isCollapsed || !sel.rangeCount) return null;
     const range = sel.getRangeAt(0);
     const startEl = range.startContainer.nodeType === 1 ? range.startContainer : range.startContainer.parentElement;
-    const zh = startEl && startEl.closest("#paper .zh");
-    if (!zh || !zh.contains(range.endContainer) || zh.querySelector("textarea")) return null;
-    const text = fullText(zh);
-    const s = offsetOf(zh, range.startContainer, range.startOffset);
-    const e = offsetOf(zh, range.endContainer, range.endOffset);
+    const root = startEl && startEl.closest("#paper .en, #paper .zh");
+    if (!root || !root.contains(range.endContainer) || root.querySelector("textarea")) return null;
+    const lang = root.getAttribute("lang") === "en" || root.classList.contains("en") ? "en" : "zh";
+    const pair = root.closest(".translation-pair");
+    const key = root.dataset.key || (pair && pair.querySelector(".zh") && pair.querySelector(".zh").dataset.key);
+    const text = fullText(root);
+    const s = offsetOf(root, range.startContainer, range.startOffset);
+    const e = offsetOf(root, range.endContainer, range.endOffset);
     const quote = text.slice(s, e);
     if (!quote.trim()) return null;
-    return { anchor: zh.closest(".blk").dataset.id, key: zh.dataset.key, quote, prefix: text.slice(Math.max(0, s - 32), s), suffix: text.slice(e, e + 32), rect: range.getBoundingClientRect() };
+    return { anchor: root.closest(".blk").dataset.id, key, lang, quote, prefix: text.slice(Math.max(0, s - 32), s), suffix: text.slice(e, e + 32), rect: range.getBoundingClientRect() };
   }
   PR.hasPendingSelection = () => !!pendingSel && selbar().classList.contains("open");
 
@@ -118,7 +145,7 @@
       '<button data-s="note" title="寫筆記（N）">' + PR.icon("note", "sm") + "筆記</button>" +
       '<button data-s="question" title="提問（Q）">' + PR.icon("question", "sm") + "提問</button>" +
       (PR.canChat && PR.canChat() && PR.feature("chat") ? '<button data-s="chat" title="把這句引用到問 AI（可以引用多段）">' + PR.icon("sparkle", "sm") + (PR.chatOpen && PR.chatOpen() ? "引用到對話" : "問 AI") + "</button>" : "") +
-      '<button data-s="en" title="看這段英文">' + PR.icon("en", "sm") + "原文</button>" +
+      (pendingSel.lang === "en" ? "" : '<button data-s="en" title="看這段英文">' + PR.icon("en", "sm") + "原文</button>") +
       '<button data-s="copy" title="複製">' + PR.icon("copy", "sm") + "</button>";
     bar.classList.add("open");
     const r = pendingSel.rect, w = bar.offsetWidth;
@@ -132,14 +159,14 @@
 
   PR.selectionAction = function (kind, color) {
     if (!pendingSel) return;
-    const { anchor, key, quote, prefix, suffix } = pendingSel;
+    const { anchor, key, lang, quote, prefix, suffix } = pendingSel;
     selbar().classList.remove("open");
     getSelection().removeAllRanges();
     pendingSel = null;
     if (kind === "en") { PR.toggleEn(anchor, true); return; }
     if (kind === "copy") { navigator.clipboard.writeText(quote).then(() => PR.toast("已複製")); return; }
     if (kind === "chat") { PR.chatAsk({ anchor, quote }); return; }
-    const note = { anchor, key, quote, prefix, suffix, kind, color: color || "yellow" };
+    const note = { anchor, key, lang, quote, prefix, suffix, kind, color: color || "yellow" };
     if (PR.prefs.pen === "underline") note.style = "underline";
     if (kind === "highlight") {
       Object.assign(note, { id: PR.uid("n"), body: "", created: PR.nowIso() });

@@ -50,8 +50,8 @@
     const en = PR.isEnKey(key) ? ' lang="en"' : "";
     return '<div class="zh translation' + (en ? " en-main" : "") + '"' + en + ' data-key="' + PR.esc(key) + '">' + PR.md(PR.textFor(key)) + staleTag(key) + "</div>";
   }
-  const enIfZh = (key, text) => (PR.isEnKey(key) ? "" : enDiv(text));  // 正文已經是英文了，就不再附一份原文
-  function enDiv(text) { return text ? '<div class="en" lang="en">' + PR.md(text) + "</div>" : ""; }
+  const enIfZh = (key, text) => (PR.isEnKey(key) ? "" : enDiv(key, text));  // 正文已經是英文了，就不再附一份原文
+  function enDiv(key, text) { return text ? '<div class="en" lang="en" data-key="' + PR.esc(key) + '">' + PR.md(text) + "</div>" : ""; }
 
   function captionHtml(b) {
     const key = b.id + "#caption";
