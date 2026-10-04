@@ -116,3 +116,202 @@ body.ch-open #chatpanel { transform: none; }
 .ch-readonly { display: grid; gap: 6px; padding: 14px 16px; font-size: 12.5px; color: var(--ink-3); line-height: 1.6; }
 .ch-readonly b { font-size: 13.5px; color: var(--ink); font-weight: 500; }
 .ch-readonly .btn { justify-self: start; margin-top: 4px; }
+
+/* 問 AI 面板使用冷白底色，與暖色閱讀紙面清楚分區。 */
+#chatpanel {
+  --bg: #f8fcff;
+  --surface: #ffffff;
+  --surface-2: #eff6f9;
+  --rule: #d3e1e7;
+  --rule-2: #b9ccd5;
+  --chat-divider: #a9c3ce;
+  background: var(--bg);
+  border-left: 2px solid var(--chat-divider);
+}
+
+/* 深色模式下用偏藍的深灰底，仍與正文背景分開。 */
+:root[data-theme="dark"] #chatpanel {
+  --bg: #20292d;
+  --surface: #283338;
+  --surface-2: #303f45;
+  --rule: #405158;
+  --rule-2: #576b73;
+  --chat-divider: #6f95a3;
+}
+
+/* 空白對話只顯示一句簡短提示，輸入框仍固定在面板底部。 */
+.ch-empty { padding: 0 6px; }
+.ch-empty p { font: 15px/1.6 var(--ui); margin: 0; color: var(--ink-2); }
+/* Taste redesign: restrained editorial hierarchy for the reading companion. */
+#chatpanel {
+  --ink-3: #61717a;
+  --chat-user-surface: #eaf3f6;
+  --chat-shadow: rgba(45, 97, 115, .09);
+  --shadow: 0 8px 24px rgba(45, 97, 115, .12);
+}
+:root[data-theme="dark"] #chatpanel {
+  --ink-3: #a0afb5;
+  --chat-user-surface: #34434a;
+  --chat-shadow: rgba(0, 0, 0, .24);
+  --shadow: 0 8px 24px rgba(0, 0, 0, .28);
+}
+
+#chatpanel .ch-head {
+  height: 56px;
+  padding: 0 10px 0 14px;
+  border-bottom: 1px solid var(--rule);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--accent) 4%, transparent);
+}
+#chatpanel .ch-title {
+  height: 40px;
+  padding: 0 10px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background-color .18s ease, color .18s ease;
+}
+#chatpanel .ch-title svg { color: var(--accent); }
+#chatpanel .ch-title:hover { background: var(--accent-soft-2); color: var(--accent); }
+#chatpanel .ch-head .btn.icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  color: var(--ink-2);
+  transition: background-color .18s ease, color .18s ease;
+}
+#chatpanel .ch-head .btn.icon:hover { background: var(--accent-soft); color: var(--accent); }
+
+#chatpanel .ch-scroll {
+  gap: 20px;
+  padding-top: 22px;
+  padding-bottom: 18px;
+  background-image: radial-gradient(ellipse at 52% 40%, color-mix(in srgb, var(--accent) 4%, transparent), transparent 68%);
+}
+#chatpanel .cm.user .bubble {
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--rule));
+  border-radius: 16px 16px 5px 16px;
+  background: var(--chat-user-surface);
+  box-shadow: none;
+  font: 14.5px/1.75 var(--ui);
+}
+#chatpanel .cm.ai {
+  padding: 14px 16px 13px;
+  border: 1px solid var(--rule);
+  border-left: 2px solid var(--accent);
+  border-radius: 5px 16px 16px 5px;
+  background: var(--surface);
+  box-shadow: 0 8px 24px var(--chat-shadow);
+}
+#chatpanel .cm.ai .who {
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .01em;
+}
+#chatpanel .cm.ai .av {
+  width: 26px;
+  height: 26px;
+  border-radius: 9px;
+  background: var(--accent-soft-2);
+  color: var(--accent);
+}
+#chatpanel .cm.ai .body { padding-left: 34px; }
+#chatpanel .cm.ai .acts {
+  gap: 8px;
+  margin: 12px 0 0 34px;
+  opacity: .9;
+}
+#chatpanel .cm.ai .acts button {
+  min-height: 34px;
+  padding: 0 8px;
+  border-radius: 8px;
+  transition: background-color .18s ease, color .18s ease;
+}
+#chatpanel .cm.ai .acts button:hover { background: var(--accent-soft); }
+
+#chatpanel .ch-empty {
+  align-self: center;
+  width: min(100%, 420px);
+  padding: 18px 0 30px;
+  color: var(--ink);
+  text-align: left;
+}
+#chatpanel .ch-empty::before {
+  display: block;
+  width: 34px;
+  height: 2px;
+  margin: 0 0 16px;
+  border-radius: 2px;
+  background: var(--accent);
+  content: "";
+}
+#chatpanel .ch-empty p {
+  margin: 0;
+  color: var(--ink);
+  font: 600 20px/1.5 var(--serif-zh);
+  letter-spacing: .01em;
+  text-wrap: balance;
+}
+
+#chatpanel .ch-compose {
+  margin-top: 12px;
+  margin-bottom: 16px;
+  padding: 10px 10px 8px 14px;
+  border: 1px solid var(--rule-2);
+  border-radius: 18px;
+  box-shadow: 0 10px 26px var(--chat-shadow);
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+#chatpanel .ch-compose:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft-2), 0 10px 26px var(--chat-shadow);
+}
+#chatpanel #chatInput { min-height: 36px; padding: 7px 2px; font: 15px/1.65 var(--ui); }
+#chatpanel .ch-bar { gap: 8px; }
+#chatpanel .ch-model {
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 10px;
+  transition: background-color .18s ease, color .18s ease;
+}
+#chatpanel .ch-send {
+  width: 40px;
+  height: 40px;
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--accent) 22%, transparent);
+  transition: transform .18s ease, opacity .18s ease, box-shadow .18s ease;
+}
+#chatpanel .ch-send:hover {
+  opacity: 1;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+#chatpanel .ch-send:active { transform: scale(.97); }
+#chatpanel.drop-ok .ch-compose::after,
+#chatpanel.drop-on .ch-compose::after { border-radius: inherit; }
+#chatpanel button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (max-width: 760px) {
+  #chatpanel .ch-send { width: 44px; height: 44px; }
+  #chatpanel .ch-model { height: 44px; }
+  #chatpanel .cm.ai .acts button { min-height: 44px; }
+}
+
+/* Match the whole AI panel canvas to the PDF viewer's warm surround. */
+:root {
+  --reader-surround: color-mix(in srgb, var(--bg) 60%, var(--rule));
+}
+#chatpanel { background: var(--reader-surround); }
+#chatpanel .ch-head,
+#chatpanel .ch-scroll,
+#chatpanel .ch-compose {
+  background-color: var(--reader-surround);
+}
+#chatpanel .ch-scroll { background-image: none; }
+
+/* Keep the panel divider, using a neutral gray instead of blue. */
+#chatpanel {
+  --chat-divider: color-mix(in srgb, var(--ink) 28%, var(--reader-surround));
+  border-left-color: var(--chat-divider);
+}

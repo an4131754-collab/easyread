@@ -118,12 +118,7 @@
         (m.usage && m.usage.calls ? '<span class="cm-usage" title="輸入 ' + PR.fmtTokens(m.usage.input) + "（快取命中 " + PR.fmtTokens(m.usage.cached) + "），輸出 " + PR.fmtTokens(m.usage.output) + '">' + PR.fmtTokens(m.usage.input + m.usage.output) + " token</span>" : "") + "</div>" : "") + "</div>";
   }
   function emptyHtml() {
-    const counts = markCounts();
-    const colors = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
-    const sug = ["這段在說什麼？用大白話講一遍", "這個公式每一項是什麼意思？怎麼推出來的？", "這裡的結論靠得住嗎？有什麼前提？"];
-    if (colors.length) sug.unshift("我標" + colorName(colors[0]) + "的那些地方，彼此有什麼聯絡？", "把我劃過線的內容串成一條主線講講");
-    return '<div class="ch-empty">' + PR.logo("hero") + "<b>邊讀邊問</b><p>預設帶上你正在讀的段落；把正文裡選中的文字拖到輸入框，可以引用多段一起問。" + (colors.length ? "問到“標" + colorName(colors[0]) + "的”“劃線”時，會自動找出你的 " + Object.values(counts).reduce((a, b) => a + b, 0) + " 處標記。" : "") + "</p>" +
-      '<div class="chips">' + sug.map((q) => '<button data-c="suggest">' + PR.esc(q) + "</button>").join("") + "</div></div>";
+    return '<div class="ch-empty"><p>準備好了，隨時等你。</p></div>';
   }
   function composerHtml() {
     if (!PR.canChat()) {

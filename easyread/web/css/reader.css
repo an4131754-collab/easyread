@@ -85,6 +85,17 @@ body.font-sans #paper { font-family: var(--sans-zh); letter-spacing: .01em; }
   font: .84em/1.66 var(--serif-en); color: var(--ink-2); letter-spacing: 0; text-align: left; hyphens: auto; font-variant-numeric: lining-nums;
 }
 body.mode-bi .en, .blk.show-en .en { display: block; }
+.translation-pair { display: flex; flex-direction: column; }
+body:not(.mode-bi) .blk.show-en .translation-pair { flex-direction: column-reverse; }
+body.mode-bi .translation-pair .en {
+  margin: 0; padding: 0; border: 0;
+  font: 1em/var(--lh) var(--serif-en); color: var(--ink);
+  letter-spacing: 0; text-align: left; hyphens: auto;
+}
+body.mode-bi .translation-pair .en + .translation {
+  display: block; margin: .55em 0 .2em; padding: 0 0 0 .9em; border-left: 2px solid var(--rule);
+  font: .84em/1.66 var(--serif-zh); color: var(--ink-2); letter-spacing: 0; text-align: left;
+}
 .en .katex { font-size: 1.04em; }
 
 /* 只讀原文（不翻譯）：沒譯的地方正文直接是英文，用英文襯線、左對齊、斷詞 */

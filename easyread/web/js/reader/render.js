@@ -48,7 +48,7 @@
   function staleTag(key) { return PR.isStale(key) ? '<button class="stale-tag" data-t="stale" title="你改過這段之後，譯者稿又更新了">譯者稿有更新</button>' : ""; }
   function zhDiv(key) {
     const en = PR.isEnKey(key) ? ' lang="en"' : "";
-    return '<div class="zh' + (en ? " en-main" : "") + '"' + en + ' data-key="' + PR.esc(key) + '">' + PR.md(PR.textFor(key)) + staleTag(key) + "</div>";
+    return '<div class="zh translation' + (en ? " en-main" : "") + '"' + en + ' data-key="' + PR.esc(key) + '">' + PR.md(PR.textFor(key)) + staleTag(key) + "</div>";
   }
   const enIfZh = (key, text) => (PR.isEnKey(key) ? "" : enDiv(text));  // 正文已經是英文了，就不再附一份原文
   function enDiv(text) { return text ? '<div class="en" lang="en">' + PR.md(text) + "</div>" : ""; }
@@ -59,7 +59,7 @@
     const m = text.match(/^([^：:]{1,12})[：:]/);
     const body = m ? '<span class="label">' + PR.esc(m[1]) + "</span>" + PR.md(text.slice(m[1].length)) : PR.md(text);
     const en = PR.isEnKey(key) ? ' lang="en"' : "";
-    return '<div class="caption"><div class="zh' + (en ? " en-main" : "") + '"' + en + ' data-key="' + key + '">' + body + staleTag(key) + "</div>" + enIfZh(key, b.caption_en) + "</div>";
+    return '<div class="caption translation-pair">' + enIfZh(key, b.caption_en) + '<div class="zh translation' + (en ? " en-main" : "") + '"' + en + ' data-key="' + key + '">' + body + staleTag(key) + "</div></div>";
   }
   function cell(c) { return PR.md(String(c), { xref: false, cite: false }).replace(/<br>(\([^<]*\))/g, '<br><span class="sub">$1</span>'); }
   function linkify(t) { return PR.esc(t).replace(/(https?:\/\/[^\s<]+[^\s<.,;)])/g, '<a href="$1" target="_blank" rel="noopener">$1</a>'); }
@@ -72,10 +72,10 @@
         "<span>" + PR.md(PR.textFor(b.id)) + "</span>" + staleTag(b.id) +
         (b.en && !en ? '<span class="en-title" lang="en">' + PR.md(b.en, { cite: false, xref: false }) + "</span>" : "") + "</" + tag + ">";
     },
-    para: (b) => zhDiv(b.id) + enIfZh(b.id, b.en),
+    para: (b) => '<div class="translation-pair">' + enIfZh(b.id, b.en) + zhDiv(b.id) + "</div>",
     list(b) {
       const tag = b.ordered ? "ol" : "ul";
-      return "<" + tag + ">" + (b.items || []).map((it, i) => "<li>" + zhDiv(b.id + "#" + i) + enIfZh(b.id + "#" + i, it.en) + "</li>").join("") + "</" + tag + ">";
+      return "<" + tag + ">" + (b.items || []).map((it, i) => "<li><div class=\"translation-pair\">" + enIfZh(b.id + "#" + i, it.en) + zhDiv(b.id + "#" + i) + "</div></li>").join("") + "</" + tag + ">";
     },
     math: (b) => '<div class="math-row"><div class="math-body">' + PR.tex(b.tex, true) + "</div>" + (b.tag ? '<div class="math-tag">(' + PR.esc(b.tag) + ")</div>" : "") + "</div>",
     table(b) {
