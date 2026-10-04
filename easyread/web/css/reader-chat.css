@@ -25,6 +25,16 @@ body.ch-open #chatpanel { transform: none; }
 .ch-scroll { flex: 1; overflow-y: auto; padding: 18px 18px 10px; display: flex; flex-direction: column; gap: 18px; }
 .cm.user { align-self: flex-end; max-width: 88%; display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
 .cm.user .bubble { background: var(--surface); color: var(--ink); padding: 9px 13px; border-radius: 14px 14px 4px 14px; font-size: 14px; line-height: 1.7; box-shadow: 0 0 0 1px var(--rule); }
+.cm-files { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; max-width: min(100%, 420px); }
+.cm-image { position: relative; display: block; overflow: hidden; max-width: 240px; max-height: 190px; border-radius: 12px; background: var(--surface); box-shadow: 0 0 0 1px var(--rule); }
+.cm-image img { display: block; max-width: 240px; max-height: 190px; object-fit: contain; }
+.cm-image span { position: absolute; inset: auto 0 0; overflow: hidden; padding: 14px 8px 5px; background: linear-gradient(transparent, rgba(0,0,0,.62)); color: #fff; font: 11px var(--ui); text-overflow: ellipsis; white-space: nowrap; }
+.cm-file { display: flex; align-items: center; gap: 7px; max-width: 260px; min-width: 150px; padding: 8px 10px; border-radius: 11px; color: var(--ink-2); background: var(--surface); box-shadow: 0 0 0 1px var(--rule); font: 12px var(--ui); }
+.cm-file-icon { display: grid; place-items: center; width: 27px; height: 30px; flex: none; border-radius: 7px; background: var(--accent-soft); color: var(--accent); }
+.cm-file-icon svg { width: 15px; height: 15px; }
+.cm-file-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-file small { margin-left: auto; flex: none; color: var(--ink-3); }
+.cm-file:hover { color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 .cm-ctx { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--ink-3); max-width: 100%; }
 .cm-ctx svg { width: 12px; height: 12px; flex: none; }
 .cm-ctx:hover { color: var(--accent); }
@@ -70,6 +80,16 @@ body.ch-open #chatpanel { transform: none; }
 .ch-compose { position: relative; flex: none; margin: 8px 12px 12px; border-radius: 16px; background: var(--surface); box-shadow: 0 0 0 1px var(--rule-2), 0 2px 10px rgba(0,0,0,.04); padding: 8px 8px 6px 12px; }
 .ch-compose:focus-within { box-shadow: 0 0 0 1.5px var(--accent), 0 2px 10px rgba(0,0,0,.05); }
 .ch-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 4px; }
+.ch-files { display: flex; flex-wrap: wrap; gap: 7px; margin: 2px 0 7px; }
+.ch-file { position: relative; display: flex; align-items: center; gap: 6px; max-width: 100%; min-width: 150px; padding: 6px 28px 6px 7px; border-radius: 10px; background: var(--bg); box-shadow: 0 0 0 1px var(--rule); font: 11.5px var(--ui); color: var(--ink-2); }
+.ch-file img { width: 38px; height: 34px; flex: none; object-fit: cover; border-radius: 6px; }
+.ch-file-icon { display: grid; place-items: center; width: 30px; height: 34px; flex: none; border-radius: 6px; background: var(--accent-soft); color: var(--accent); }
+.ch-file-icon svg { width: 16px; height: 16px; }
+.ch-file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ch-file small { flex: none; color: var(--ink-3); }
+.ch-file > button { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; border-radius: 50%; color: var(--ink-3); font-size: 15px; line-height: 1; }
+.ch-file > button:hover { background: var(--surface-2); color: var(--ink); }
+.ch-uploading { display: flex; align-items: center; gap: 7px; margin: 3px 0 5px; color: var(--ink-3); font: 11.5px var(--ui); }
 .chip-ctx, .chip-marks { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; height: 24px; padding: 0 4px 0 8px; border-radius: 12px; font-size: 12px; color: var(--ink-2); background: var(--bg); }
 .chip-ctx > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .chip-ctx svg { width: 12px; height: 12px; flex: none; color: var(--accent); }
@@ -78,10 +98,19 @@ body.ch-open #chatpanel { transform: none; }
 #chatInput { width: 100%; border: 0; outline: 0; resize: none; background: transparent; padding: 6px 0; font: 14.5px/1.6 var(--ui); color: var(--ink); min-height: 30px; max-height: 200px; display: block; }
 .ch-bar { display: flex; align-items: center; gap: 6px; }
 .ch-bar .grow { flex: 1; }
+.ch-attach { position: relative; display: grid; place-items: center; width: 32px; height: 32px; flex: none; border-radius: 50%; color: var(--ink-2); background: var(--bg); }
+.ch-attach:hover:not(:disabled) { color: var(--accent); background: var(--accent-soft); }
+.ch-attach:disabled { opacity: .45; cursor: not-allowed; }
+.ch-attach-menu { position: absolute; left: 8px; bottom: 46px; z-index: 7; display: grid; gap: 2px; width: min(265px, calc(100vw - 48px)); padding: 6px; border-radius: 12px; background: var(--surface); box-shadow: 0 0 0 1px var(--rule), var(--shadow); }
+.ch-attach-menu button { display: flex; align-items: center; gap: 9px; min-height: 38px; padding: 0 10px; border-radius: 8px; text-align: left; font: 13px var(--ui); color: var(--ink-2); }
+.ch-attach-menu button:hover { color: var(--ink); background: var(--accent-soft); }
+.ch-attach-menu button svg { width: 16px; height: 16px; color: var(--accent); }
+.ch-attach-menu small { padding: 5px 9px 3px; color: var(--ink-3); font: 10.5px/1.5 var(--ui); }
 .ch-model { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 8px 0 10px; border-radius: 8px; font-size: 12.5px; color: var(--ink-2); }
 .ch-model:hover { background: var(--accent-soft); color: var(--ink); }
 .ch-send { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: #fff; }
 .ch-send:hover { opacity: .88; }
+.ch-send:disabled { opacity: .55; cursor: wait; }
 .ch-send.stop { background: var(--ink); color: var(--bg); }
 :root[data-theme="dark"] .ch-send { color: #10201f; }
 .ch-menu { position: absolute; left: 8px; bottom: 44px; z-index: 6; min-width: 250px; padding: 5px; border-radius: 12px; background: var(--surface); box-shadow: 0 0 0 1px var(--rule), var(--shadow); }

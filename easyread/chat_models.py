@@ -90,13 +90,26 @@ def engine_cfg(cfg: dict, mid: str | None) -> tuple[dict, dict]:
         out[m["engine"]]["model"] = m.get("model") or ""
     elif m["engine"] == "openai":
         p = next((x for x in PRESETS if x["id"] == m.get("preset")), None)
-        out["openai"] = {**out["openai"], "preset": m.get("preset") or "", "vision": False,
+        out["openai"] = {**out["openai"], "preset": m.get("preset") or "", "vision": supports_images(m),
                          "base_url": m.get("base_url") or (p["base_url"] if p else out["openai"].get("base_url", "")),
                          "model": m.get("model") or (p["model"] if p else ""), "api_key": _key(cfg, m.get("preset") or ""),
                          "api": m.get("api") or (p or {}).get("api") or "chat"}
     else:
         raise engines.EngineError(f"不認識的模型來源：{m.get('engine')}")
     return out, m
+
+
+def supports_images(model: dict) -> bool:
+    """Whether the selected chat model can receive user supplied images."""
+    engine = model.get("engine")
+    if engine in ("claude", "codex"):
+        return True
+    if engine != "openai":
+        return False
+    if model.get("vision"):
+        return True
+    preset = next((p for p in PRESETS if p["id"] == model.get("preset")), None)
+    return any(x.get("id") == model.get("model") and x.get("vision") for x in (preset or {}).get("models", []))
 
 
 def translation_id(cfg: dict) -> str:
@@ -142,6 +155,7 @@ def listing(cfg: dict) -> dict:
             source = p["name"] if p else "自定義地址"
             hint = "" if ready else f"還沒填 {source} 的 Key（設定 → 模型 → 點這張卡片 → 修改）"
         out.append({**m, "label": label(m), "source": source, "ready": ready, "hint": hint,
+                    "supports_images": supports_images(m),
                     "detail": (actual_of(m.get("model", "")) or m.get("model") or _claude_default()) if e == "claude"
                     else m.get("model") or ((codex_default_model() + "（跟隨 Codex 預設）") if e == "codex" and codex_default_model() else "")})
     default = (cfg.get("chat") or {}).get("default") or (out[0]["id"] if out else "")
@@ -161,7 +175,7 @@ def sanitize(items: list[dict]) -> list[dict]:
         seen.add(mid)
         out.append({"id": mid, "name": str(m.get("name") or m.get("model") or "模型")[:40], "engine": e,
                     "model": str(m.get("model") or "")[:120], "preset": str(m.get("preset") or ""), "base_url": str(m.get("base_url") or "")[:300],
-                    "api": m.get("api") if m.get("api") in ("chat", "responses") else ""})
+                    "api": m.get("api") if m.get("api") in ("chat", "responses") else "", "vision": bool(m.get("vision"))})
     return out or copy.deepcopy(DEFAULT_MODELS)
 
 

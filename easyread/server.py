@@ -11,7 +11,7 @@ from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import parse_qs, quote, unquote, urlparse
 
-from . import __version__, chat, chat_models, chat_store, cli_models, config, detect, engines, notehelp, paperdata, pdfwork, prefs, settings_api, trash, updates, usage, wsock
+from . import __version__, chat, chat_attachments, chat_models, chat_store, cli_models, config, detect, engines, notehelp, paperdata, pdfwork, prefs, settings_api, trash, updates, usage, wsock
 from .log import log, tail
 from .jobs import Jobs
 from .library import Library
@@ -58,10 +58,10 @@ class Handler(BaseHTTPRequestHandler):
     def _json(self, code: int, obj):
         self._send(code, json.dumps(obj, ensure_ascii=False).encode("utf-8"), "application/json; charset=utf-8")
 
-    def _file(self, path: Path | None, cache=False):
+    def _file(self, path: Path | None, cache=False, ctype: str | None = None):
         if not path:
             return self._json(404, {"error": "not found"})
-        ctype = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+        ctype = ctype or mimetypes.guess_type(path.name)[0] or "application/octet-stream"
         if ctype.startswith("text/") or ctype.endswith("javascript"):
             ctype += "; charset=utf-8"
         self._send(200, path.read_bytes(), ctype, cache)
@@ -78,8 +78,6 @@ class Handler(BaseHTTPRequestHandler):
     def _chat(self, ws, body: dict):
         """流式回答：一行一個 JSON，{"t": 片段} … 最後 {"done": true, "id": …} 或 {"error": …}。"""
         text = (body.get("text") or "").strip()
-        if not text:
-            raise ValueError("問題是空的")
         cfg = config.load()
         ecfg, m = chat_models.engine_cfg(cfg, body.get("model"))
         model = chat_models.label(m)
@@ -90,9 +88,23 @@ class Handler(BaseHTTPRequestHandler):
         first = refs[0] if refs else {}
         user = {"content": text, "anchor": body.get("anchor") or first.get("anchor"), "quote": (body.get("quote") or first.get("quote") or "")[:1000],
                 "note": body.get("note"), "refs": refs}
+        attachment_ids = body.get("attachments") or []
+        attachments = chat_attachments.selected(ws, attachment_ids)
+        if not text and not attachments:
+            raise ValueError("請輸入問題或附加檔案")
+        if not text:
+            text = ("請協助分析這些附件，並參考本篇論文的摘要、目前所在章節、附近段落與已引用內容"
+                    "來辨認附件內容，再用簡單的方式解釋它想表達什麼。")
+            user["content"] = text
+        if any(a["kind"] == "image" for a in attachments) and not chat_models.supports_images(m):
+            raise ValueError("目前選用的模型不支援圖片，請切換到可看圖片的模型後再送出。")
+        if attachments:
+            user["attachments"] = attachments
         past = (thread or {}).get("messages", [])
         convo = [{"role": x["role"], "content": x["content"]} for x in past] + [{"role": "user", "content": text}]
-        prompt_text = chat.prompt(ws, convo, user["anchor"], user["quote"], ecfg["engine"], refs)
+        attachment_context = chat_attachments.context(ws, attachments, ecfg["engine"])
+        prompt_text = chat.prompt(ws, convo, user["anchor"], user["quote"], ecfg["engine"], refs, attachment_context)
+        image_paths = chat_attachments.images(ws, attachments)
         self.send_response(200)
         self.send_header("Content-Type", "application/x-ndjson; charset=utf-8")
         self.send_header("Cache-Control", "no-store")
@@ -112,7 +124,7 @@ class Handler(BaseHTTPRequestHandler):
                 chat_models.remember(m.get("model", ""), actual)
                 if m.get("engine") == "claude":
                     send({"model": chat_models.label(m)})
-            for piece in chat.stream(ecfg, prompt_text, ws.root, cancel, seen, meter):
+            for piece in chat.stream(ecfg, prompt_text, ws.root, cancel, seen, meter, image_paths):
                 pieces.append(piece)
                 send({"t": piece})
             msg = chat_store.append(ws, tid, user, "".join(pieces), m["id"], model, meter.snapshot())
@@ -212,6 +224,11 @@ class Handler(BaseHTTPRequestHandler):
             if action == "versions":
                 return self._json(200, ws.versions())
             if action == "chat":
+                if len(parts) > 6 and parts[5] == "attachments":
+                    found = chat_attachments.file_for_id(ws, parts[6])
+                    if not found:
+                        return self._json(404, {"error": "找不到附件"})
+                    return self._file(found[0], ctype=found[1])
                 return self._json(200, {"threads": chat_store.threads(ws), **chat_models.listing(config.load()), "limits": usage.latest()})
             if action == "log":
                 return self._json(200, {"text": tail(ws.root / "job.log", 300)})
@@ -307,6 +324,24 @@ class Handler(BaseHTTPRequestHandler):
             if not ws:
                 return self._json(404, {"error": "沒有這篇論文"})
             action = parts[4]
+            if action == "chat" and len(parts) > 5 and parts[5] == "attachments":
+                if len(parts) == 6:
+                    n = int(self.headers.get("Content-Length", "0"))
+                    if n <= 0:
+                        raise ValueError("附件是空的")
+                    if n > chat_attachments.MAX_FILE_BYTES:
+                        self.close_connection = True
+                        raise ValueError("每個附件不能超過 20 MB")
+                    data = self.rfile.read(n)
+                    if len(data) != n:
+                        self.close_connection = True
+                        raise ValueError("附件上傳未完成，請再試一次")
+                    item = chat_attachments.save(ws, q.get("name", "附件"), data)
+                    return self._json(200, item)
+                if len(parts) == 7 and parts[6] == "delete":
+                    body = json.loads(self._body() or b"{}")
+                    chat_attachments.delete_unreferenced(ws, body.get("ids") or [])
+                    return self._json(200, {"ok": True})
             body = json.loads(self._body() or b"{}")
             if action == "chat" and len(parts) > 5:
                 sub, tid = parts[5], body.get("thread", "")
@@ -315,7 +350,11 @@ class Handler(BaseHTTPRequestHandler):
                 elif sub == "rename":
                     chat_store.rename(ws, tid, body.get("title", ""))
                 elif sub == "delete":
+                    old = chat_store.get(ws, tid)
+                    ids = [a.get("id") for m in (old or {}).get("messages", []) for a in m.get("attachments", [])
+                           if isinstance(a, dict) and a.get("id")]
                     chat_store.delete(ws, tid)
+                    chat_attachments.delete_unreferenced(ws, ids)
                 return self._json(200, {"threads": chat_store.threads(ws)})
             if action == "chat":
                 return self._chat(ws, body)

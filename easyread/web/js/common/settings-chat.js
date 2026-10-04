@@ -114,8 +114,10 @@
   }
   function toModel(s, f, p) {
     const api = isApi(f.kind), name = autoName(s, f);
+    const rec = api && p && (p.models || []).find((x) => x.id === f.model);
     return { engine: api ? "openai" : f.kind, preset: api ? f.preset : "",
       base_url: api && (!p || f.base_url !== p.base_url) ? f.base_url : "", api: api && (!p || f.api !== (p.api || "chat")) ? f.api : "", model: f.model, name, label: name,
+      vision: api && (rec ? !!rec.vision : !!f.vision),
       source: api ? (p ? p.name : "自定義地址") : f.kind === "claude" ? "Claude Code" : "Codex CLI",
       detail: f.model, ready: true };
   }
@@ -128,7 +130,7 @@
   }
   function startForm(s, m) {
     const p = m && preset(s, m.preset);
-    s.form = m ? { kind: kindOf(m), model: m.model || "", preset: m.preset || "", base_url: m.base_url || (p ? p.base_url : ""), api: m.api || (p && p.api) || "chat", vision: false,
+    s.form = m ? { kind: kindOf(m), model: m.model || "", preset: m.preset || "", base_url: m.base_url || (p ? p.base_url : ""), api: m.api || (p && p.api) || "chat", vision: !!m.vision,
       name: "", key: "" }
       : { kind: "claude", model: "opus", preset: "", base_url: "", api: "", name: "", key: "" };
     s.fetchMsg = null; s.apiTyping = false;

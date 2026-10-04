@@ -120,7 +120,8 @@ def _marks_summary(ws: Workspace) -> str:
     return "讀者在論文上做過 " + str(len(notes)) + " 處標記（" + "、".join(f"{k} {v}" for k, v in counts.items()) + "），這次問題沒提到，就沒附上。"
 
 
-def prompt(ws: Workspace, messages: list[dict], anchor: str | None, quote: str, engine: str, refs: list[dict] | None = None) -> str:
+def prompt(ws: Workspace, messages: list[dict], anchor: str | None, quote: str, engine: str,
+           refs: list[dict] | None = None, attachment_context: str = "") -> str:
     history = messages[-HISTORY:]
     convo = "\n\n".join(("讀者" if m["role"] == "user" else "你") + "：" + m["content"] for m in history[:-1])
     ask = history[-1]["content"] if history else ""
@@ -132,13 +133,15 @@ def prompt(ws: Workspace, messages: list[dict], anchor: str | None, quote: str, 
             "區分“論文裡寫了什麼”和“你的補充解釋”，論文裡沒有的內容不要說成是論文說的。"
             "行內公式寫 $TeX$，行間公式寫 $$TeX$$。提到原文位置時說“式 5”“第 4 頁那段”，不要寫 [p4-5] 這類內部編號。只輸出回答本身，不要客套，不要重複問題。\n" + tool + "\n"
             + _context(ws, anchor, quote, refs)
+            + ("\n\n" + attachment_context if attachment_context else "")
             + ("\n\n" + marks if marks else "")
             + (f"\n\n之前的對話：\n{convo}" if convo else "")
             + f"\n\n讀者現在問：{ask}")
 
 
 # ---------- 流式輸出 ----------
-def stream(ecfg: dict, text: str, cwd: Path, cancel: threading.Event, on_model=None, meter=None) -> Iterator[str]:
+def stream(ecfg: dict, text: str, cwd: Path, cancel: threading.Event, on_model=None, meter=None,
+           images: list[Path] | None = None) -> Iterator[str]:
     """on_model(實際模型名)：Claude Code 開頭會報它實際用的模型。meter：傳了就記下這次回答的 token 用量。"""
     e = ecfg.get("engine")
     bad = netcheck.problem(ecfg)
@@ -148,9 +151,9 @@ def stream(ecfg: dict, text: str, cwd: Path, cancel: threading.Event, on_model=N
         if e == "claude":
             yield from _stream_claude(ecfg["claude"], text, cwd, cancel, on_model, meter)
         elif e == "openai":
-            yield from openai_api.stream(ecfg["openai"], text, cancel, meter)
+            yield from openai_api.stream(ecfg["openai"], text, cancel, meter, images or [])
         else:  # codex 沒有逐字輸出，整段給
-            yield engines.run(ecfg, text, cwd, None, cancel, meter)
+            yield engines.run(ecfg, text, cwd, images or [], cancel, meter)
     except engines.EngineError as err:
         raise engines.EngineError(netcheck.explain(ecfg, str(err))) from None
 

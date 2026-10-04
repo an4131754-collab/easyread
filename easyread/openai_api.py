@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import base64
 import json
+import mimetypes
 import math
 import time
 import urllib.error
@@ -25,6 +26,8 @@ API_KINDS = [("chat", "Chat Completions（通用）"), ("responses", "Responses�
 _HINT = {401: "（Key 不對或過期了）", 402: "（餘額不足）", 403: "（沒有許可權用這個模型）",
          404: "（地址、模型名或介面格式不對）", 429: "（被限流了，稍後重試或換個模型）"}
 _SESSION = f"easyread-{uuid.uuid4()}"  # 每次啟動一個，整個程序內不變
+for _ext, _mime in ((".jpg", "image/jpeg"), (".jpeg", "image/jpeg"), (".png", "image/png"), (".webp", "image/webp")):
+    mimetypes.add_type(_mime, _ext)
 
 
 def kind(o: dict) -> str:
@@ -50,7 +53,8 @@ def _headers(o: dict, stream: bool = False) -> dict:
 
 
 def _body(o: dict, prompt: str, images: list[Path], stream: bool, temperature: float | None) -> dict:
-    urls = ["data:image/jpeg;base64," + base64.b64encode(p.read_bytes()).decode() for p in images] if o.get("vision") else []
+    urls = [("data:" + (mimetypes.guess_type(p.name)[0] or "image/jpeg") + ";base64," +
+             base64.b64encode(p.read_bytes()).decode()) for p in images] if o.get("vision") else []
     if kind(o) == "responses":
         content = [{"type": "input_text", "text": prompt}] + [{"type": "input_image", "image_url": u} for u in urls]
         body = {"model": o["model"], "input": [{"role": "user", "content": content}], "store": False}
@@ -178,10 +182,10 @@ def _sleep(seconds: float, cancel) -> None:
 
 
 # ---------- 逐字輸出（問 AI 用） ----------
-def stream(o: dict, text: str, cancel, meter=None) -> Iterator[str]:
+def stream(o: dict, text: str, cancel, meter=None, images: list[Path] | None = None) -> Iterator[str]:
     if cancel.is_set():
         raise Cancelled()
-    body = _body(o, text, [], True, None if kind(o) == "responses" else 0.4)
+    body = _body(o, text, images or [], True, None if kind(o) == "responses" else 0.4)
     try:
         r = _open(o, body, True)
     except urllib.error.HTTPError as e:
