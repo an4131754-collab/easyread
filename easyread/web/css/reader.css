@@ -35,13 +35,17 @@ body.en-only #bar .mode-control { display: none; }
 .compare-order { position: relative; display: none; }
 body.mode-bi .compare-order { display: inline-flex; }
 .compare-order-trigger {
-  height: 30px; padding: 0 8px; border: 1px solid var(--rule); border-radius: 8px;
-  display: inline-flex; align-items: center; gap: 5px; background: color-mix(in srgb, var(--surface) 72%, transparent);
+  height: 30px; padding: 0 4px; border: 1px solid var(--rule); border-radius: 8px;
+  display: inline-flex; align-items: center; gap: 1px; background: color-mix(in srgb, var(--surface) 72%, transparent);
   color: var(--ink-2); font-size: 12px; white-space: nowrap;
 }
 .compare-order-trigger:hover, .compare-order-trigger[aria-expanded="true"] { background: var(--accent-soft); color: var(--ink); }
 .compare-order-trigger:focus-visible, .compare-order-menu button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.compare-order-caret { color: var(--ink-3); font-size: 11px; }
+.compare-order-caret {
+  width: 18px; height: 18px; flex: none; display: grid; place-items: center;
+  border-radius: 5px; background: var(--accent-soft-2); color: var(--accent);
+}
+.compare-order-caret svg { display: block; width: 14px; height: 14px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .compare-order-menu {
   position: absolute; top: calc(100% + 7px); right: 0; z-index: 70; width: 174px; padding: 5px;
   border: 1px solid var(--rule); border-radius: 10px; background: var(--surface); box-shadow: var(--shadow);
