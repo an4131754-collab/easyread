@@ -65,10 +65,8 @@
       const rec = ((p && p.models) || []).find((x) => x.id === m.model);
       Object.assign(c.openai, { preset: m.preset || "", base_url: m.base_url || (p ? p.base_url : ""), api: m.api || (p && p.api) || "chat",
         model: m.model, api_key: typed || (PR.apiHasKey(s, m.preset) ? "••••" : ""), vision: rec ? !!rec.vision : !!c.openai.vision });
-      if (c.engine !== "openai" && c.concurrency < 2) c.concurrency = 3;
     } else {
       c[m.engine].model = m.model || "";
-      if (c.engine === "openai" && c.concurrency > 2) c.concurrency = 1;
     }
     c.engine = m.engine;
   }
@@ -144,7 +142,8 @@
     if (e === "openai") h += '<label class="check" style="margin:0 0 10px"><input type="checkbox" data-k="openai.vision"' + (c.openai.vision ? " checked" : "") + ">模型能看圖</label>";
     h += '<div class="grid2">' +
       '<label class="field"><span>每批頁數</span><select class="input" data-k="batch_pages">' + PR.opt([[1, "1 頁"], [2, "2 頁"], [3, "3 頁"], [4, "4 頁"]], c.batch_pages) + "</select></label>" +
-      '<label class="field"><span>同時幾批</span><select class="input" data-k="concurrency">' + PR.opt([[1, "1"], [2, "2"], [3, "3"], [4, "4"], [6, "6"]], c.concurrency) + "</select></label></div>" +
+      '<label class="field"><span>同時幾段</span><select class="input" data-k="concurrency">' + PR.opt([[0, "自動（最多 4 段）"], [1, "1"], [2, "2"], [3, "3"], [4, "4"], [6, "6"], [8, "8"]], c.concurrency) + "</select></label></div>" +
+      '<p class="hint">各段同時翻譯，段內依頁序進行，保留前後文。舊設定的 1 批改為自動，超過 4 批改為 4 段；儲存後可自行選擇。</p>' +
       '<div class="test-line"><button class="btn sm line" id="testBtn">' + PR.icon("sparkle", "sm") + '試譯一句</button><span class="test-result" id="testRes"></span></div>';
     if (e === "claude" || e === "codex") {
       h += '<details class="api-adv"><summary>高階</summary><label class="field"><span>' + (e === "claude" ? "Claude Code" : "Codex") + ' 命令</span><input class="input" data-k="' + e + '.command" value="' + PR.esc(c[e].command) + '"></label></details>';

@@ -6,7 +6,7 @@ import threading
 import webbrowser
 from http.server import ThreadingHTTPServer
 
-from . import __version__, config, detect
+from . import __version__, config, detect, reader_files
 from .log import log, setup as setup_log
 from .presence import Presence
 from .server import App, Handler
@@ -16,6 +16,7 @@ from .store import now_iso, read_json, write_json_atomic
 class _Server(ThreadingHTTPServer):
     # Windows 上 SO_REUSEADDR 會讓兩個程序同時佔住 8765，瀏覽器隨機連到其中一個（比如舊版本）
     allow_reuse_address = os.name != "nt"
+    daemon_threads = True  # 更新關閉時，不被閒置連線或頁面的 WebSocket 卡住。
 
 
 def serve(port: int | None = None, open_browser: bool = False, path: str = "/", exit_on_close: bool = False):
@@ -31,7 +32,7 @@ def serve(port: int | None = None, open_browser: bool = False, path: str = "/", 
     except OSError:
         httpd = _Server(("127.0.0.1", 0), Handler)
     url = f"http://127.0.0.1:{httpd.server_address[1]}"
-    app.presence = Presence(app.jobs.busy, httpd.shutdown, exit_on_close)
+    app.presence = Presence(lambda: app.jobs.busy() or reader_files.busy() or app.active_posts > 0, httpd.shutdown, exit_on_close)
     if not config.temp_library():
         write_json_atomic(config.SERVER_INFO, {"url": url, "pid": os.getpid(), "started": now_iso()})
     log.info("EasyRead %s 已啟動：%s  文獻庫：%s", __version__, url, app.lib.root)

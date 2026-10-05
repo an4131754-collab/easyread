@@ -57,6 +57,35 @@ const server=spawn(path.join(root,'.venv','Scripts','python.exe'),['-m','easyrea
  assert.equal(await page.locator('.cm.user').innerText(),'figure.png');
  assert.equal(errors.length,0,errors.join('\n'));
  console.log('PASS photo chooser/upload, image-only message without automatic bubble; no browser exceptions');
+ await page.addInitScript(()=>{
+   let state={supported:true,phase:'idle',percent:0,error:''},listener=()=>{};
+   window.updateCalls={download:0,install:0};
+   window.easyreadDesktop={
+     updateState:async()=>state,
+     onUpdateState:fn=>{listener=fn;return()=>{};},
+     downloadUpdate:async()=>{window.updateCalls.download++;state={...state,phase:'downloading',percent:52};listener(state);await new Promise(r=>setTimeout(r,100));state={...state,phase:'downloaded',percent:100};listener(state);return state;},
+     installUpdate:async()=>{window.updateCalls.install++;state={...state,phase:window.updateCalls.install===1?'downloaded':'installing',error:window.updateCalls.install===1?'正在翻譯，請稍後重試':''};listener(state);return state;}
+   };
+ });
+ let failedLibrary=true;
+ await page.route('**/api/library',route=>failedLibrary?route.fulfill({status:503,json:{error:'Temporary failure'}}):route.continue());
+ await page.route('**/api/update*',route=>route.fulfill({json:{newer:true,latest:'1.2.9.zh-tw',current:'1.2.8',url:'https://github.com/an4131754-collab/easyread/releases/latest',notes:'Update fixture'}}));
+ await page.goto(url+'/');
+ await page.waitForSelector('[data-retry-library]');
+ assert.equal(await page.locator('.welcome').count(),0);
+ failedLibrary=false;await page.click('[data-retry-library]');await page.waitForSelector('.row');
+ await page.evaluate(async()=>{await PR.checkUpdate(true);PR.openUpdate();});
+ await page.click('[data-up="install"]');
+ await page.waitForSelector('.update-progress');
+ assert.equal(await page.locator('[data-up="install"]').isDisabled(),true);
+ await page.waitForSelector('.update-error');
+ assert.match(await page.locator('.update-error').innerText(),/正在翻譯/);
+ assert.equal(await page.locator('[data-up="install"]').innerText(),'重新啟動並安裝');
+ await page.click('[data-up="install"]');
+ await page.waitForFunction(()=>window.updateCalls.install===2);
+ assert.deepEqual(await page.evaluate(()=>window.updateCalls),{download:1,install:2});
+ assert.equal(errors.length,0,errors.join('\n'));
+ console.log('PASS library error/retry without false empty welcome; update progress, busy-backend retry and install without redownloading');
  }finally{if(browser)await browser.close();server.kill();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
 

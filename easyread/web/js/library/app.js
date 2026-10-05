@@ -2,6 +2,8 @@
 (function (PR) {
   "use strict";
   const L = (PR.lib = { items: [], view: "all", tag: null, q: "", sort: PR.ls.get("easyread-sort", "opened"), selected: null, engine: "claude" });
+  L.loadStatus = "loading";
+  L.loadError = "";
   const prefs = PR.ls.get("easyread-prefs", {});
   PR.applyTheme(prefs.theme);
 
@@ -22,8 +24,17 @@
     await L.load();
   };
 
-  L.load = async function () {
-    const d = await PR.api("/api/library");
+  let pendingLoad, loadFailures = 0;
+  L.load = function () {
+    if (pendingLoad) return pendingLoad;
+    pendingLoad = loadLibrary().finally(() => { pendingLoad = null; });
+    return pendingLoad;
+  };
+  async function loadLibrary() {
+    const abort = new AbortController();
+    const deadline = setTimeout(() => abort.abort(), 10000);
+    try {
+    const d = await PR.api("/api/library", { signal: abort.signal });
     PR.token = d.token;
     L.engine = d.engine;
     L.engineLabel = d.engine_label;
@@ -32,15 +43,28 @@
     L.trashCount = d.trash || 0;
     engineChip();
     L.items = d.items;
+    L.loadStatus = "ready";
+    L.loadError = "";
+    loadFailures = 0;
     L.render();
-    schedule();
-  };
+    } catch (error) {
+      L.loadStatus = "error";
+      L.loadError = error.name === "AbortError" ? "本機服務回應逾時" : error.message;
+      loadFailures++;
+      L.render();
+      throw error;
+    } finally {
+      clearTimeout(deadline);
+      schedule();
+    }
+  }
 
   let pollT;
   function schedule() {
     clearTimeout(pollT);
     const busy = L.items.some((i) => i.job && ["queued", "running"].includes(i.job.state));
-    pollT = setTimeout(() => L.load().catch(() => schedule()), busy ? 2500 : 15000);
+    const delay = loadFailures ? Math.min(15000, 1000 * 2 ** Math.min(loadFailures, 4)) : busy ? 2500 : 15000;
+    pollT = setTimeout(() => L.load().catch(() => {}), delay);
   }
 
   function filtered() {
@@ -94,11 +118,14 @@
     const view = L.VIEWS.find((v) => v[0] === L.view) || L.VIEWS[0];
     PR.$("#viewTitle").textContent = L.tag ? L.tag : view[1] + (L.view === "all" ? "論文" : "");
     PR.$("#count").textContent = list.length + " 篇";
-    PR.$("#list").innerHTML = list.length ? list.map(rowHtml).join("") : emptyHtml();
+    const warning = L.loadStatus === "error" && L.items.length ? '<p class="hint" role="status">更新列表失敗，暫時顯示上次載入的論文。<button class="btn sm" data-retry-library>重試</button></p>' : "";
+    PR.$("#list").innerHTML = warning + (list.length ? list.map(rowHtml).join("") : emptyHtml());
     if (L.selected && !L.byId(L.selected)) L.select(null);
     else PR.renderDetail && PR.renderDetail();
   };
   function emptyHtml() {
+    if (L.loadStatus === "loading") return '<div class="empty-state" role="status"><span class="spin"></span> 正在載入文獻庫…</div>';
+    if (L.loadStatus === "error" && !L.items.length) return '<div class="empty-state" role="alert"><div class="big">無法載入文獻庫</div><p>' + PR.esc(L.loadError) + '</p><button class="btn" data-retry-library>重試</button></div>';
     if (L.items.length) return '<div class="empty-state"><div class="big">沒有符合條件的論文</div>換個關鍵詞或篩選試試。</div>';
     const ok = L.engineReady;
     return '<div class="welcome">' + PR.logo("hero") + "<h2>把英文論文，讀成舒服的繁體中文</h2>" +
@@ -138,6 +165,7 @@
 
   /* ---------- 事件 ---------- */
   PR.$("#list").addEventListener("click", (e) => {
+    if (e.target.closest("[data-retry-library]")) { L.load().catch(() => {}); return; }
     const r = e.target.closest(".row");
     if (r) L.select(r.dataset.id);
   });
@@ -179,6 +207,7 @@
   // 等側欄、詳情這些指令碼都載入完再取資料：資料先到、指令碼還沒到時會出錯
   document.addEventListener("DOMContentLoaded", () => {
     PR.loadPrefs().then((p) => { if (p.reader && p.reader.theme) PR.applyTheme(p.reader.theme); PR.useServerUi(p); L.useServerSide(p); });
-    L.load().catch((e) => { PR.$("#list").innerHTML = '<div class="empty-state"><div class="big">連不上本地服務</div>' + PR.esc(e.message) + "</div>"; });
+    L.render();
+    L.load().catch(() => {});
   });
 })(window.PR);

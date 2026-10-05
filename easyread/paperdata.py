@@ -23,21 +23,27 @@ def parse_pages(spec) -> list[int]:
     return out
 
 
-def merge_blocks(ws: Workspace, data: dict, done=None, replace_pages=None, en_only: bool = False) -> dict:
+def merge_blocks(ws: Workspace, data: dict, done=None, replace_pages=None, en_only: bool = False, drop_ids=None) -> dict:
     """併入一批塊。同 id 整塊替換；新塊按 _after 或頁碼順序插入。
     replace_pages：先刪掉這些頁上已有的塊（重新翻譯某幾頁時用）。
     en_only：這批是“只讀原文”整理出來的、只有英文的塊，done 的頁記進 translation.en_pages；否則從 en_pages 裡去掉。"""
     if isinstance(data, list):
         data = {"blocks": data}
     for b in data.get("blocks", []):
-        if not b.get("id") or b.get("type") not in BLOCK_TYPES:
+        if not isinstance(b, dict) or not b.get("id") or b.get("type") not in BLOCK_TYPES:
             raise ValueError(f"塊缺 id 或型別不對：{str(b)[:120]}")
+
+        problem = block_shape_problem(b)
+        if problem:
+            raise ValueError(problem)
 
     def apply(paper):
         blocks = paper.setdefault("blocks", [])
         if replace_pages:
             drop = set(replace_pages)
             blocks[:] = [b for b in blocks if b.get("page") not in drop]
+        if drop_ids:
+            blocks[:] = [b for b in blocks if b.get("id") not in set(drop_ids)]
         n_new = n_upd = 0
         last = None  # 同一批的新塊保持給定順序，接在上一個新塊後面
         for b in data.get("blocks", []):
@@ -103,6 +109,8 @@ def fill_zh(ws: Workspace, data: dict, pages: list[int], keys: set[str]) -> list
             if field == "caption":
                 b["caption_zh"] = str(zh)
             elif field == "head":
+                if not _is_matrix(zh):
+                    raise ValueError(f"{bid}：譯文 table.head 必須是二維陣列")
                 if isinstance(zh, list) and len(zh) == len(b.get("head", [])):
                     b["head"] = zh
             elif field.isdigit() and int(field) < len(b.get("items", [])):
@@ -192,3 +200,21 @@ def set_block_text(ws: Workspace, key: str, zh: str) -> None:
 
 def dumps(obj) -> str:
     return json.dumps(obj, ensure_ascii=False, indent=1)
+
+
+def _is_matrix(value) -> bool:
+    return isinstance(value, list) and all(isinstance(row, list) for row in value)
+
+
+def block_shape_problem(block: dict) -> str | None:
+    """Return a user-facing problem for block shapes that renderers cannot safely consume."""
+    if not isinstance(block, dict):
+        return '塊必須是對象'
+    bid = block.get("id")
+    if block.get("type") != "table":
+        return None
+    for field in ("head", "rows"):
+        value = block.get(field, [])
+        if not _is_matrix(value):
+            return '{id}：table.{field} 必須是二維陣列'.format(id=bid, field=field)
+    return None

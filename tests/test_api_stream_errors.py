@@ -94,11 +94,12 @@ class APIStreamErrorsTest(unittest.TestCase):
 
     def test_retry_after_date_invalid_and_seconds(self):
         now = 1700000000
-        for header, wait in [(formatdate(now + 12, usegmt=True), 12), ("invalid", 5), ("nan", 5), ("7", 7), ("0", 0)]:
+        for header, wait in [(formatdate(now + 12, usegmt=True), 12), ("invalid", 10), ("nan", 10), ("7", 7), ("0", 0)]:
             error = urllib.error.HTTPError("http://example.invalid", 429, "limited", {"Retry-After": header}, None)
             response = io.BytesIO(json.dumps({"choices": [{"message": {"content": "ok"}}]}).encode())
             with self.subTest(header=header), patch.object(openai_api, "_open", side_effect=[error, response]), \
-                    patch.object(openai_api, "_sleep") as sleep, patch.object(openai_api.time, "time", return_value=now):
+                    patch.object(openai_api, "_sleep") as sleep, patch.object(openai_api.time, "time", return_value=now), \
+                    patch.object(openai_api.random, "uniform", return_value=1):
                 self.assertEqual(openai_api.complete({"model": "fake"}, "q", []), "ok")
                 sleep.assert_called_once_with(wait, None)
 

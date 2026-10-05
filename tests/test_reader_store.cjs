@@ -31,3 +31,26 @@ test("offline deletes survive delayed note creation and export/import", async ()
     assert.ok(!PR.state.reader.notes.n1.deleted);
   }
 });
+
+test("saving notes does not swallow a concurrent paper update", async () => {
+  const PR = { uid: () => "client", nowIso: () => "2026-10-01T00:00:00Z", emit() {},
+    ls: { get: (key, fallback) => fallback, set: () => true } };
+  const fetch = async url => ({ ok: true, status: 200, json: async () => {
+    if (url.endsWith("/state")) return { paper: { meta: {} }, reader: {}, token: "test", versions: { paper: "p1", reader: "r1" } };
+    if (url.endsWith("/ops")) return { rev: 1, versions: { paper: "p2", reader: "r2" } };
+    if (url.endsWith("/versions")) return { paper: "p2", reader: "r2" };
+    if (url.endsWith("/part/paper")) return { version: "p2", data: { meta: {}, translated: true } };
+    throw Error(url);
+  } });
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, "../easyread/web/js/reader/store.js"), "utf8"), {
+    window: { PR, addEventListener() {} }, location: { pathname: "/read/fixture" },
+    document: { getElementById: () => null, hidden: false }, fetch, setTimeout() {}, clearTimeout() {},
+  });
+  await PR.load();
+  PR.commit({ op: "paper_note", body: "saved note" });
+  await PR.flush();
+  assert.equal(PR.state.versions.paper, "p1");
+  await PR.poll();
+  assert.equal(PR.state.versions.paper, "p2");
+  assert.equal(PR.state.paper.translated, true);
+});

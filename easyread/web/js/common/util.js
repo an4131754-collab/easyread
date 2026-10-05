@@ -179,7 +179,7 @@ window.PR = window.PR || {};
     let body = opts.body;
     if (body != null && !(body instanceof Blob) && !(body instanceof ArrayBuffer)) { body = JSON.stringify(body); headers["Content-Type"] = "application/json"; }
     if (opts.method && opts.method !== "GET") headers["X-Token"] = PR.token || "";
-    const r = await fetch(path, { method: opts.method || "GET", headers, body, cache: "no-store" });
+    const r = await fetch(path, { method: opts.method || "GET", headers, body, cache: "no-store", signal: opts.signal });
     const data = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(data.error || "請求失敗 " + r.status);
     return data;

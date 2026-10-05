@@ -16,7 +16,8 @@ import tempfile
 import threading
 from pathlib import Path
 
-from . import netcheck, usage
+from . import codex_lean, netcheck, usage
+from .log import log
 
 
 class EngineError(RuntimeError):
@@ -94,43 +95,51 @@ def _popen(args: list[str], cwd: Path):
 def run_claude(c: dict, prompt: str, cwd: Path, cancel=None, meter=None) -> str:
     exe = claude_path(c)
     if not exe:
-        raise EngineError(f"找不到 Claude Code 命令：{c.get('command') or 'claude'}（先裝好並登入 Claude Code）")
+        raise EngineError('找不到 Claude Code 命令：{cmd}（先裝好並登入 Claude Code）'.format(cmd=c.get('command') or 'claude'))
     args = [exe, "-p", *_CLAUDE_ARGS]
     if c.get("model"):
         args += ["--model", c["model"]]
     args += list(c.get("extra_args") or [])
-    out = _communicate(_popen(args, cwd), prompt, int(c.get("timeout") or 1200), cancel)
+    # lean（翻譯時）：只給 Read 一個工具。--allowedTools 只是免確認，別的內置工具的定義照樣每次都發，
+    # 實测空調用固定上下文從約 3.2 萬 token 降到約 5 千。使用者設定（代理、預設模型、登入）照舊讀。
+    lean = CLAUDE_LEAN if c.get("lean") else []
+    try:
+        out = _communicate(_popen(args + lean, cwd), prompt, int(c.get("timeout") or 1200), cancel)
+    except EngineError as e:
+        if not lean or not option_unknown(e):
+            raise
+        log.warning("Claude Code 不認 --tools，照舊調用：%s", str(e)[-300:])
+        out = _communicate(_popen(args, cwd), prompt, int(c.get("timeout") or 1200), cancel)
     events = _json_lines(out)
     res = next((e for e in reversed(events) if e.get("type") == "result"), None)
     if res is None:
-        raise EngineError(f"Claude Code 輸出不是 JSON：{out[:300]}")
+        raise EngineError('Claude Code 輸出不是 JSON：{out}'.format(out=out[:300]))
     if meter is not None:
         meter.add(**usage.from_claude(res, next((e for e in reversed(events) if e.get("type") == "rate_limit_event"), None)))
     if res.get("is_error") or res.get("subtype", "success") != "success":
         msg = str(res.get("result") or res.get("terminal_reason") or res.get("subtype"))
         if "limit" in msg.lower():
-            msg += "（用量到上限了，等額度恢復後點“重試”，或在設定裡換個引擎）"
-        raise EngineError(f"Claude Code 出錯：{msg}")
+            msg += '（用量到上限了，等額度恢復後點“重試”，或在設定裡換個引擎）'
+        raise EngineError('Claude Code 出錯：{msg}'.format(msg=msg))
     return res.get("result") or ""
 
 
 def run_codex(c: dict, prompt: str, cwd: Path, images: list[Path], cancel=None, meter=None) -> str:
+    """c["lean"]：不拉起使用者 Codex 設定裡的 MCP 服務（翻譯時用，見 codex_lean）。
+    這些覆蓋參數讓 Codex 報設定錯誤時，去掉它們照舊再調一次。"""
     exe = codex_path(c)
     if not exe:
-        raise EngineError(f"找不到 Codex 命令：{c.get('command') or 'codex'}（先裝好並登入 Codex CLI）")
-    fd, last = tempfile.mkstemp(suffix=".txt", prefix="easyread-codex-")
-    os.close(fd)
-    args = [exe, "exec", "--skip-git-repo-check", "--sandbox", "read-only", "--ephemeral", "--color", "never", "--json", "-o", last]
-    if c.get("model"):
-        args += ["--model", c["model"]]
-    for img in images:
-        args += ["-i", str(img)]
-    args += list(c.get("extra_args") or []) + ["-"]
+        raise EngineError('找不到 Codex 命令：{cmd}（先裝好並登入 Codex CLI）'.format(cmd=c.get('command') or 'codex'))
+    lean = codex_lean.args() if c.get("lean") else []
     try:
-        out = _communicate(_popen(args, cwd), prompt, int(c.get("timeout") or 1200), cancel)
-        text = Path(last).read_text(encoding="utf-8", errors="replace").strip()
-    finally:
-        Path(last).unlink(missing_ok=True)
+        text, out = _codex_once(exe, c, prompt, cwd, images, cancel, lean)
+    except EngineError as e:  # 設定覆蓋不被認時 codex 直接退出、只寫 stderr
+        if not lean or not _CONFIG_ERR.search(str(e)):
+            raise
+        text, out = "", str(e)
+    if not text and lean and _CONFIG_ERR.search(out or ""):
+        log.warning("Codex 不認關掉 MCP 的參數，照舊調用：%s", (out or "")[-300:])
+        text, out = _codex_once(exe, c, prompt, cwd, images, cancel, [])
     events = _json_lines(out)
     if meter is not None:
         for e in events:
@@ -138,7 +147,7 @@ def run_codex(c: dict, prompt: str, cwd: Path, images: list[Path], cancel=None, 
                 meter.add(**usage.from_codex(e))
     if not text:
         errs = [str(e.get("message") or (e.get("error") or {}).get("message") or "") for e in events if e.get("type") in ("error", "turn.failed")]
-        raise EngineError("Codex 沒有給出結果：" + (next((m for m in reversed(errs) if m), "") or (out or "")[-300:]))
+        raise EngineError('Codex 沒有給出結果：{msg}'.format(msg=next((m for m in reversed(errs) if m), '') or (out or '')[-300:]))
     return text
 
 
@@ -233,3 +242,43 @@ def test(cfg: dict) -> dict:
         return {"ok": True, "message": "可以用：" + out.strip()[:40]}
     except (EngineError, Cancelled) as e:
         return {"ok": False, "message": str(e)[:300]}
+
+
+def _codex_once(exe: str, c: dict, prompt: str, cwd: Path, images: list[Path], cancel, extra: list[str]) -> tuple[str, str]:
+    fd, last = tempfile.mkstemp(suffix=".txt", prefix="easyread-codex-")
+    os.close(fd)
+    args = [exe, "exec", "--skip-git-repo-check", "--sandbox", "read-only", "--ephemeral", "--color", "never", "--json", "-o", last]
+    if c.get("model"):
+        args += ["--model", c["model"]]
+    for img in images:
+        args += ["-i", str(img)]
+    args += list(c.get("extra_args") or [])
+    args += extra + ["-"]
+    try:
+        out = _communicate(_popen(args, cwd), prompt, int(c.get("timeout") or 1200), cancel)
+        text = Path(last).read_text(encoding="utf-8", errors="replace").strip()
+    finally:
+        Path(last).unlink(missing_ok=True)
+    return text, out
+
+
+def option_unknown(err) -> bool:
+    """Claude Code 版本太舊、不認 --tools 時的報錯。"""
+    return bool(_OPTION_ERR.search(str(err)))
+
+
+def for_translation(cfg: dict) -> dict:
+    """為整篇翻譯建立臨時 CLI 設定，停用不需要的工具。"""
+    out = dict(cfg)
+    for e in ("claude", "codex"):
+        if isinstance(cfg.get(e), dict):
+            out[e] = {**cfg[e], "lean": True}
+    return out
+
+
+_CONFIG_ERR = re.compile(r"config|mcp_servers|notify|unknown (field|key)|invalid", re.I)
+_OPTION_ERR = re.compile(r"unknown option|--tools", re.I)
+CLAUDE_LEAN = ["--tools", "Read"]
+
+def engine_name(engine):
+    return ENGINE_NAMES.get(engine, engine or "")

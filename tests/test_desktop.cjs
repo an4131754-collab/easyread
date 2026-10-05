@@ -42,6 +42,8 @@ async function desktop(platform = "darwin", lock = true) {
   const fakeRequire = name => name === "electron" ? { app, BrowserWindow: Window, Menu, dialog: { showErrorBox() {} }, shell: {} }
     : name === "child_process" ? childProcess : name === "fs" ? { existsSync: () => true }
     : name === "./window-state.cjs" ? { options: () => ({ opts: { width: 1440, height: 960 }, maximized: false }), track() {} }
+    : name === "./desktop-updates.cjs" ? { registerUpdates() {} }
+    : name === "electron-updater" ? { autoUpdater: {} }
     : require(name);
   const source = fs.readFileSync(path.join(__dirname, "../electron/main.cjs"), "utf8");
   vm.runInNewContext(source, { require: fakeRequire, process: proc, __dirname: "/tmp/electron", setTimeout, clearTimeout, console });

@@ -17,7 +17,7 @@
   PR.agentText = function (key) { const [zh, en] = fields(key); return zh || en; };
   /* 這處還沒有譯文、正文排的是英文原文（只讀原文） */
   PR.isEnKey = function (key) { const [zh, en] = fields(key); return !zh && !!en && !PR.editOf(key); };
-  PR.hasZh = (b) => !!(b.zh || b.caption_zh || (b.items || []).some((i) => i.zh));
+  PR.hasZh = (b) => !!(b && (b.zh || b.caption_zh || (Array.isArray(b.items) && b.items.some((i) => i && i.zh))));
   PR.editOf = function (key) { const e = (S.reader.edits || {})[key]; return e && e.zh != null ? e : null; };
   PR.textFor = function (key) { const e = PR.editOf(key); return e ? e.zh : PR.agentText(key); };
   PR.isStale = function (key) { const e = PR.editOf(key); return !!(e && e.base && e.base !== PR.hashText(PR.agentText(key))); };
@@ -36,6 +36,7 @@
     PR.order = {};
     (S.paper.references || []).forEach((r) => (PR.refById[String(r.id)] = r));
     (S.paper.blocks || []).forEach((b, i) => {
+      if (!b || !b.id) return;
       PR.blockById[b.id] = b;
       PR.order[b.id] = i;
       if (b.type === "math" && b.tag) PR.xindex.eq[b.tag] = b.id;
@@ -62,6 +63,11 @@
     return '<div class="caption translation-pair">' + enIfZh(key, b.caption_en) + '<div class="zh translation' + (en ? " en-main" : "") + '"' + en + ' data-key="' + key + '">' + body + staleTag(key) + "</div></div>";
   }
   function cell(c) { return PR.md(String(c), { xref: false, cite: false }).replace(/<br>(\([^<]*\))/g, '<br><span class="sub">$1</span>'); }
+  function tableRows(value) {
+    if (!Array.isArray(value)) throw new Error("表格資料必須是陣列");
+    if (!value.length) return [];
+    return value.every(Array.isArray) ? value : [value.map(c => Array.isArray(c) ? c.join(" ") : c)];
+  }
   function linkify(t) { return PR.esc(t).replace(/(https?:\/\/[^\s<]+[^\s<.,;)])/g, '<a href="$1" target="_blank" rel="noopener">$1</a>'); }
 
   const R = {
@@ -81,8 +87,8 @@
     table(b) {
       const al = (b.align || "").split("");
       const style = (i) => (al[i] ? ' style="text-align:' + ({ l: "left", r: "right", c: "center" }[al[i]] || "left") + '"' : "");
-      const head = (b.head || []).map((r) => "<tr>" + r.map((c, i) => "<th" + style(i) + ">" + cell(c) + "</th>").join("") + "</tr>").join("");
-      const rows = (b.rows || []).map((r) => "<tr>" + r.map((c, i) => "<td" + style(i) + ">" + cell(c) + "</td>").join("") + "</tr>").join("");
+      const head = tableRows(b.head || []).map((r) => "<tr>" + r.map((c, i) => "<th" + style(i) + ">" + cell(c) + "</th>").join("") + "</tr>").join("");
+      const rows = tableRows(b.rows || []).map((r) => "<tr>" + r.map((c, i) => "<td" + style(i) + ">" + cell(c) + "</td>").join("") + "</tr>").join("");
       const table = '<div class="tbl-wrap"><table class="tbl"><thead>' + head + "</thead><tbody>" + rows + "</tbody></table></div>";
       return b.caption_pos === "above" ? captionHtml(b) + table : table + captionHtml(b);
     },
@@ -111,9 +117,16 @@
   const edited = (b) => PR.blockKeys(b).some((k) => PR.editOf(k));
 
   function sectionHtml(b, extraClass, pageMark) {
+    let body;
+    try {
+      body = R[b.type](b) + (edited(b) ? '<span class="edited-dot" title="這裡有你改過的譯文"></span>' : "");
+    } catch (error) {
+      console.warn("Cannot render block", b.id, error);
+      body = '<p class="pending bad">這個區塊無法顯示（' + PR.esc(b.id) + '），請對照原頁。</p>';
+    }
     return '<section class="' + blockClass(b) + (extraClass || "") + '" id="b-' + PR.esc(b.id) + '" data-id="' + PR.esc(b.id) + '">' +
       (pageMark ? '<button class="pgmark" data-t="page" title="看原文第 ' + b.page + ' 頁">p.' + b.page + "</button>" : "") +
-      R[b.type](b) + (edited(b) ? '<span class="edited-dot" title="這裡有你改過的譯文"></span>' : "") + "</section>";
+      body + "</section>";
   }
 
   /* 線上演示的署名和許可（CC BY 要求寫明出處），網址做成連結 */
@@ -181,7 +194,7 @@
     const done = new Set((S.paper.translation || {}).done_pages || []);
     const allPages = (S.paper.meta || {}).pages || [];
     for (const b of S.paper.blocks || []) {
-      if (!R[b.type]) continue;
+      if (!b || !R[b.type]) continue;
       if (b.page && b.page > lastPage + 1) {
         const gap = allPages.filter((p) => p.n > lastPage && p.n < b.page && !done.has(p.n));
         if (gap.length) html += gapHtml(gap);

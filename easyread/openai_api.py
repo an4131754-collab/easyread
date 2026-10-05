@@ -11,6 +11,10 @@ import base64
 import json
 import mimetypes
 import math
+import random
+import threading
+import random
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -96,23 +100,22 @@ def _http_error(e: urllib.error.HTTPError) -> EngineError:
 def complete(o: dict, prompt: str, images: list[Path], cancel=None, meter=None) -> str:
     body = _body(o, prompt, images, False, None if kind(o) == "responses" else 0.2)
     res = None
-    for attempt in range(4):  # 限流、服務端錯誤、網路抖動：等一會兒再試
+    for attempt in range(len(_BACKOFF) + 1):  # 限流、服務端錯誤、網路抖動：等一会儿再試
         if cancel is not None and cancel.is_set():
             raise Cancelled()
         try:
-            with _open(o, body, False) as r:
-                res = json.loads(r.read())
+            res = _fetch(o, body, cancel)
             break
         except urllib.error.HTTPError as e:
-            if e.code in (429, 500, 502, 503, 504) and attempt < 3:
-                _sleep(_retry_after(e.headers.get("Retry-After"), 5 * 2 ** attempt), cancel)
+            if e.code in (429, 500, 502, 503, 504) and attempt < len(_BACKOFF):
+                _sleep(_retry_after(e.headers.get("Retry-After"), _BACKOFF[attempt] * random.uniform(.8, 1.2)), cancel)
                 continue
             raise _http_error(e)
         except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as e:
             if attempt < 2:
                 _sleep(5, cancel)
                 continue
-            raise EngineError(f"連不上介面：{e}")
+            raise EngineError('連不上介面：{err}'.format(err=e))
     if meter is not None and isinstance(res, dict):
         meter.add(**usage.from_openai(res))
     return _responses_text(res) if kind(o) == "responses" else _chat_text(res)
@@ -174,11 +177,11 @@ def _retry_after(value: str | None, default: float) -> float:
 
 
 def _sleep(seconds: float, cancel) -> None:
-    end = time.time() + min(seconds, 90)
-    while time.time() < end:
+    end = time.monotonic() + seconds
+    while time.monotonic() < end:
         if cancel is not None and cancel.is_set():
             raise Cancelled()
-        time.sleep(0.5)
+        time.sleep(min(0.5, max(0, end - time.monotonic())))
 
 
 # ---------- 逐字輸出（問 AI 用） ----------
@@ -337,3 +340,33 @@ def models(o: dict) -> list[str]:
         items = (res or {}).get("models") or []
     ids = [str(m.get("id") or m.get("name") or "").removeprefix("models/") if isinstance(m, dict) else str(m) for m in items]
     return sorted({i for i in ids if i})
+
+
+def _fetch(o: dict, body: dict, cancel) -> dict:
+    """發請求、讀完整個回答。請求放在執行緒里，點取消就不再等它（這次调用的回答丟掉），不然要等介面返回，常常一两分钟。"""
+    if cancel is None:
+        with _open(o, body, False) as r:
+            return json.loads(r.read())
+    box: dict = {}
+
+    def run():
+        try:
+            with _open(o, body, False) as r:
+                box["res"] = json.loads(r.read())
+        except BaseException as e:  # 原样交回主執行緒，限流重試、連不上這些分支照舊
+            box["err"] = e
+    t = threading.Thread(target=run, daemon=True)
+    t.start()
+    while t.is_alive():
+        t.join(0.3)
+        if cancel.is_set() and t.is_alive():
+            raise Cancelled()
+    if "err" in box:
+        raise box["err"]
+    return box["res"]
+
+
+_BACKOFF = (10, 20, 40, 60, 60)
+
+
+_BACKOFF = (10, 20, 40, 60, 60)

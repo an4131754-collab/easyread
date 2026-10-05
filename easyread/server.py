@@ -16,6 +16,7 @@ from .log import log, tail
 from .jobs import Jobs
 from .library import Library
 from .store import now_iso
+from . import reader_files
 
 WEB = config.WEB
 mimetypes.add_type("image/webp", ".webp")
@@ -35,6 +36,9 @@ class App:
         self.jobs = Jobs(self.lib)
         self.token = os.urandom(12).hex()
         self.presence = None  # presence.Presence，serve() 裡設
+        self.request_lock = threading.Lock()
+        self.active_posts = 0
+        self.shutting_down = False
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -169,6 +173,8 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
             self._get()
+        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+            self.close_connection = True
         except Exception as e:  # noqa: BLE001
             log.exception("請求出錯 %s", self.path)
             self._json(500, {"error": f"{type(e).__name__}: {e}"})
@@ -219,12 +225,18 @@ class Handler(BaseHTTPRequestHandler):
                 if (ws.load("item") or {}).get("status", "unread") == "unread":  # 開啟過就算在讀
                     opened["status"] = "reading"
                 ws.patch_item(opened)
-                _warm(ws.root)
-                _refresh_layout(ws)
-                return self._json(200, {
+                versions = ws.versions()  # Capture before reads: a concurrent write must remain visible to polling.
+                self._json(200, {
                     **{n: ws.load(n) for n in ("paper", "discussion", "reader", "layout", "item", "job")},
-                    "versions": ws.versions(), "token": app.token, "id": ws.id,
+                    "versions": versions, "token": app.token, "id": ws.id,
                     "engine": config.load().get("engine")})
+                try:
+                    with app.request_lock:
+                        if not app.shutting_down:
+                            reader_files.prepare_later(ws)
+                except Exception:
+                    log.exception("啟動閱讀頁準備失敗 %s", ws.root)
+                return
             if action == "versions":
                 return self._json(200, ws.versions())
             if action == "chat":
@@ -241,7 +253,8 @@ class Handler(BaseHTTPRequestHandler):
                 out = build(ws)
                 return self._download(out.read_bytes(), out.name, "text/html; charset=utf-8")
             if action == "part" and len(parts) > 5 and parts[5] in ("paper", "discussion", "reader", "layout", "job"):
-                return self._json(200, {"data": ws.load(parts[5]), "version": ws.versions()[parts[5]]})
+                version = ws.versions()[parts[5]]
+                return self._json(200, {"data": ws.load(parts[5]), "version": version})
         if path.startswith("/p/"):
             _, _, pid, rel = path.split("/", 3)
             ws = lib.ws(pid)
@@ -260,6 +273,12 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         if self.headers.get("X-Token") != self.app.token:  # 擋住別的網頁跨站寫
             return self._json(403, {"error": "bad token"})
+        if urlparse(self.path).path == "/api/shutdown":
+            return self._shutdown()
+        with self.app.request_lock:
+            if self.app.shutting_down:
+                return self._json(503, {"error": "正在關閉服務以安裝更新，請稍後重試。"})
+            self.app.active_posts += 1
         try:
             self._post()
         except (ValueError, KeyError) as e:
@@ -267,6 +286,22 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as e:  # noqa: BLE001
             log.exception("請求出錯 %s", self.path)
             self._json(500, {"error": f"{type(e).__name__}: {e}"})
+        finally:
+            with self.app.request_lock:
+                self.app.active_posts -= 1
+
+    def _shutdown(self):
+        with self.app.request_lock:
+            if self.app.shutting_down:
+                return self._json(409, {"error": "服務已在關閉中。"})
+            if self.app.active_posts or self.app.jobs.busy() or reader_files.busy():
+                return self._json(409, {"error": "正在翻譯、回答問題或儲存資料，請等任務完成後再按「重啟並更新」。"})
+            self.app.shutting_down = True
+        self.close_connection = True
+        try:
+            self._json(200, {"ok": True})
+        finally:
+            threading.Thread(target=self.server.shutdown, daemon=True).start()
 
     def _presence(self):
         """頁面開著就一直連著這條 WebSocket；斷開就是頁面關了（見 presence.py）。"""
@@ -401,36 +436,6 @@ class Handler(BaseHTTPRequestHandler):
                 app.jobs.cancel(ws.id)
                 return self._json(200, {"trash": str(lib.trash(ws.id))})
         return self._json(404, {"error": "not found"})
-
-
-_warming: set[str] = set()
-
-
-def _refresh_layout(ws) -> None:
-    """定位規則升級後重算舊論文的原頁框；翻譯還在跑時不動，它結束時自己會定位。"""
-    if (ws.load("job") or {}).get("state") in ("queued", "running"):
-        return
-    try:
-        pdfwork.refresh_layout(ws.root)
-    except Exception:  # noqa: BLE001
-        log.exception("重算原頁定位失敗 %s", ws.root)
-
-
-def _warm(root: Path) -> None:
-    """開啟一篇論文時，背景生成原頁面板用的小圖（每篇只做一次）。"""
-    if str(root) in _warming or (root / "pages" / f"w{pdfwork.PANEL_WIDTH}").exists() and \
-            len(list((root / "pages" / f"w{pdfwork.PANEL_WIDTH}").glob("*.webp"))) >= len(list((root / "pages").glob("page-*.webp"))):
-        return
-    _warming.add(str(root))
-
-    def run():
-        try:
-            pdfwork.warm_variants(root)
-        except Exception:  # noqa: BLE001
-            log.exception("生成面板圖失敗 %s", root)
-        finally:
-            _warming.discard(str(root))
-    threading.Thread(target=run, daemon=True).start()
 
 
 def _reveal(path: Path):

@@ -5,6 +5,9 @@
   "author": "Edwardxlai",
   "main": "electron/main.cjs",
   "private": true,
+  "dependencies": {
+    "electron-updater": "^6.8.9"
+  },
   "scripts": {
     "dev": "electron .",
     "start": "electron .",
@@ -19,6 +22,11 @@
     "appId": "com.edwardxlai.easyread",
     "productName": "EasyRead",
     "asar": true,
+    "publish": {
+      "provider": "github",
+      "owner": "an4131754-collab",
+      "repo": "easyread"
+    },
     "directories": {
       "output": "dist/electron"
     },

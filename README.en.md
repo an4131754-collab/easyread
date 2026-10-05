@@ -95,6 +95,21 @@ If `codex` works in the terminal but EasyRead still cannot find it, open **Setti
 
 Papers and settings live in the `EasyRead` folder in your home directory (same place as the pip install), so reinstalling keeps them.
 
+### Updates (develop)
+
+- Windows desktop adds **Download and update**: show download progress, then shut down the backend, install and relaunch automatically. Active translations, answers or writes block installation; finish the task and retry **Restart and install**.
+- macOS keeps update notifications and manual `.dmg` downloads and installation. Linux also retains manual updates.
+- Updates come only from [this fork's Releases](https://github.com/an4131754-collab/easyread/releases/latest). Older desktop builds need one manual upgrade to a release containing this feature.
+- Releases must include the Windows `.exe`, `.blockmap` and `latest.yml` together. Tags may remain `vX.Y.Z.zh-tw`; installer and update metadata versions use `X.Y.Z`. Publish as a stable release.
+
+### Segmented translation (develop)
+
+**Pages per batch** still controls pages in each model request. **Concurrent segments** translates separate segments in parallel, with sequential batches inside each segment. Auto uses up to four segments; manual settings allow up to eight, limited by the number of pages.
+
+Legacy concurrency of one migrates to auto; values over four migrate to four. After saving the new settings, selecting one remains one. Models, API keys and reasoning settings are preserved. Adjacent pages and source context help verify cross-page continuation. Speed and token usage depend on the document and model; no fixed improvement is guaranteed.
+
+PDF extraction, figure cropping and ordering fixes apply to newly imported documents. Opening older documents does not automatically recalculate their text, figures or page locations. Bilingual highlights, chat attachments and the existing reading interface are retained.
+
 **Or run from source** (needs Python 3.10+): download the latest zip from [Releases](https://github.com/an4131754-collab/easyread/releases/latest) and unzip it (or `git clone` this repo).
 
 **Windows**: double-click `start.cmd`. The first run sets up the environment (about a minute); after that it opens right away.

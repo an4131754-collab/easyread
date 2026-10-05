@@ -1,9 +1,12 @@
-const { app, BrowserWindow, dialog, Menu, shell } = require("electron");
+const { app, BrowserWindow, dialog, Menu, shell, ipcMain } = require("electron");
 const { execFileSync, spawn } = require("child_process");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const windowState = require("./window-state.cjs");
+const http = require("http");
+const { URL } = require("url");
+const { registerUpdates } = require("./desktop-updates.cjs");
 
 // 視窗快取等放 %APPDATA%\EasyRead（預設會用 package.json 的 name，叫 easyread-desktop）。
 // 論文和設定不放這裡：打包後的後端預設用 ~/EasyRead，和 pip 安裝版同一個位置，使用者找得到、好備份。
@@ -13,6 +16,7 @@ let backend;
 let mainWindow;
 let backendReady;
 let windowOpening = false;
+let backendUrl;
 
 function projectRoot() {
   return path.resolve(__dirname, "..");
@@ -92,7 +96,7 @@ function startBackend() {
     backend.stdout.on("data", (chunk) => {
       output = (output + chunk.toString()).slice(-65536);
       const match = output.match(/EasyRead\s+已啟動：\s*(http:\/\/127\.0\.0\.1:\d+)/);
-      if (match) finish(resolve, match[1]);
+      if (match) { backendUrl = match[1]; finish(resolve, match[1]); }
     });
     backend.stderr.on("data", (chunk) => {
       output = (output + chunk.toString()).slice(-65536);
@@ -102,6 +106,7 @@ function startBackend() {
       if (!settled) finish(reject, new Error(`EasyRead 後端退出（code=${code}, signal=${signal}）。${output.slice(-500)}`));
       backend = undefined;
       backendReady = undefined;
+      backendUrl = undefined;
     });
   });
   return backendReady;
@@ -126,6 +131,53 @@ function stopBackend() {
     }
     backend = undefined;
   }
+}
+
+function trustedWindow(event) {
+  if (!mainWindow || event.sender !== mainWindow.webContents ||
+      event.senderFrame !== mainWindow.webContents.mainFrame || !backendUrl ||
+      new URL(event.senderFrame.url).origin !== backendUrl) {
+    throw new Error("Untrusted IPC sender");
+  }
+}
+
+function backendJson(endpoint, token) {
+  return new Promise((resolve, reject) => {
+    const req = http.request(new URL(endpoint, backendUrl), {
+      method: token ? "POST" : "GET",
+      headers: token ? { "X-Token": token, "Content-Type": "application/json", "Content-Length": 2 } : {},
+    }, res => {
+      let body = "";
+      res.setEncoding("utf8");
+      res.on("data", part => { body += part; });
+      res.on("end", () => {
+        try {
+          const data = JSON.parse(body);
+          if (res.statusCode !== 200) return reject(new Error(data.error || `HTTP ${res.statusCode}`));
+          resolve(data);
+        } catch (error) { reject(error); }
+      });
+    });
+    req.setTimeout(8000, () => req.destroy(new Error("後端關閉逾時，請稍後重試。")));
+    req.on("error", reject);
+    req.end(token ? "{}" : undefined);
+  });
+}
+
+async function stopBackendGracefully() {
+  const child = backend;
+  if (!child) return;
+  const info = await backendJson("/api/library");
+  await backendJson("/api/shutdown", info.token);
+  if (backend !== child) return;
+  await new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      child.removeListener("exit", exited);
+      reject(new Error("後端尚未退出，請稍後重試。"));
+    }, 8000);
+    function exited() { clearTimeout(timer); resolve(); }
+    child.once("exit", exited);
+  });
 }
 
 async function createWindow() {
@@ -193,7 +245,23 @@ if (!app.requestSingleInstanceLock()) {
   Menu.setApplicationMenu(process.platform === "darwin"
     ? Menu.buildFromTemplate([{ role: "appMenu" }, { role: "editMenu" }, { role: "windowMenu" }])
     : null);
-  app.whenReady().then(createWindow);
+  app.whenReady().then(() => {
+    registerUpdates({
+      app, ipcMain, updater: require("electron-updater").autoUpdater, trustedWindow,
+      getWindow: () => mainWindow,
+      prepareInstall: stopBackendGracefully,
+      recover: async () => {
+        if (backend) return; // A running task refused shutdown; keep the current page.
+        const previous = mainWindow && mainWindow.webContents.getURL();
+        const url = await startBackend();
+        if (mainWindow) {
+          const old = previous && new URL(previous);
+          await mainWindow.loadURL(old ? new URL(old.pathname + old.search, url).href : url);
+        }
+      },
+    });
+    createWindow();
+  });
   app.on("before-quit", stopBackend);
   app.on("window-all-closed", () => {
     if (process.platform !== "darwin") app.quit();

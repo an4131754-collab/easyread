@@ -29,7 +29,8 @@ DEFAULTS = {
     "auto_translate": True,      # 匯入後自動開始翻譯
     "check_updates": True,       # 開啟文獻庫時問 GitHub 有沒有新版本（一天一次），見 updates.py
     "batch_pages": 2,            # 每次交給模型的頁數
-    "concurrency": 1,            # 同時翻譯幾批
+    "concurrency": 0,            # 同時翻譯幾段；0 自動（最多四段），手動最多八段
+    "concurrency_v": 2,        # 分段並行設定版本；0 是自動，最多四段
     "claude": {"command": "claude", "model": "", "extra_args": [], "timeout": 1200},
     "codex": {"command": "codex", "model": "", "extra_args": [], "timeout": 1200},
     # api：chat（/chat/completions）| responses（/responses），見 openai_api.py
@@ -50,7 +51,7 @@ def is_first_run() -> bool:
 
 
 def load() -> dict:
-    cfg = _merge(DEFAULTS, read_json(CONFIG_PATH, {}) or {})
+    cfg = _merge(DEFAULTS, _saved())
     lib = os.environ.get("EASYREAD_LIBRARY") or os.environ.get("COREAD_LIBRARY")
     if lib:  # 測試或多庫時臨時指定文獻庫
         cfg["library_dir"] = lib
@@ -62,7 +63,7 @@ def temp_library() -> bool:
 
 
 def save(patch: dict) -> dict:
-    cfg = _merge(_merge(DEFAULTS, read_json(CONFIG_PATH, {}) or {}), patch)
+    cfg = _merge(_merge(DEFAULTS, _saved()), patch)
     write_json_atomic(CONFIG_PATH, cfg)
     return load()
 
@@ -98,3 +99,15 @@ def library_dir(cfg: dict | None = None) -> Path:
     p = Path((cfg or load())["library_dir"])
     p.mkdir(parents=True, exist_ok=True)
     return p
+
+
+def _saved() -> dict:
+    raw = read_json(CONFIG_PATH, {}) or {}
+    if raw.get("concurrency_v") != 2 and raw.get("concurrency") == 1:
+        # 以前預設 1，而且切到本機 CLI 時設定頁會強制改回 1，舊設定裡的 1 多半不是自己選的：當成自動。
+        # 存過一次之後帶上 concurrency_v，再選 1 就是真的要一段一段譯
+        raw["concurrency"] = 0
+    elif raw.get("concurrency_v") != 2 and isinstance(raw.get("concurrency"), int) and raw["concurrency"] > 4:
+        raw["concurrency"] = 4  # 以前的 6 是“同時 6 批”，現在是“同時 6 段”：升級時不替老使用者開到 4 段以上
+    raw["concurrency_v"] = 2
+    return raw

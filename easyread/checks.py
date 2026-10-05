@@ -8,7 +8,7 @@ import subprocess
 from pathlib import Path
 
 from .config import WEB
-from .paperdata import BLOCK_TYPES
+from .paperdata import BLOCK_TYPES, block_shape_problem
 from .store import Workspace
 
 _CITE = re.compile(r"\[(\d+(?:\s*[,–-]\s*\d+)*)\]")
@@ -19,43 +19,59 @@ KATEX = WEB / "vendor" / "katex" / "katex.min.js"
 
 
 def texts(block: dict):
-    for key in ("zh", "en", "caption_zh", "caption_en"):
+    for key in ("zh", "en", "caption_zh", "caption_en", "image_zh", "image_en"):
         if block.get(key):
             yield block[key]
-    for it in block.get("items", []):
-        yield it.get("zh", "")
-        yield it.get("en", "")
-    for row in block.get("head", []) + block.get("rows", []):
-        for cell in row:
-            yield str(cell)
+    items = block.get("items", [])
+    if isinstance(items, list):
+        for it in items:
+            if isinstance(it, dict):
+                yield it.get("zh", "")
+                yield it.get("en", "")
+            else:
+                yield str(it)
+    for field in ("head", "rows"):
+        matrix = block.get(field, [])
+        if not isinstance(matrix, list):
+            continue
+        for row in matrix:
+            cells = row if isinstance(row, list) else [row]
+            for cell in cells:
+                yield str(cell)
 
 
 def block_problems(blocks: list[dict], refs: set[str] | None = None) -> tuple[list[str], list]:
     problems, tex = [], []
     ids = set()
     for b in blocks:
+        if not isinstance(b, dict):
+            problems.append(f"塊必須是對象：{str(b)[:80]}")  # i18n-ok
+            continue
         bid = b.get("id")
         if not bid:
-            problems.append(f"缺 id：{str(b)[:80]}")
+            problems.append(f"缺 id：{str(b)[:80]}")  # i18n-ok 交給模型修正的問題清單
         elif bid in ids:
-            problems.append(f"id 重複：{bid}")
+            problems.append(f"id 重複：{bid}")  # i18n-ok
         ids.add(bid)
         if b.get("type") not in BLOCK_TYPES:
-            problems.append(f"{bid}：未知型別 {b.get('type')}")
+            problems.append(f"{bid}：未知型別 {b.get('type')}")  # i18n-ok
+        shape_problem = block_shape_problem(b)
+        if shape_problem:
+            problems.append(shape_problem)
         if b.get("type") == "math":
             tex.append((bid, b.get("tex", ""), True))
         for t in list(texts(b)) + [b.get("tex", "")]:
             if _CTRL.search(t or ""):
-                problems.append(f"{bid}：含控制字元，多半是 JSON 裡 TeX 命令（frac、text、bar、nu 這類）前的反斜槓只寫了一個")
+                problems.append(f"{bid}：含控制字元，多半是 JSON 裡 TeX 命令（frac、text、bar、nu 這類）前的反斜槓只寫了一個")  # i18n-ok
         for t in texts(b):
             if (t.count("$") - t.count("\\$")) % 2:
-                problems.append(f"{bid}：$ 不成對")
+                problems.append(f"{bid}：$ 不成對")  # i18n-ok
             tex += [(bid, m.group(1), False) for m in _INLINE_MATH.finditer(t)]
             if refs:
                 for m in _CITE.finditer(_INLINE_MATH.sub("", t)):
                     for n in re.split(r"\s*[,–-]\s*", m.group(1)):
                         if n not in refs:
-                            problems.append(f"{bid}：引用 [{n}] 不在參考文獻裡")
+                            problems.append(f"{bid}：引用 [{n}] 不在參考文獻裡")  # i18n-ok
     return problems, tex
 
 

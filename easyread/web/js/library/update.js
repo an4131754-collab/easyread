@@ -5,6 +5,9 @@
   "use strict";
   const SKIP = "easyread-skip-update", SEEN = "easyread-seen-update";
   const desktop = /Electron/i.test(navigator.userAgent);
+  const bridge = window.easyreadDesktop;
+  let nativeState = { supported: false, phase: "idle", percent: 0, error: "" };
+  let actionPending = false;
   PR.update = null;
 
   const chip = PR.el("button", { class: "engine-chip update-chip", id: "updateChip", hidden: "" });
@@ -38,6 +41,33 @@
       : "從原始碼執行的：下載新版 zip 解壓後雙擊 start.cmd（macOS / Linux 執行 ./start.sh），或者在專案目錄裡 git pull；用 pip 裝的：pip install -U easyread。論文和設定在資料目錄裡，不受影響。";
   }
 
+  function updateControls() {
+    const root = PR.$("#textDlg"), status = root.querySelector("[data-update-status]"), button = root.querySelector('[data-up="install"]');
+    if (!status || !button) return;
+    const phase = nativeState.phase;
+    const pct = Math.max(0, Math.min(100, Number(nativeState.percent) || 0));
+    const messages = { checking: "正在檢查更新…", downloading: "正在下載更新 " + Math.round(pct) + "%", downloaded: "下載完成，準備安裝", installing: "正在關閉服務並安裝，完成後會重新開啟", current: "目前已是最新版本", error: "更新未完成" };
+    status.innerHTML = '<p role="status" aria-live="polite">' + PR.esc(messages[phase] || "下載完成後會自動重新啟動並安裝。請先儲存目前工作。") + '</p>' +
+      (phase === "downloading" ? '<progress class="update-progress" max="100" value="' + pct + '" aria-label="下載更新進度"></progress>' : "") +
+      (nativeState.error ? '<p class="update-error" role="alert">' + PR.esc(nativeState.error) + '</p>' : "");
+    button.disabled = actionPending || ["checking", "downloading", "installing"].includes(phase);
+    button.textContent = phase === "downloaded" ? "重新啟動並安裝" : phase === "error" ? "重試更新" : "下載並更新";
+  }
+  if (bridge && bridge.updateState && bridge.onUpdateState) {
+    bridge.onUpdateState(state => { nativeState = state; updateControls(); });
+    bridge.updateState().then(state => { nativeState = state; updateControls(); }).catch(() => {});
+  }
+  async function installUpdate() {
+    if (actionPending) return;
+    actionPending = true;
+    updateControls();
+    try {
+      if (nativeState.phase !== "downloaded") nativeState = await bridge.downloadUpdate();
+      if (nativeState.phase === "downloaded") nativeState = await bridge.installUpdate();
+    } catch (error) { nativeState = { ...nativeState, phase: "error", error: error.message }; }
+    finally { actionPending = false; updateControls(); }
+  }
+
   function show(u) {
     PR.update = u;
     const on = !!(u && u.newer && PR.ls.get(SKIP, "") !== u.latest);
@@ -59,13 +89,17 @@
       '<div class="help-head">' + PR.logo("hero sm") + "<div><h2>EasyRead " + PR.esc(u.latest) + (u.newer ? " 可以更新了" : "") + '</h2><div class="hint">你現在用的是 ' + PR.esc(u.current) +
       (u.published ? " · " + PR.esc(u.published.slice(0, 10)) + " 釋出" : "") + "</div></div></div>" +
       '<div class="update-notes">' + (notesHtml(u.notes) || '<p class="hint">這次沒寫更新說明。</p>') + "</div>" +
-      (u.newer ? '<p class="hint">' + howTo() + "</p>" : "") +
+      (u.newer ? '<p class="hint">' + (nativeState.supported ? "Windows 桌面版可在這裡下載並安裝更新；正在翻譯、回答或儲存時會暫停安裝，稍後可重試。" : howTo()) + "</p>" : "") +
+      (u.newer && nativeState.supported ? '<div data-update-status></div>' : "") +
       '<div class="actions">' + (u.newer ? '<button class="btn" data-up="skip">跳過這個版本</button>' : "") + '<button class="btn" data-close>關閉</button>' +
-      '<a class="btn accent" href="' + PR.esc(u.url) + '" target="_blank" rel="noopener">' + (u.newer ? "去下載" : "在 GitHub 上看") + "</a></div>";
+      (u.newer && nativeState.supported ? '<button class="btn accent" data-up="install">下載並更新</button>' : "") +
+      '<a class="btn' + (nativeState.supported && u.newer ? "" : " accent") + '" href="' + PR.esc(u.url) + '" target="_blank" rel="noopener">' + (u.newer ? nativeState.supported ? "手動下載" : "去下載" : "在 GitHub 上看") + "</a></div>";
     dlg.classList.add("open");
+    updateControls();
   };
 
   PR.$("#textDlg").addEventListener("click", (e) => {
+    if (e.target.closest('[data-up="install"]')) { installUpdate(); return; }
     if (!e.target.closest('[data-up="skip"]')) return;
     PR.ls.set(SKIP, PR.update.latest);
     PR.$("#textDlg").classList.remove("open");

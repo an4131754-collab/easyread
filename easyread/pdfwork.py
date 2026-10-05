@@ -9,10 +9,12 @@ import re
 import threading
 import unicodedata
 from contextlib import closing, contextmanager
+from functools import lru_cache
 from pathlib import Path
 from statistics import median
 
-from .store import write_json_atomic
+from . import float_order
+from .store import Workspace, write_json_atomic
 
 # PDFium is not thread-safe, even when threads open separate documents.
 # Keep native handles and their cleanup inside the same process-wide lock.
@@ -22,9 +24,9 @@ _LAYOUT_LOCK = threading.RLock()
 
 @contextmanager
 def open_pdf(pdf: Path):
-    """所有 PDFium 呼叫與資源釋放共用一把鎖，包括操作不同文件的執行緒。"""
+    """所有 PDFium 呼叫與資源釋放共用一把鎖，包括操作不同檔案的執行緒。"""
     import pypdfium2 as pdfium
-    with _PDFIUM_LOCK, pdfium.PdfDocument(str(pdf)) as doc:
+    with _PDFIUM_LOCK, closing(pdfium.PdfDocument(str(pdf))) as doc:
         yield doc
 
 
@@ -44,22 +46,58 @@ def render_pages(pdf: Path, out_dir: Path, scale: float = 2.4, quality: int = 84
 
 def extract_text(pdf: Path, out_dir: Path) -> int:
     """每頁一份 .txt（給 agent 讀）和 .chars.json（給定位用，座標按頁寬高歸一化）。"""
-    import pdfplumber
+    from pypdfium2 import raw as pdfium_c
 
     out_dir.mkdir(parents=True, exist_ok=True)
     with open_pdf(pdf) as doc:
         for i in range(len(doc)):
             with closing(doc[i]) as page, closing(page.get_textpage()) as tp:
-                (out_dir / f"page-{i + 1:03d}.txt").write_text(tp.get_text_range(), encoding="utf-8")
-    with pdfplumber.open(str(pdf)) as plumb:
-        for i, page in enumerate(plumb.pages):
-            W, H = float(page.width), float(page.height)
-            chars = [
-                [c["text"], round(c["x0"] / W, 4), round(c["top"] / H, 4), round(c["x1"] / W, 4), round(c["bottom"] / H, 4)]
-                for c in page.chars
-            ]
-            (out_dir / f"page-{i + 1:03d}.chars.json").write_text(json.dumps(chars, ensure_ascii=False), encoding="utf-8")
-        return len(plumb.pages)
+                # A tiled PDF can reference the entire source document on every
+                # page. Unbounded text includes the off-page content; pdfplumber
+                # also builds and retains a full Python layout for every tile.
+                # Use one native text page for both outputs and close it eagerly.
+                text = tp.get_text_bounded()
+                bounds, rotation = page.get_bbox(), page.get_rotation()
+                chars = []
+                count = tp.count_chars()
+                for index in range(count):
+                    box = _char_box(tp.get_charbox(index, loose=True), bounds, rotation)
+                    if box is None:
+                        continue
+                    # Indexing get_text_range() is unsafe: its string indices can
+                    # differ from PDFium's character indices (generated newlines,
+                    # unmapped glyphs, and non-BMP Unicode characters).
+                    code = pdfium_c.FPDFText_GetUnicode(tp, index)
+                    if 0xD800 <= code <= 0xDBFF and index + 1 < count:
+                        low = pdfium_c.FPDFText_GetUnicode(tp, index + 1)
+                        if 0xDC00 <= low <= 0xDFFF:
+                            code = 0x10000 + ((code - 0xD800) << 10) + low - 0xDC00
+                    if not code or code > 0x10FFFF or 0xD800 <= code <= 0xDFFF:
+                        continue
+                    char = chr(code)
+                    if char in "\r\n":
+                        continue
+                    chars.append([char, *box])
+                (out_dir / f"page-{i + 1:03d}.txt").write_text(text, encoding="utf-8")
+                (out_dir / f"page-{i + 1:03d}.chars.json").write_text(json.dumps(chars, ensure_ascii=False), encoding="utf-8")
+        return len(doc)
+
+
+def _char_box(box, bounds, rotation: int) -> list[float] | None:
+    """PDF canvas -> rendered page, respecting CropBox origin and page rotation."""
+    l, b, r, t = box
+    L, B, R, T = bounds
+    if r <= L or l >= R or t <= B or b >= T:
+        return None
+    x0, y0 = (max(l, L) - L) / (R - L), (T - min(t, T)) / (T - B)
+    x1, y1 = (min(r, R) - L) / (R - L), (T - max(b, B)) / (T - B)
+    if rotation == 90:
+        x0, y0, x1, y1 = 1 - y1, x0, 1 - y0, x1
+    elif rotation == 180:
+        x0, y0, x1, y1 = 1 - x1, 1 - y1, 1 - x0, 1 - y0
+    elif rotation == 270:
+        x0, y0, x1, y1 = y0, 1 - x1, y1, 1 - x0
+    return [round(v, 4) for v in (x0, y0, x1, y1)]
 
 
 def crop(root: Path, page: int, box: list[float], out_name: str, scale: float = 3.0) -> str:
@@ -76,11 +114,11 @@ def crop(root: Path, page: int, box: list[float], out_name: str, scale: float = 
     return rel
 
 
-# ---------- 定位：譯文段落 -> 原頁區域 ----------
+# ---------- 定位：譯文段落 -> 原頁区域 ----------
 
 _MATH = re.compile(r"\$[^$]*\$")
 _ALNUM = re.compile(r"[a-z0-9]")
-LOCATE_VERSION = "3"  # 跨欄段落保留獨立區域；舊論文開啟時重算。
+LOCATE_VERSION = "7"  # 圖表按原頁位置重排；舊論文打開時重算一次。
 
 
 def _norm(s: str) -> str:
@@ -94,7 +132,7 @@ def _page_stream(extract_dir: Path, n: int):
     chars = json.loads(path.read_text(encoding="utf-8"))
     text, idx = [], []
     for k, c in enumerate(chars):
-        for t in _norm(c[0]):  # 連字 ﬁ/ﬂ 會展開成兩個字母，指向同一個字元框
+        for t in _norm(c[0]):  # 連字 ﬁ/ﬂ 會展開成兩個字母，指向同一個字符框
             text.append(t)
             idx.append(k)
     return "".join(text), idx, chars
@@ -150,7 +188,12 @@ def locate(root: Path) -> dict:
 def _locate(root: Path) -> dict:
     paper = json.loads((root / "paper.json").read_text(encoding="utf-8"))
     extract_dir = root / "extract"
-    streams: dict[int, tuple] = {}
+    # Blocks may arrive out of page order during parallel translation. Keep only
+    # the current/next page streams instead of retaining a whole book's chars.
+    @lru_cache(maxsize=2)
+    def stream(n):
+        return _page_stream(extract_dir, n)
+
     layout: dict[str, dict] = {}
     cursor: dict[int, int] = {}
     for block in paper.get("blocks", []):
@@ -167,9 +210,7 @@ def _locate(root: Path) -> dict:
         if block.get("type") == "heading" and block.get("num"):
             heads.insert(0, _anchors(f"{block['num']} {block.get('en', '')}")[0])
         for pn in (page, page + 1):
-            if pn not in streams:
-                streams[pn] = _page_stream(extract_dir, pn)
-            st = streams[pn]
+            st = stream(pn)
             if not st:
                 continue
             text, idx, chars = st
@@ -190,8 +231,11 @@ def _locate(root: Path) -> dict:
                 layout[bid]["boxes"] = boxes
             cursor[pn] = end
             break
-    _extend_captioned(paper.get("blocks", []), layout)
+    _extend_captioned(paper.get("blocks", []), layout, root)
     _clamp_overlaps(layout)
+    ids = float_order.order(paper.get("blocks", []), layout)
+    if ids:  # 圖表挪回原頁位置；公式的估算框按塊順序算，要在這之後
+        paper = Workspace(root).update("paper", lambda p: (float_order.apply(p, ids), p)[1])
     _fill_gaps(paper.get("blocks", []), layout)
     write_json_atomic(root / "layout.json", layout)
     (extract_dir / "locate.version").write_text(LOCATE_VERSION, encoding="utf-8")
@@ -231,18 +275,25 @@ def _page_locs(layout: dict, page: int) -> list[dict]:
             for box in loc.get("boxes") or [loc["box"]]]
 
 
-def _extend_captioned(blocks: list[dict], layout: dict):
-    """表格/圖只匹配到了題注，把框往上撐到同一欄裡上方最近一塊的下沿（題注在上方的往下撐）。"""
+def _extend_captioned(blocks: list[dict], layout: dict, root: Path | None = None):
+    """圖优先用 PDF 圖形邊界；表格或无法识別的圖按題注所在欄估算。"""
+    from .figure_geometry import locate_figures
+    visual = locate_figures(root, blocks, layout) if root else {}
     for block in blocks:
         loc = layout.get(block.get("id"))
-        if block.get("type") not in ("table", "figure") or not loc or loc.get("src") == "manual":
+        if block.get("type") not in ("table", "figure") or not loc or block.get("box") or loc.get("src") == "manual":
+            continue
+        if block["id"] in visual:
+            loc["box"] = visual[block["id"]]
+            loc.pop("boxes", None)
+            loc["src"] = "graphic"
             continue
         x0, y0, x1, y1 = loc["box"]
         others = [l for l in _page_locs(layout, loc["page"]) if l["_parent"] is not loc]
         col = _column(others, loc["box"])
         if col:
             x0, x1 = col
-        elif x1 - x0 < 0.45 and abs((x0 + x1) / 2 - 0.5) > 0.1:  # 窄題注偏在一側：正文繞排的小表/小圖
+        elif x1 - x0 < 0.45 and abs((x0 + x1) / 2 - 0.5) > 0.1:  # 窄題注偏在一側：正文绕排的小表/小圖
             x0, x1 = max(0.05, x0 - 0.02), min(0.95, x1 + 0.02)
         else:
             x0, x1 = min(x0, 0.15), max(x1, 0.85)
@@ -254,8 +305,8 @@ def _extend_captioned(blocks: list[dict], layout: dict):
             below = [b[1] for b in same_col if b[1] > y1]
             y1 = min(below) - 0.005 if below else 0.92
         loc["box"] = [x0, round(y0, 4), x1, round(y1, 4)]
-        loc.pop("boxes", None)  # 圖表框要包含影像本身，按題注擴充套件後用整個區域。
-        loc["src"] = "caption"  # 撐過的框旁邊常有繞排正文，後面截重疊時不能再截它
+        loc.pop("boxes", None)  # 圖表框要包含圖像本身，按題注扩展後用整個区域。
+        loc["src"] = "caption"  # 撑過的框旁邊常有绕排正文，後面截重叠時不能再截它
 
 
 def _clamp_overlaps(layout: dict):
@@ -333,7 +384,7 @@ def page_variant(root: Path, rel: str, width: int) -> Path | None:
     return out
 
 
-PANEL_WIDTH = 1000  # 原頁面板預設要的寬度（閱讀頁按面板寬度只會要 1000 或 1600）
+PANEL_WIDTH = 1000  # 原頁面板預設要的宽度（閱讀頁按面板宽度只會要 1000 或 1600）
 
 
 def warm_variants(root: Path, width: int = PANEL_WIDTH) -> None:

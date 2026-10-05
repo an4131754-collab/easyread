@@ -91,7 +91,8 @@
       saveOutbox();
       serverReader = applyOps(JSON.parse(JSON.stringify(serverReader || {})), batch);
       serverReader.rev = res.rev;
-      S.versions = Object.assign(S.versions, res.versions || {});
+      // Other versions advance only after polling has fetched their content.
+      if (res.versions && res.versions.reader) S.versions.reader = res.versions.reader;
       rebuildReader();
       retryMs = 1500;
       if (outbox.length) scheduleFlush(50); else statusIdle();
