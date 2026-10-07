@@ -20,7 +20,12 @@
     PR.openSide(open ? "chat" : null);
     if (open) { autoContext(); load().then(() => { render(); focusInput(); }); render(); }
   };
-  const focusInput = () => setTimeout(() => { const t = PR.$("#chatInput"); t && t.focus(); }, 300);
+  const focusInput = () => setTimeout(() => {
+    // A delayed focus must not erase a new selection made while quoting another reply.
+    const selection = getSelection();
+    if (selection && !selection.isCollapsed) return;
+    const t = PR.$("#chatInput"); t && t.focus();
+  }, 300);
 
   function autoContext() {
     const id = (PR.currentBlock && PR.currentBlock()) || PR.readingBlock();
@@ -30,18 +35,37 @@
     if (!PR.blockById[anchor]) return false;
     quote = (quote || "").trim();
     if (st.refs.some((r) => r.anchor === anchor && r.quote === quote)) return false;
+    if (st.refs.length >= 12) { PR.toast("一次最多引用 12 個片段，請先移除不需要的引用。"); return false; }
     st.refs = st.refs.filter((r) => !(r.anchor === anchor && !r.quote && quote)).concat({ anchor, quote });  // 同段先引整段、再選一句：換成那句
     return true;
   }
+  PR.chatReplyReference = function (id, quote) {
+    const m = thread() && thread().messages.find((m) => m.id === id && m.role === "assistant");
+    if (!PR.canChat() || !PR.feature("chat") || !id || !m || m.error || m.pending || (st.streaming && st.streaming.msg === m) || !quote) return null;
+    return { source: "assistant", message: id, quote, model: m.model || "AI" };
+  };
+  function addReplyRef(ref) {
+    const valid = PR.chatReplyReference(ref.message, ref.quote);
+    if (!valid) return false;
+    if (valid.quote.length > 1000) { PR.toast("單個引用片段最多 1,000 字，請縮小選取範圍。"); return false; }
+    if (st.refs.some((r) => r.source === "assistant" && r.message === valid.message && r.quote === valid.quote)) return false;
+    if (st.refs.length >= 12) { PR.toast("一次最多引用 12 個片段，請先移除不需要的引用。"); return false; }
+    st.refs.push(valid);
+    return true;
+  }
   /* 這次提問帶哪幾段：手動引用的；沒有就用正在讀的那段 */
-  const sendRefs = () => (st.refs.length ? st.refs.slice() : st.auto && !st.noAuto ? [st.auto] : []);
+  const sendRefs = () => {
+    const refs = st.refs.slice();
+    if (!refs.some((r) => r.source !== "assistant") && st.auto && !st.noAuto) refs.unshift(st.auto);
+    return refs;
+  };
 
   /* 外部入口：段落操作條、選中文字（都是“加一段引用”），筆記卡片（直接問這一條） */
   PR.chatAsk = function (opts) {
     if (PR.side !== "chat") { PR.openSide("chat"); autoContext(); }
     load().then(() => {
       if (opts.text) return send(opts.text, opts.note, [{ anchor: opts.anchor, quote: opts.quote || "" }]);
-      const added = addRef(opts.anchor, opts.quote);
+      const added = opts.source === "assistant" ? addReplyRef(opts) : addRef(opts.anchor, opts.quote);
       if (opts.draft) st.draft = opts.draft;
       render(); focusInput();
       if (added && st.refs.length > 1) PR.toast("已引用 " + st.refs.length + " 段", null, 1000);
@@ -71,6 +95,7 @@
     return (t || "").replace(/\$\$?([^$]*)\$\$?/g, (m, x) => x.replace(/\\([a-zA-Z]+)\s*/g, (y, name) => ({ mu: "μ", sigma: "σ", epsilon: "ε", alpha: "α", beta: "β", theta: "θ", pi: "π", sum: "Σ", mid: "|", succ: "≻", log: "log ", exp: "exp " })[name] || "").replace(/[{}\\^_]/g, ""));
   }
   function ctxLabel(c) {
+    if (c && c.source === "assistant") return 'AI 回答 ·「' + c.quote.slice(0, 18) + (c.quote.length > 18 ? "…" : "") + '」';
     if (!c || !PR.blockById[c.anchor]) return "";
     const b = PR.blockById[c.anchor];
     if (b.type === "math" && !c.quote) return (PR.sectionOf ? PR.sectionOf(c.anchor) + " · " : "") + (b.tag ? "公式 (" + b.tag + ")" : "一個公式");
@@ -80,13 +105,14 @@
   }
   function refChip(r, i, auto) {
     const label = ctxLabel(r);
-    const tip = (auto ? "會帶上你正在讀的這段：" : "引用：") + label + "\n想一起問幾段：把正文裡選中的文字拖進來，或點段落上的“問 AI”";
-    return '<span class="chip-ctx' + (auto ? " auto" : "") + '" title="' + PR.esc(tip) + '">' + PR.icon(auto ? "book" : "link", "sm") + "<span>" + PR.esc(label) +
+    const ai = r.source === "assistant";
+    const tip = ai ? "引用 AI 回答（" + (r.model || "AI") + "）：\n" + r.quote : (auto ? "會帶上你正在讀的這段：" : "引用：") + label + "\n想一起問幾段：把正文裡選中的文字拖進來，或點段落上的“問 AI”";
+    return '<span class="chip-ctx' + (auto ? " auto" : "") + (ai ? " ai-ref" : "") + '" title="' + PR.esc(tip) + '">' + PR.icon(auto ? "book" : ai ? "sparkle" : "link", "sm") + "<span>" + PR.esc(label) +
       '</span><button data-c="' + (auto ? "noauto" : "unref") + '" data-i="' + i + '" title="不帶這段">×</button></span>';
   }
   function markCounts() {
     const out = {};
-    PR.myNotes().forEach((n) => { if (n.quote) out[n.color || "yellow"] = (out[n.color || "yellow"] || 0) + 1; });
+    PR.myNotes().forEach((n) => { if (n.quote && !n.unmarked) out[n.color || "yellow"] = (out[n.color || "yellow"] || 0) + 1; });
     return out;
   }
   const colorName = (c) => (PR.HL_COLORS.find(([k]) => k === c) || [c, c])[1];
@@ -155,8 +181,8 @@
     if (m.role === "user") {
       const bubble = m.content ? '<div class="bubble">' + PR.esc(m.content).replace(/\n/g, "<br>") + "</div>" : "";
       return '<div class="cm user">' + messageFilesHtml(m.attachments) + bubble +
-        ((m.refs && m.refs.length ? m.refs : m.anchor ? [m] : []).filter((r) => PR.blockById[r.anchor])
-          .map((r) => '<button class="cm-ctx" data-c="go" data-anchor="' + PR.esc(r.anchor) + '">' + PR.icon("link", "sm") + "<span>" + PR.esc(ctxLabel(r)) + "</span></button>").join("")) + "</div>";
+        ((m.refs && m.refs.length ? m.refs : m.anchor ? [m] : []).filter((r) => r.source === "assistant" || PR.blockById[r.anchor])
+          .map((r) => '<button class="cm-ctx" title="' + PR.esc(r.quote || ctxLabel(r)) + '" ' + (r.source === "assistant" ? 'data-c="go-reply" data-message="' + PR.esc(r.message) : 'data-c="go" data-anchor="' + PR.esc(r.anchor)) + '">' + PR.icon(r.source === "assistant" ? "sparkle" : "link", "sm") + "<span>" + PR.esc(ctxLabel(r)) + "</span></button>").join("")) + "</div>";
     }
     const live = st.streaming && st.streaming.msg === m;
     return '<div class="cm ai' + (m.error ? " err" : "") + '" data-id="' + PR.esc(m.id || "") + '"><div class="who"><span class="av">' + PR.icon("sparkle", "sm") + "</span>" + PR.esc(m.model || "AI") + (live ? ' <span class="spin"></span>' : "") + "</div>" +
@@ -174,7 +200,8 @@
         '<a class="btn sm accent" href="' + repo + '" target="_blank" rel="noopener">去 GitHub 安裝 ↗</a></div>';
     }
     const m = modelOf(st.model);
-    const chips = st.refs.length ? st.refs.map((r, i) => refChip(r, i)).join("") : st.auto && !st.noAuto ? refChip(st.auto, 0, true) : "";
+    const auto = !st.refs.some((r) => r.source !== "assistant") && st.auto && !st.noAuto;
+    const chips = (auto ? refChip(st.auto, 0, true) : "") + st.refs.map((r, i) => refChip(r, i)).join("");
     const menu = st.menuOpen ? '<div class="ch-menu">' + st.models.map((x) => '<button data-c="model" data-m="' + PR.esc(x.id) + '" class="' + (x.id === st.model ? "on" : "") + '"' + (x.ready === false ? ' disabled title="' + PR.esc(x.hint) + '"' : "") + ">" +
       "<b>" + PR.esc(x.label) + "</b><small>" + PR.esc(x.ready === false ? x.hint : [x.source, x.id === st.def ? "預設" : ""].filter(Boolean).join(" · ")) + "</small></button>").join("") +
       '<hr><button data-c="manage">' + PR.icon("gear", "sm") + "管理模型…</button></div>" : "";
@@ -241,7 +268,7 @@
     const photoOnly = !text && saved.length > 0 && saved.every((a) => a.kind === "image");
     if (!text && saved.length && !photoOnly) text = attachmentPrompt;
     const refs = only || sendRefs();
-    const c = refs[0] || null;
+    const c = refs.find((r) => r.source !== "assistant") || null;
     let t = thread();
     if (!t) {
       const title = photoOnly ? saved[0].name : text;
@@ -326,6 +353,12 @@
     if (c === "unref") { st.refs.splice(+b.dataset.i, 1); return render(); }
     if (c === "noauto") { st.noAuto = true; return render(); }
     if (c === "go") return PR.jumpTo("b-" + b.dataset.anchor);
+    if (c === "go-reply") {
+      const source = PR.$('#chatList .cm.ai[data-id="' + CSS.escape(b.dataset.message) + '"]');
+      if (source) source.scrollIntoView({ behavior: "smooth", block: "center" });
+      else PR.toast("找不到這則 AI 回答。");
+      return;
+    }
     if (c === "rename" && row) {
       const t = st.threads.find((x) => x.id === row.dataset.t);
       const title = await PR.promptText({ title: "對話改名", value: t.title, ok: "改名", at: row });
@@ -353,6 +386,7 @@
   document.addEventListener("click", (e) => {  // 點對話列表裡的一行：切過去
     const row = e.target.closest("#chatpanel .ch-thread[data-t]");
     if (!row || e.target.closest("[data-c]")) return;
+    if (st.cur !== row.dataset.t) st.refs = st.refs.filter((r) => r.source !== "assistant");
     st.cur = row.dataset.t; st.listOpen = false;
     const t = thread();
     if (t && t.model && st.models.some((m) => m.id === t.model)) st.model = t.model;
@@ -396,7 +430,7 @@
     if (!PR.chatOpen() || st.streaming) return;
     const before = st.auto && st.auto.anchor;
     autoContext();
-    if ((st.auto && st.auto.anchor) === before || st.refs.length || st.noAuto) return;
+    if ((st.auto && st.auto.anchor) === before || st.refs.some((r) => r.source !== "assistant") || st.noAuto) return;
     const el = PR.$(".chip-ctx.auto > span");
     if (el && st.auto) { el.textContent = ctxLabel(st.auto); el.parentElement.title = "會帶上你正在讀的這段：" + ctxLabel(st.auto); } else render();
   }, 400), { passive: true });

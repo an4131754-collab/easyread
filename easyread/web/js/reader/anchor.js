@@ -91,7 +91,7 @@
     scope.normalize();
     if (!onlyBlock) lost.clear();
     const items = [];
-    for (const n of PR.myNotes()) if (n.quote) items.push({ n, attrs: { class: "hl c-" + (n.color || "yellow") + (n.style === "underline" ? " s-ul" : "") + (n.kind === "question" ? " q" : ""), "data-note": n.id } });
+    for (const n of PR.myNotes()) if (n.quote && !n.unmarked) items.push({ n, attrs: { class: "hl c-" + (n.color || "yellow") + (n.style === "underline" ? " s-ul" : "") + (n.kind === "question" ? " q" : ""), "data-note": n.id } });
     for (const e of S.discussion.entries || []) if (e.quote && e.anchor) items.push({ n: e, attrs: { class: "hl agent", "data-card": e.id } });
     for (const { n, attrs } of items) {
       if (onlyBlock && n.anchor !== onlyBlock) continue;
@@ -101,7 +101,7 @@
       if (i < 0) { lost.add(n.id); continue; }
       lost.delete(n.id);
       wrap(target, i, i + n.quote.length, attrs);
-      if (n.kind === "highlight") {
+      if (attrs["data-note"]) {
         const counterpart = counterpartFor(target);
         const pairedText = counterpart && fullText(counterpart);
         if (counterpart && pairedText) wrap(counterpart, 0, pairedText.length, attrs);
@@ -118,6 +118,11 @@
     if (!sel || sel.isCollapsed || !sel.rangeCount) return null;
     const range = sel.getRangeAt(0);
     const startEl = range.startContainer.nodeType === 1 ? range.startContainer : range.startContainer.parentElement;
+    const answer = startEl && startEl.closest("#chatList .cm.ai .body");
+    if (answer && answer.contains(range.endContainer) && PR.chatReplyReference) {
+      const ref = PR.chatReplyReference(answer.closest(".cm.ai").dataset.id, fullText(range.cloneContents()).trim());
+      return ref ? Object.assign(ref, { rect: range.getBoundingClientRect() }) : null;
+    }
     const root = startEl && startEl.closest("#paper .en, #paper .zh");
     if (!root || !root.contains(range.endContainer) || root.querySelector("textarea")) return null;
     const lang = root.getAttribute("lang") === "en" || root.classList.contains("en") ? "en" : "zh";
@@ -138,7 +143,9 @@
     if (!pendingSel) { bar.classList.remove("open"); return; }
     PR.hideBlockbar && PR.hideBlockbar();
     const pen = PR.prefs.pen === "underline" ? "underline" : "marker";
-    bar.innerHTML = '<span class="pens"><button data-pen="marker" class="' + (pen === "marker" ? "on" : "") + '" title="熒光筆：塗底色">' + PR.icon("marker", "sm") + "</button>" +
+    bar.innerHTML = pendingSel.source === "assistant"
+      ? '<button data-s="chat" title="引用選取的 AI 回答，輸入問題後再送出">' + PR.icon("sparkle", "sm") + '引用追問</button><button data-s="copy" title="複製">' + PR.icon("copy", "sm") + '</button>'
+      : '<span class="pens"><button data-pen="marker" class="' + (pen === "marker" ? "on" : "") + '" title="熒光筆：塗底色">' + PR.icon("marker", "sm") + "</button>" +
       '<button data-pen="underline" class="' + (pen === "underline" ? "on" : "") + '" title="下劃線">' + PR.icon("underline", "sm") + "</button></span>" +
       '<span class="dots pen-' + pen + '">' + PR.HL_COLORS.map(([c, name], i) =>
       '<button data-s="highlight" data-color="' + c + '" class="dot-' + c + '" title="' + name + (pen === "underline" ? "色下劃線" : "色熒光筆") + (PR.keysOn ? "（" + (i + 1) + "）" : "") + '"></button>').join("") + "</span>" +
@@ -159,13 +166,15 @@
 
   PR.selectionAction = function (kind, color) {
     if (!pendingSel) return;
+    const selected = pendingSel;
+    if (selected.source === "assistant" && kind !== "chat" && kind !== "copy") return;
     const { anchor, key, lang, quote, prefix, suffix } = pendingSel;
     selbar().classList.remove("open");
     getSelection().removeAllRanges();
     pendingSel = null;
     if (kind === "en") { PR.toggleEn(anchor, true); return; }
     if (kind === "copy") { navigator.clipboard.writeText(quote).then(() => PR.toast("已複製")); return; }
-    if (kind === "chat") { PR.chatAsk({ anchor, quote }); return; }
+    if (kind === "chat") { PR.chatAsk(selected.source === "assistant" ? selected : { anchor, quote }); return; }
     const note = { anchor, key, lang, quote, prefix, suffix, kind, color: color || "yellow" };
     if (PR.prefs.pen === "underline") note.style = "underline";
     if (kind === "highlight") {
@@ -188,18 +197,33 @@
   });
 
   /* 點劃線：寫筆記 / 換顏色 / 刪掉 */
+  function cancelMark(id) {
+    // Keep the quote as the note's reference; unmarked suppresses only its visual mark.
+    if (PR.editingNote === id) PR.closeNoteEditor();
+    const n = (S.reader.notes || {})[id];
+    if (!n || n.deleted) return;
+    if (n.kind !== "highlight" || (n.body || "").trim() || PR.repliesTo(id).length) {
+      PR.saveNote(Object.assign({}, n, { unmarked: true, kind: n.kind === "highlight" ? "note" : n.kind }));
+    } else PR.commit({ op: "note_del", id });
+    PR.applyMarks(n.anchor);
+    PR.renderMargin();
+    if (PR.notesPanelOpen()) PR.renderNotesPanel();
+    PR.toast("已取消標記", { label: "撤銷", fn: () => {
+      PR.saveNote(Object.assign({}, n, { deleted: false })); PR.applyMarks(n.anchor); PR.renderMargin();
+      if (PR.notesPanelOpen()) PR.renderNotesPanel();
+    } });
+  }
   document.addEventListener("click", (e) => {
     const m = e.target.closest("mark.hl[data-note]");
     if (!m || getSelection().toString()) return;
     const n = (S.reader.notes || {})[m.dataset.note];
     if (!n) return;
     e.stopPropagation();
-    if (n.kind !== "highlight") { PR.openNoteEditor(n.id); return; }
     const ul = n.style === "underline";
     PR.popover(m, '<div class="hd">我的劃線</div><div class="hl-edit"><span class="pens"><button data-hl-style="marker" class="' + (ul ? "" : "on") + '" title="熒光筆">' + PR.icon("marker", "sm") + '</button><button data-hl-style="underline" class="' + (ul ? "on" : "") + '" title="下劃線">' + PR.icon("underline", "sm") + "</button></span>" +
       '<span class="dots pen-' + (ul ? "underline" : "marker") + '">' + PR.HL_COLORS.map(([c, name]) =>
       '<button data-hl-color="' + c + '" title="' + name + '" class="dot-' + c + ((n.color || "yellow") === c ? " on" : "") + '"></button>').join("") + "</span></div>" +
-      '<div style="display:flex;gap:6px"><button class="btn sm line" data-hl="note">寫筆記</button><button class="btn sm line" data-hl="question">提問</button><button class="btn sm danger" data-hl="del">刪除劃線</button></div>', { sticky: true });
+      '<div style="display:flex;gap:6px"><button class="btn sm line" data-hl="note">' + (n.kind === "highlight" ? "寫筆記" : "編輯筆記") + '</button><button class="btn sm line" data-hl="question">提問</button><button class="btn sm danger" data-hl="del">取消標記</button></div>', { sticky: true });
     PR.$("#popover").onclick = (ev) => {
       const c = ev.target.closest("[data-hl-color]"), b = ev.target.closest("[data-hl]");
       if (c) { PR.saveNote(Object.assign({}, n, { color: c.dataset.hlColor })); PR.applyMarks(n.anchor); PR.hidePopover(); return; }
@@ -207,8 +231,8 @@
       if (sty) { const x = Object.assign({}, n); if (sty.dataset.hlStyle === "underline") x.style = "underline"; else delete x.style; PR.saveNote(x); PR.applyMarks(n.anchor); PR.hidePopover(); return; }
       if (!b) return;
       PR.hidePopover();
-      if (b.dataset.hl === "del") { PR.commit({ op: "note_del", id: n.id }); PR.applyMarks(n.anchor); }
-      else { PR.saveNote(Object.assign({}, n, { kind: b.dataset.hl })); PR.openNoteEditor(n.id); }
+      if (b.dataset.hl === "del") cancelMark(n.id);
+      else { PR.saveNote(Object.assign({}, n, { kind: b.dataset.hl === "note" && n.kind === "question" ? "question" : b.dataset.hl })); PR.openNoteEditor(n.id); }
     };
   }, true);
 })(window.PR);

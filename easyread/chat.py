@@ -25,6 +25,35 @@ MARKS_BUDGET = 9000  # 標記部分最多帶多少字
 
 
 # ---------- 提示詞 ----------
+def normalize_refs(refs, thread: dict | None) -> list[dict]:
+    """Keep paper references compatible; resolve AI reply provenance within this thread."""
+    if not isinstance(refs, list):
+        raise ValueError("引用格式不正確，請重新選取引用。")
+    if len(refs) > 13:  # 12 selected excerpts plus the automatic paper context.
+        raise ValueError("一次最多引用 12 個片段。")
+    messages = {m.get("id"): m for m in (thread or {}).get("messages", []) if m.get("role") == "assistant"}
+    result = []
+    for ref in refs:
+        if not isinstance(ref, dict):
+            continue
+        quote = str(ref.get("quote") or "").strip()
+        if ref.get("source") == "assistant":
+            mid = str(ref.get("message") or "")
+            msg = messages.get(mid)
+            if not msg or msg.get("error") or msg.get("pending") or not msg.get("content"):
+                raise ValueError("引用的 AI 回答已不存在或尚未完成，請重新選取。")
+            if not quote or len(quote) > 1000:
+                raise ValueError("每個 AI 回答引用需有文字，且最多 1,000 字。")
+            item = {"source": "assistant", "message": mid, "quote": quote, "model": msg.get("model") or "AI"}
+        elif ref.get("anchor"):
+            item = {"anchor": str(ref["anchor"]), "quote": quote[:1000]}
+        else:
+            continue
+        if item not in result:
+            result.append(item)
+    return result
+
+
 def _context(ws: Workspace, anchor: str | None, quote: str, refs: list[dict] | None = None) -> str:
     paper = ws.load("paper")
     meta = paper.get("meta", {})
@@ -44,7 +73,11 @@ def _context(ws: Workspace, anchor: str | None, quote: str, refs: list[dict] | N
         lines.append(f"讀者指著的段落 [{focus['id']}]：\n譯文：{_block_text(focus)}\n原文：{focus.get('en') or focus.get('caption_en') or focus.get('tex', '')}")
     if quote:
         lines.append(f"讀者選中的原話：「{quote}」")
-    extra = [r for r in (refs or []) if r.get("anchor") != anchor or (r.get("quote") or "") != quote]
+    replies = [r for r in (refs or []) if r.get("source") == "assistant"]
+    if replies:
+        parts = [f"{i + 1}. {r.get('model') or 'AI'} 的回答片段：「{r['quote']}」" for i, r in enumerate(replies)]
+        lines.append("讀者引用的 AI 回答（來自先前的模型回答，不是論文原文；請針對這些片段解答追問，並核對論文上下文）：\n" + "\n".join(parts))
+    extra = [r for r in (refs or []) if r.get("source") != "assistant" and (r.get("anchor") != anchor or (r.get("quote") or "") != quote)]
     if extra:
         by_id = {b.get("id"): b for b in blocks}
         parts = []
@@ -72,7 +105,7 @@ def _marks(ws: Workspace, colors: set[str] | None = None) -> str:
     groups: dict[str, list[str]] = {}
     shown: set[str] = set()
     for n in notes:
-        color = COLOR_NAMES.get(n.get("color") or "yellow", "黃") if n.get("quote") else "無顏色"
+        color = COLOR_NAMES.get(n.get("color") or "yellow", "黃") if n.get("quote") and not n.get("unmarked") else "無顏色"
         if colors and color not in colors:
             continue
         b = blocks.get(n.get("anchor")) or {}
@@ -115,7 +148,7 @@ def _marks_summary(ws: Workspace) -> str:
         return ""
     counts: dict[str, int] = {}
     for n in notes:
-        k = COLOR_NAMES.get(n.get("color") or "yellow", "黃") + "色" if n.get("quote") else "無顏色筆記"
+        k = COLOR_NAMES.get(n.get("color") or "yellow", "黃") + "色" if n.get("quote") and not n.get("unmarked") else "無顏色筆記"
         counts[k] = counts.get(k, 0) + 1
     return "讀者在論文上做過 " + str(len(notes)) + " 處標記（" + "、".join(f"{k} {v}" for k, v in counts.items()) + "），這次問題沒提到，就沒附上。"
 
@@ -123,7 +156,15 @@ def _marks_summary(ws: Workspace) -> str:
 def prompt(ws: Workspace, messages: list[dict], anchor: str | None, quote: str, engine: str,
            refs: list[dict] | None = None, attachment_context: str = "") -> str:
     history = messages[-HISTORY:]
-    convo = "\n\n".join(("讀者" if m["role"] == "user" else "你") + "：" + m["content"] for m in history[:-1])
+    turns = []
+    for m in history[:-1]:
+        text = ("讀者" if m["role"] == "user" else "你") + "：" + m["content"]
+        if m["role"] == "user":
+            quotes = [r.get("quote", "")[:1000] for r in m.get("refs", []) if r.get("source") == "assistant"]
+            if quotes:
+                text += "\n讀者當時引用的 AI 回答片段：\n" + "\n".join(f"「{q}」" for q in quotes)
+        turns.append(text)
+    convo = "\n\n".join(turns)
     ask = history[-1]["content"] if history else ""
     tool = ("需要看全文時，用 Read 工具讀當前目錄的 paper.json（blocks 裡是譯文和原文）；讀者的全部標記在 reader.json 的 notes 裡。\n"
             if engine == "claude" else "")

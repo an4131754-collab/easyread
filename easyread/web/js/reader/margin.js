@@ -65,7 +65,7 @@
   PR.cardHtml = cardHtml;
   PR.collectNotes = collect;
   function colorDots(d) {
-    if (!d.quote) return "";
+    if (!d.quote || d.unmarked) return "";
     return '<span class="dots">' + ["yellow", "green", "blue", "pink"].map((c) =>
       '<button data-color="' + c + '" class="dot-' + c + ((d.color || "yellow") === c ? " on" : "") + '" title="換顏色"></button>').join("") + "</span>";
   }

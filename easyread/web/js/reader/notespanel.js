@@ -33,7 +33,7 @@
     for (const e of S.discussion.entries || []) out.push({ src: "agent", anchor: PR.anchorOfEntry(e), t: e.at || "", data: e });
     const keep = {
       all: () => true, mine: (i) => i.src === "mine" && i.data.kind !== "highlight", agent: (i) => i.src === "agent",
-      hl: (i) => i.src === "mine" && i.data.quote, open: (i) => i.src === "mine" && i.data.kind === "question" && !replied.has(i.data.id),
+      hl: (i) => i.src === "mine" && i.data.quote && !i.data.unmarked, open: (i) => i.src === "mine" && i.data.kind === "question" && !replied.has(i.data.id),
     }[filter];
     const order = (a) => (a === "head" ? -1 : PR.order[a] ?? 1e9);
     return out.filter(keep).sort((a, b) => order(a.anchor) - order(b.anchor) || (a.t < b.t ? -1 : 1));
