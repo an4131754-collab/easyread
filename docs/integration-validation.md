@@ -36,7 +36,7 @@ npm run dist
 
 - 本機 Windows 包：維持目前 `1.2.9` 版號，僅供本次打包驗證，不可當成新正式版發布。建置使用 `--publish never`。
 - develop 的 workflow_dispatch 可建置三平台驗證資產，不建立 tag、不執行 Release job。`validate_unsigned_mac=true` 僅允許 macOS 臨時簽章的測試資產。
-- 已查詢 fork 的 Secret **名稱**，目前沒有 `MAC_SIGN_P12`／`MAC_SIGN_P12_PASSWORD`；未讀取任何秘密值。macOS固定簽章與真實跨版本更新尚未驗證。正式 tag 建置缺憑證會失敗，不把臨時簽章包當成正式可更新包。
+- 已查詢 fork 的 Secret **名稱**，整合驗證時尚未設定 `MAC_SIGN_P12`／`MAC_SIGN_P12_PASSWORD`；未讀取任何秘密值。macOS固定簽章與真實跨版本更新尚未驗證。正式 tag 建置缺憑證會失敗，不把臨時簽章包當成正式可更新包。
 - 要啟用 macOS 真實更新，維護者須準備固定名稱為 `EasyRead Self-Signed` 的程式簽章憑證與私鑰，以 base64 P12 放入 `MAC_SIGN_P12`，密碼放 `MAC_SIGN_P12_PASSWORD`。憑證應持續沿用。使用者首次手動安裝該固定簽章版本；後續更新需相同身分及 mac ZIP＋latest-mac.yml。macOS實機與跨版本替換仍需驗證。
 - Linux 需從 AppImage 執行，其他開發／解包方式仍手動下載。CI建置不等於使用者 Linux/macOS 實機安裝驗收。
 - OneDrive短暫占用已加入有限重試及唯讀處理；未在真實 OneDrive 同步事故中驗證。
@@ -53,3 +53,9 @@ CI程式基準：`3884b2e440dcd0e09330e2b8820ef2bc5cca58a7`。
 - [三平台測試安裝包](https://github.com/an4131754-collab/easyread/actions/runs/38519555223)：Windows NSIS、macOS臨時簽章DMG/ZIP、Linux AppImage建置及frozen backend smoke全部成功。
 - [跨系統測試](https://github.com/an4131754-collab/easyread/actions/runs/38519554272)：Windows/macOS/Linux Python3.10/3.12，以及macOS/Linux啟動腳本均成功。
 - macOS固定簽章、實機跨版本更新與OneDrive同步事故仍未驗證，限制依前節所列。
+
+## 1.3.0 發行前簽章設定
+
+2026-10-14 依使用者確認建立固定自簽Code Signing憑證，GitHub已設定 `MAC_SIGN_P12` 與 `MAC_SIGN_P12_PASSWORD`。私密備份位於維護者受Windows ACL限制的本機目錄，未提交Git。公開憑證SHA-256：`648c205bb7fa135729e6d792e0a0b11ace12f777c019dc0718609a34f1a080ae`；有效期至2036-10-11。
+
+1.3.0 的發行建置不允許臨時簽章；正式簽章建置結果將在Release公開前核對。macOS使用者首次必須手動安裝此固定簽章版本，後續版本沿用相同身分；自簽不是Apple公證。
