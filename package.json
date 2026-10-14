@@ -21,6 +21,7 @@
   "build": {
     "appId": "com.edwardxlai.easyread",
     "productName": "EasyRead",
+    "afterSign": "scripts/mac_sign.cjs",
     "asar": true,
     "publish": {
       "provider": "github",
@@ -69,10 +70,11 @@
           "arch": [
             "arm64"
           ]
-        }
+        },
+        { "target": "zip", "arch": ["arm64"] }
       ],
       "category": "publications",
-      "identity": "-",
+      "identity": null,
       "hardenedRuntime": false
     },
     "linux": {

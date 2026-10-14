@@ -1,6 +1,6 @@
 """檢查新版本：問 GitHub 最新的 Release，比當前版本新就告訴頁面（文獻庫頂欄顯示“有新版本”）。
 
-一天最多問一次，結果記在資料目錄的 update.json；沒網、GitHub 連不上就當沒有新版本，不報錯。
+成功後一天最多問一次；失敗會明確標示，三小時後可背景再試。結果記在資料目錄的 update.json。
 幫助裡關掉“自動檢查新版本”後，只有點“檢查更新”時才聯網。
 """
 from __future__ import annotations
@@ -45,22 +45,23 @@ def _fetch() -> dict:
 
 def check(force: bool = False) -> dict:
     """{"current", "latest", "newer", "url", "notes", "published", "enabled"}。force：手動點“檢查更新”，關掉自動檢查也照樣問。"""
-    out = {"current": __version__, "latest": "", "newer": False, "enabled": bool(config.load().get("check_updates", True))}
+    out = {"current": __version__, "latest": "", "newer": False, "enabled": bool(config.load().get("check_updates", True)), "failed": False}
     if not out["enabled"] and not force:
         return out
     with _lock:  # 兩個頁面同時開啟只問一次
         cache = read_json(_path(), {}) or {}
         age = time.time() - cache.get("checked", 0)
-        if force or age > (EVERY if cache.get("latest") else RETRY):
+        if force or age > (EVERY if cache.get("latest") and not cache.get("failed") else RETRY):
             try:
                 cache = {**_fetch(), "checked": time.time()}
             except Exception as e:  # noqa: BLE001  沒網、限流、GitHub 改了格式：都當沒有新版本
                 log.info("檢查新版本沒成功：%s", e)
-                cache = {**cache, "checked": time.time()}
+                cache = {**cache, "checked": time.time(), "failed": True}
             try:
                 write_json_atomic(_path(), cache)
             except OSError:
                 pass
+    out["failed"] = bool(cache.get("failed"))
     if cache.get("latest"):
         out.update(latest=cache["latest"], url=cache.get("url", ""), notes=cache.get("notes", ""),
                    published=cache.get("published", ""), newer=newer(cache["latest"]))

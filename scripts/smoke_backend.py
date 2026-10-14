@@ -44,7 +44,8 @@ def main():
         pdf.write_bytes(probe_pdf())
         env = dict(os.environ, EASYREAD_HOME=str(home), EASYREAD_LIBRARY=str(home / "library"), PYTHONUTF8="1")
         (home / "config.json").write_text(json.dumps({"engine": "none"}), encoding="utf-8")
-        imported = subprocess.run([str(exe), "import", str(pdf), "--no-translate"], env=env, capture_output=True, text=True, timeout=120)
+        imported = subprocess.run([str(exe), "import", str(pdf), "--no-translate"], env=env, capture_output=True, text=True,
+                                  encoding="utf-8", errors="replace", timeout=120)
         if imported.returncode:
             raise RuntimeError(imported.stderr or imported.stdout)
         ws = next((home / "library").iterdir())

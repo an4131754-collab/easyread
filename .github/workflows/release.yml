@@ -2,6 +2,11 @@ name: Build desktop releases
 
 on:
   workflow_dispatch:
+    inputs:
+      validate_unsigned_mac:
+        description: "Allow ad-hoc signed macOS validation artifact (not update-ready; never a Release)"
+        type: boolean
+        default: true
   push:
     tags:
       - "v*"
@@ -48,6 +53,10 @@ jobs:
           npm version "$version" --no-git-tag-version --allow-same-version
       - name: Build and package
         run: npm run dist
+        env:
+          MAC_SIGN_P12: ${{ secrets.MAC_SIGN_P12 }}
+          MAC_SIGN_P12_PASSWORD: ${{ secrets.MAC_SIGN_P12_PASSWORD }}
+          EASYREAD_VALIDATE_UNSIGNED: ${{ github.event_name == 'workflow_dispatch' && inputs.validate_unsigned_mac && '1' || '0' }}
       - name: Smoke test the frozen backend
         run: python scripts/smoke_backend.py
       - name: Check glibc floor of the bundled libpython
@@ -67,6 +76,7 @@ jobs:
           path: |
             dist/electron/*.exe
             dist/electron/*.dmg
+            dist/electron/*-mac.zip
             dist/electron/*.AppImage
             dist/electron/*.blockmap
             dist/electron/latest*.yml
@@ -90,6 +100,7 @@ jobs:
           files: |
             release-assets/**/*.exe
             release-assets/**/*.dmg
+            release-assets/**/*-mac.zip
             release-assets/**/*.AppImage
             release-assets/**/*.blockmap
             release-assets/**/latest*.yml

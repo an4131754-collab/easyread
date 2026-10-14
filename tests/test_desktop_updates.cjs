@@ -96,3 +96,20 @@ test("concurrent downloads are coalesced", { skip: process.platform !== "win32" 
   await Promise.all([f.run("download"), f.run("download")]);
   assert.deepEqual(f.calls, ["download"]);
 });
+
+test("platform eligibility includes macOS and only installed Linux AppImages", () => {
+  const { canUpdate } = require('../electron/desktop-updates.cjs');
+  assert.equal(canUpdate('darwin', {}), true);
+  assert.equal(canUpdate('linux', {}), false);
+  assert.equal(canUpdate('linux', {APPIMAGE:'/opt/EasyRead.AppImage'}), true);
+  assert.equal(canUpdate('freebsd', {}), false);
+});
+for (const platform of ['darwin','linux']) test(`${platform}: explicit install preserves fork feed and busy protection`, async () => {
+  const f=fixture({platform,env:{APPIMAGE:'/opt/EasyRead.AppImage'}});
+  assert.equal((await f.run('state')).supported,true);
+  assert.equal(f.updater.feed.owner,'an4131754-collab');
+  assert.equal((await f.run('download')).phase,'downloaded');
+  assert.deepEqual(f.calls,['download']);
+  await f.run('install');
+  assert.deepEqual(f.calls,['download','shutdown',['install',true,true]]);
+});

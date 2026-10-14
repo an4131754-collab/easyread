@@ -23,6 +23,7 @@
   function updateLine() {
     const u = PR.update;
     if (!u) return "";
+      if (u.failed) return '沒連上 GitHub，稍後再試；可按「檢查更新」重試。';
     if (u.newer) return '有新版本 <a href="#" data-help="open">' + PR.esc(u.latest) + "</a>";
     return u.latest ? "已經是最新版" : "";
   }
@@ -35,7 +36,7 @@
     b.disabled = true; msg.textContent = "正在檢查…";
     try {
       const u = await PR.checkUpdate(true);
-      msg.innerHTML = u.latest ? updateLine() : "沒連上 GitHub，稍後再試";
+        msg.innerHTML = u.failed || u.latest ? updateLine() : "沒連上 GitHub，稍後再試";
     } catch (err) { msg.textContent = "檢查失敗：" + err.message; }
     b.disabled = false;
   });

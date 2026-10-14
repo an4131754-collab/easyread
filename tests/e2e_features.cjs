@@ -12,7 +12,8 @@ write('paper',{meta:{title:'Feature regression'},blocks:[
 ]});
 write('reader',{schema:2,rev:0,notes:{},edits:{},progress:{}});
 write('item',{added:new Date().toISOString(),status:'unread',tags:[]});
-const server=spawn(path.join(root,'.venv','Scripts','python.exe'),['-m','easyread','serve','--port','0'],{cwd:root,env:{...process.env,EASYREAD_LIBRARY:lib,PYTHONUTF8:'1'}});
+fs.writeFileSync(path.join(lib,'config.json'),JSON.stringify({engine:'none',check_updates:false}));
+const server=spawn(path.join(root,'.venv','Scripts','python.exe'),['-m','easyread','serve','--port','0'],{cwd:root,env:{...process.env,EASYREAD_HOME:lib,EASYREAD_LIBRARY:lib,PYTHONUTF8:'1'}});
 (async()=>{
  let browser;
  try {
@@ -78,9 +79,15 @@ const server=spawn(path.join(root,'.venv','Scripts','python.exe'),['-m','easyrea
  await page.click('[data-up="install"]');
  await page.waitForSelector('.update-progress');
  assert.equal(await page.locator('[data-up="install"]').isDisabled(),true);
+ await page.waitForFunction(()=>document.querySelector('[data-up="install"]').textContent==='更新並重啟'&&!document.querySelector('[data-up="install"]').disabled);
+ assert.equal(await page.evaluate(()=>window.updateCalls.install),0);
+ // Downloading must never install automatically, even when the dialog is reopened.
+ await page.click('#textDlg [data-close]');
+ await page.evaluate(()=>PR.openUpdate());
+ await page.click('[data-up="install"]');
  await page.waitForSelector('.update-error');
  assert.match(await page.locator('.update-error').innerText(),/正在翻譯/);
- assert.equal(await page.locator('[data-up="install"]').innerText(),'重新啟動並安裝');
+ assert.equal(await page.locator('[data-up="install"]').innerText(),'更新並重啟');
  await page.click('[data-up="install"]');
  await page.waitForFunction(()=>window.updateCalls.install===2);
  assert.deepEqual(await page.evaluate(()=>window.updateCalls),{download:1,install:2});

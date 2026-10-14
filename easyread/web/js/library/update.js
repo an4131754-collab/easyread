@@ -46,15 +46,18 @@
     if (!status || !button) return;
     const phase = nativeState.phase;
     const pct = Math.max(0, Math.min(100, Number(nativeState.percent) || 0));
-    const messages = { checking: "正在檢查更新…", downloading: "正在下載更新 " + Math.round(pct) + "%", downloaded: "下載完成，準備安裝", installing: "正在關閉服務並安裝，完成後會重新開啟", current: "目前已是最新版本", error: "更新未完成" };
-    status.innerHTML = '<p role="status" aria-live="polite">' + PR.esc(messages[phase] || "下載完成後會自動重新啟動並安裝。請先儲存目前工作。") + '</p>' +
+    const messages = { checking: "正在檢查更新…", downloading: "正在下載更新 " + Math.round(pct) + "%", downloaded: "下載完成，按「更新並重啟」後安裝", installing: "正在關閉服務並安裝，完成後會重新開啟", current: "目前已是最新版本", error: "更新未完成" };
+    status.innerHTML = '<p role="status" aria-live="polite">' + PR.esc(messages[phase] || "下載完成後由你決定何時更新並重啟。") + '</p>' +
       (phase === "downloading" ? '<progress class="update-progress" max="100" value="' + pct + '" aria-label="下載更新進度"></progress>' : "") +
       (nativeState.error ? '<p class="update-error" role="alert">' + PR.esc(nativeState.error) + '</p>' : "");
     button.disabled = actionPending || ["checking", "downloading", "installing"].includes(phase);
-    button.textContent = phase === "downloaded" ? "重新啟動並安裝" : phase === "error" ? "重試更新" : "下載並更新";
+    button.textContent = phase === "downloaded" ? "更新並重啟" : phase === "error" ? "重試下載" : "下載更新";
   }
   if (bridge && bridge.updateState && bridge.onUpdateState) {
-    bridge.onUpdateState(state => { nativeState = state; updateControls(); });
+    bridge.onUpdateState(state => { nativeState = state; updateControls();
+      if (state.phase === "downloading") { chip.hidden = false; chip.textContent = "下載更新 " + Math.round(state.percent || 0) + "%"; }
+      if (state.phase === "downloaded") { chip.hidden = false; chip.textContent = "更新已下載"; PR.toast("更新已下載，可在更新面板按「更新並重啟」。", {label:"開啟更新",fn:PR.openUpdate}); }
+    });
     bridge.updateState().then(state => { nativeState = state; updateControls(); }).catch(() => {});
   }
   async function installUpdate() {
@@ -62,14 +65,20 @@
     actionPending = true;
     updateControls();
     try {
-      if (nativeState.phase !== "downloaded") nativeState = await bridge.downloadUpdate();
       if (nativeState.phase === "downloaded") nativeState = await bridge.installUpdate();
+      else nativeState = await bridge.downloadUpdate();
     } catch (error) { nativeState = { ...nativeState, phase: "error", error: error.message }; }
     finally { actionPending = false; updateControls(); }
   }
 
   function show(u) {
     PR.update = u;
+    // Polling or skipping a release must not hide an active/downloaded update.
+    if (["checking", "downloading", "downloaded", "installing"].includes(nativeState.phase)) {
+      chip.hidden = false;
+      chip.textContent = nativeState.phase === "downloaded" ? "更新已下載" : nativeState.phase === "downloading" ? "下載更新 " + Math.round(nativeState.percent || 0) + "%" : "更新處理中";
+      return;
+    }
     const on = !!(u && u.newer && PR.ls.get(SKIP, "") !== u.latest);
     chip.hidden = !on;
     if (!on) return;
@@ -88,8 +97,9 @@
     dlg.querySelector(".dialog").innerHTML =
       '<div class="help-head">' + PR.logo("hero sm") + "<div><h2>EasyRead " + PR.esc(u.latest) + (u.newer ? " 可以更新了" : "") + '</h2><div class="hint">你現在用的是 ' + PR.esc(u.current) +
       (u.published ? " · " + PR.esc(u.published.slice(0, 10)) + " 釋出" : "") + "</div></div></div>" +
+      (u.failed ? '<p class="update-error" role="alert">這次連不上 GitHub；以下是上次成功取得的版本資訊。可到說明面板按「檢查更新」重試。</p>' : "") +
       '<div class="update-notes">' + (notesHtml(u.notes) || '<p class="hint">這次沒寫更新說明。</p>') + "</div>" +
-      (u.newer ? '<p class="hint">' + (nativeState.supported ? "Windows 桌面版可在這裡下載並安裝更新；正在翻譯、回答或儲存時會暫停安裝，稍後可重試。" : howTo()) + "</p>" : "") +
+      (u.newer ? '<p class="hint">' + (nativeState.supported ? "桌面版可在這裡下載更新；下載完由你按「更新並重啟」。正在翻譯、回答或儲存時會暫停安裝，稍後可重試。" : howTo()) + "</p>" : "") +
       (u.newer && nativeState.supported ? '<div data-update-status></div>' : "") +
       '<div class="actions">' + (u.newer ? '<button class="btn" data-up="skip">跳過這個版本</button>' : "") + '<button class="btn" data-close>關閉</button>' +
       (u.newer && nativeState.supported ? '<button class="btn accent" data-up="install">下載並更新</button>' : "") +
@@ -119,4 +129,5 @@
   };
 
   setTimeout(() => PR.checkUpdate(false).catch(() => {}), 1500);  // 等文獻庫先顯示出來
+  setInterval(() => PR.checkUpdate(false).catch(() => {}), 180000); // 後端按成功／失敗間隔決定是否再次聯網。
 })(window.PR);

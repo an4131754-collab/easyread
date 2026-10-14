@@ -1,6 +1,9 @@
 // Windows NSIS updates. Only the main process chooses the trusted release feed.
-function registerUpdates({ app, ipcMain, updater, trustedWindow, getWindow, prepareInstall, recover }) {
-  const supported = app.isPackaged && process.platform === "win32";
+function canUpdate(platform, env) {
+  return platform === "win32" || platform === "darwin" || (platform === "linux" && !!env.APPIMAGE);
+}
+function registerUpdates({ app, ipcMain, updater, trustedWindow, getWindow, prepareInstall, recover, platform = process.platform, env = process.env }) {
+  const supported = app.isPackaged && canUpdate(platform, env);
   let state = { supported, phase: "idle", version: "", percent: 0, error: "" };
   let busy = false;
   const publish = (patch) => {
@@ -57,4 +60,4 @@ function registerUpdates({ app, ipcMain, updater, trustedWindow, getWindow, prep
   });
 }
 
-module.exports = { registerUpdates };
+module.exports = { registerUpdates, canUpdate };

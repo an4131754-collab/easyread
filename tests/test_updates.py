@@ -63,3 +63,17 @@ class UpdatesTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class UpdateFailureTest(UpdatesTest):
+    def test_failed_check_preserves_cache_but_retries_after_three_hours(self):
+        with mock.patch('easyread.updates.time.time', return_value=100000), self.fake():
+            self.assertFalse(updates.check()['failed'])
+        with mock.patch('easyread.updates.time.time', return_value=100001),self.fake(fail=True):
+            out=updates.check(force=True)
+            self.assertTrue(out['failed']);self.assertEqual(out['latest'],'9.0.0')
+        with mock.patch('easyread.updates.time.time', return_value=100002),self.fake():
+            self.assertTrue(updates.check()['failed'])
+        self.assertEqual(self.calls,2)
+        with mock.patch('easyread.updates.time.time', return_value=100002+updates.RETRY),self.fake():
+            self.assertFalse(updates.check()['failed'])
+        self.assertEqual(self.calls,3)
