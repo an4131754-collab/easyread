@@ -61,10 +61,10 @@
   function useForTranslation(s, m) {
     const c = s.cfg;
     if (m.engine === "openai") {
-      const p = preset(s, m.preset), typed = (s.chatKeys || {})[m.preset];
+      const p = preset(s, m.preset), typed = (s.chatKeys || {})[PR.apiKeyId(m.preset, m.base_url)];
       const rec = ((p && p.models) || []).find((x) => x.id === m.model);
       Object.assign(c.openai, { preset: m.preset || "", base_url: m.base_url || (p ? p.base_url : ""), api: m.api || (p && p.api) || "chat",
-        model: m.model, api_key: typed || (PR.apiHasKey(s, m.preset) ? "••••" : ""), vision: rec ? !!rec.vision : !!c.openai.vision });
+        model: m.model, api_key: typed || (PR.apiHasKey(s, m.preset, m.base_url) ? "••••" : ""), vision: rec ? !!rec.vision : !!c.openai.vision });
     } else {
       c[m.engine].model = m.model || "";
     }
@@ -144,6 +144,7 @@
       '<label class="field"><span>每批頁數</span><select class="input" data-k="batch_pages">' + PR.opt([[1, "1 頁"], [2, "2 頁"], [3, "3 頁"], [4, "4 頁"]], c.batch_pages) + "</select></label>" +
       '<label class="field"><span>同時幾段</span><select class="input" data-k="concurrency">' + PR.opt([[0, "自動（最多 4 段）"], [1, "1"], [2, "2"], [3, "3"], [4, "4"], [6, "6"], [8, "8"]], c.concurrency) + "</select></label></div>" +
       '<p class="hint">各段同時翻譯，段內依頁序進行，保留前後文。舊設定的 1 批改為自動，超過 4 批改為 4 段；儲存後可自行選擇。</p>' +
+      '<label class="field"><span>同時翻譯幾篇（重啟生效）</span><select class="input" data-k="paper_concurrency">' + PR.opt([[1,"1 篇"],[2,"2 篇"],[3,"3 篇"],[4,"4 篇"]], c.paper_concurrency || 1) + '</select></label><p class="hint">建議維持 1 篇。多篇會疊加每篇的分段並行，可能增加記憶體占用並觸發限流；例如 2 篇各 4 段，可能同時發出 8 個請求。</p>' +
       '<div class="test-line"><button class="btn sm line" id="testBtn">' + PR.icon("sparkle", "sm") + '試譯一句</button><span class="test-result" id="testRes"></span></div>';
     if (e === "claude" || e === "codex") {
       h += '<details class="api-adv"><summary>高階</summary><label class="field"><span>' + (e === "claude" ? "Claude Code" : "Codex") + ' 命令</span><input class="input" data-k="' + e + '.command" value="' + PR.esc(c[e].command) + '"></label></details>';
@@ -155,7 +156,7 @@
     PR.$$("[data-k]", root()).forEach((el) => {
       const [a, b] = el.dataset.k.split(".");
       const v = el.type === "checkbox" ? el.checked : el.value;
-      if (b) s.cfg[a][b] = v; else s.cfg[a] = ["batch_pages", "concurrency"].includes(a) ? +v : v;
+      if (b) s.cfg[a][b] = v; else s.cfg[a] = ["batch_pages", "concurrency", "paper_concurrency"].includes(a) ? +v : v;
     });
   }
 
@@ -237,7 +238,8 @@
         if (api && !f.model) { PR.toast("填一個模型名"); return false; }
         const typed = f.key && !f.key.startsWith("••••") ? f.key : "";
         if (api && p && p.key && !PR.apiHasKey(s, f.preset) && !typed) { PR.toast("這家要填 API Key"); return false; }
-        if (api && typed) (s.chatKeys = s.chatKeys || {})[f.preset] = typed;
+        if (api && !p && !PR.customApis.save(s, f, "key")) return false;
+        if (api && typed) (s.chatKeys = s.chatKeys || {})[PR.apiKeyId(f.preset, f.base_url)] = typed;
         const m = toModel(s, f, p);
         if (s.editing === "new") list.push(Object.assign(m, { id: "m" + Date.now().toString(36) }));
         else {

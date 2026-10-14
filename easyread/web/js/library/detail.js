@@ -70,6 +70,10 @@
     const box = PR.$("#detail");
     const i = L.byId(L.selected);
     if (!i) { box.innerHTML = ""; return; }
+    if (i.load_error) {
+      box.innerHTML = '<div class="detail-head"><span>資料讀取異常</span><button class="detail-close" data-d="close">×</button></div><div class="detail-inner"><h3>' + PR.esc(i.title_en) + '</h3><p class="err">' + PR.esc(i.load_error) + '</p><p class="hint">其他論文仍可使用；這篇的原檔已保留，不會用空資料覆蓋。</p>' + PR.paperMaintenanceHtml(i) + '<button class="btn line" data-d="reveal">開啟資料夾</button></div>';
+      return;
+    }
     if (box.contains(document.activeElement) && document.activeElement.matches("[contenteditable], input")) return; // 正在編輯，不打斷
     const thumb = i.thumb ? '<div class="thumb" style="background-image:url(' + i.thumb + ')"></div>' : '<div class="thumb blank">' + PR.icon("pdf") + "</div>";
     const readLabel = i.progress > 0.02 ? "繼續閱讀 · " + Math.round(i.progress * 100) + "%" : "開始閱讀";
@@ -95,7 +99,7 @@
       '<span>出處</span><span contenteditable="plaintext-only" data-meta="venue">' + PR.esc(i.venue || i.arxiv) + "</span>" +
       '<span>連結</span><span contenteditable="plaintext-only" data-meta="url">' + PR.esc(i.url) + "</span>" +
       "<span>新增</span><span>" + PR.esc(PR.relTime(i.added)) + (i.last_opened ? "　·　上次開啟 " + PR.esc(PR.relTime(i.last_opened)) : "") + "</span></div>" +
-      "<h4>翻譯</h4>" + jobHtml(i) +
+      "<h4>翻譯</h4>" + jobHtml(i) + PR.paperMaintenanceHtml(i) +
       (i.notes + i.highlights + i.open_questions ? '<p class="mine-line">' + [i.notes && i.notes + " 條筆記", i.highlights && i.highlights + " 處劃線", i.open_questions && i.open_questions + " 個問題待回答"].filter(Boolean).join(" · ") + "</p>" : "") +
       (i.abstract ? '<h4>摘要</h4><div class="abstract" id="abs">' + PR.esc(i.abstract.replace(/\$([^$]+)\$/g, "$1")) + '</div><button class="linkish" data-d="abs">展開全文</button>' : "") +
       "</div>";
@@ -135,6 +139,7 @@
     const act = d.dataset.d;
     if (act === "newcat") { d.hidden = true; const inp = PR.$("#catInput"); inp.hidden = false; inp.focus(); return; }
     if (act === "close") L.select(null);
+    else if (act === "reveal") await PR.api("/api/p/" + i.id + "/reveal", { method: "POST", body: {} });
     else if (act === "star") L.patch(i.id, { starred: !i.starred });
     else if (act === "read") L.openReader(i.id);
     else if (act === "abs") { PR.$("#abs").classList.toggle("open"); d.textContent = PR.$("#abs").classList.contains("open") ? "收起" : "展開全文"; }

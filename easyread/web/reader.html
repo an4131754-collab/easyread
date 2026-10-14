@@ -10,6 +10,8 @@
 <link rel="stylesheet" href="/web/css/reader.css">
 <link rel="stylesheet" href="/web/css/reader-panels.css">
 <link rel="stylesheet" href="/web/css/reader-chat.css">
+<link rel="stylesheet" href="/web/css/reader-media.css">
+<link rel="stylesheet" href="/web/css/reader-navigation.css">
 <link rel="stylesheet" href="/web/css/settings.css">
 <link rel="stylesheet" href="/web/css/usage.css">
 <script>try{var p=JSON.parse((localStorage.getItem("easyread-prefs")||localStorage.getItem("coread-prefs"))||"{}");var d=p.theme==="dark"||(p.theme!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.dataset.theme=d?"dark":"light"}catch(e){}</script>
@@ -26,6 +28,7 @@
   </div>
   <span class="grow"></span>
   <span class="job-state" id="jobState"></span>
+  <button class="btn icon" id="findBtn" title="搜尋原文與譯文（Ctrl／⌘＋F）" aria-label="搜尋原文與譯文">⌕</button>
   <div class="mode-control">
     <div class="seg" role="group" aria-label="顯示">
       <button data-mode="zh" title="只看譯文">譯文</button>
@@ -111,6 +114,11 @@
 <script src="/web/js/reader/pageview.js"></script>
 <script src="/web/js/reader/splitter.js"></script>
 <script src="/web/js/reader/notespanel.js"></script>
+<script src="/web/js/reader/ui-text.js"></script>
+<script src="/web/js/reader/media-preview.js"></script>
+<script src="/web/js/reader/note-media.js"></script>
+<script src="/web/js/reader/note-media-drag.js"></script>
+<script src="/web/js/reader/find.js"></script>
 <script src="/web/js/reader/chat.js"></script>
 <script src="/web/js/reader/notehelp.js"></script>
 <script src="/web/js/reader/jumpback.js"></script>
@@ -118,6 +126,7 @@
 <script src="/web/js/reader/export.js"></script>
 <script src="/web/js/common/settings-models.js"></script>
 <script src="/web/js/common/settings-api.js"></script>
+<script src="/web/js/common/settings-custom-apis.js"></script>
 <script src="/web/js/common/settings.js"></script>
 <script src="/web/js/common/settings-tabs.js"></script>
 <script src="/web/js/common/settings-chat.js"></script>

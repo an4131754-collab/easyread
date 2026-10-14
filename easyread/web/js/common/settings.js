@@ -92,9 +92,9 @@
   PR.settingsTabs.engine = {
     collect(state) {
       const c = state.cfg, o = c.openai;
-      return { engine: c.engine, batch_pages: c.batch_pages, concurrency: c.concurrency, auto_translate: c.auto_translate,
+      return { engine: c.engine, batch_pages: c.batch_pages, concurrency: c.concurrency, paper_concurrency: c.paper_concurrency, auto_translate: c.auto_translate,
         claude: { model: c.claude.model, command: c.claude.command }, codex: { model: c.codex.model, command: c.codex.command },
-        openai: { preset: o.preset, base_url: o.base_url, api: o.api, model: o.model, api_key: o.api_key, vision: o.vision } };
+        openai: { preset: o.preset, base_url: o.base_url, api: o.api, model: o.model, api_key: o.api_key, vision: o.vision, custom_apis: o.custom_apis || [] } };
     },
   };
 })(window.PR);

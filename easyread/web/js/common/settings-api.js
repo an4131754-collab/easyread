@@ -9,7 +9,8 @@
   const found = {};  // 介面地址 → 點“獲取模型列表”拉到的模型名
   const masked = (v) => String(v || "").startsWith("••••");
   const preset = (s, id) => s.presets.find((p) => p.id === id);
-  const hasKey = (s, id) => (s.cfg.openai.saved_keys || []).includes(id) || !!(s.chatKeys || {})[id];
+  PR.apiKeyId = (id, base) => id || "url:" + String(base || "").trim().replace(/\/+$/, "");
+  const hasKey = (s, id, base) => (s.cfg.openai.saved_keys || []).includes(PR.apiKeyId(id, base)) || !!(s.chatKeys || {})[PR.apiKeyId(id, base)];
   PR.apiHasKey = hasKey;
   /* 模型的顯示名：推薦名單裡有就用“DeepSeek V4.1 Flash”，沒有就是模型名本身 */
   PR.apiModelName = (s, presetId, model) => ((((preset(s, presetId) || {}).models) || []).find((m) => m.id === model) || {}).name || model;
@@ -43,7 +44,7 @@
 
   function html(s, a, opt) {
     const p = preset(s, a.preset);
-    const kp = opt.keyProp, saved = hasKey(s, a.preset) || masked(a[kp]);
+    const kp = opt.keyProp, saved = hasKey(s, a.preset, a.base_url) || masked(a[kp]);
     const addr = '<div class="grid2"><label class="field"><span>介面地址（base URL）</span><input class="input" data-af="base_url" value="' + PR.esc(a.base_url) + '" placeholder="https://…/v1"></label>' +
       '<label class="field"><span>介面格式</span><select class="input" data-af="api">' + PR.opt(API_KINDS, a.api || "chat") + "</select></label></div>";
     let note = p ? PR.esc(p.note || "") : "填服務商給的介面地址（一般以 /v1 結尾）。不知道選哪種介面格式就用 Chat Completions；只支援 Responses 的才換。";
@@ -53,7 +54,7 @@
     }
     const link = p && p.key_url ? ' <a href="' + p.key_url + '" target="_blank" rel="noopener">' + (p.key ? "獲取 Key ↗" : "下載 ↗") + "</a>" : "";
     const fetchMsg = s.fetchMsg || {};
-    return tiles(s, a) + '<p class="hint preset-note">' + note + link + "</p>" + (p ? "" : addr) +
+    return tiles(s, a) + '<p class="hint preset-note">' + note + link + "</p>" + (p ? "" : PR.customApis.html(s, a) + addr) +
       (p && !p.key ? "" : '<label class="field"><span>API Key</span><input class="input" type="password" data-af="key" value="' + (masked(a[kp]) ? "" : PR.esc(a[kp] || "")) +
         '" placeholder="' + (saved ? "已儲存，留空不改" : "sk-…") + '" autocomplete="off"></label>') +
       '<label class="field"><span>模型</span><div class="model-row">' + modelField(s, a, p) +
@@ -84,7 +85,7 @@
       const m = p.models.find((x) => x.id === a.model);
       a.vision = !!(m && m.vision);
     } else if (prev) Object.assign(a, { base_url: "", api: "chat", model: "", vision: false });
-    a[kp] = hasKey(s, id) ? "••••" : "";
+    a[kp] = hasKey(s, id, a.base_url) ? "••••" : "";
   }
 
   PR.apiForm = {
@@ -97,7 +98,7 @@
       if (e.target.closest("[data-fetch-models]")) {
         e.preventDefault();
         read(root, a, kp);
-        const key = masked(a[kp]) ? (s.chatKeys || {})[a.preset] || "" : a[kp] || "";
+        const key = masked(a[kp]) ? (s.chatKeys || {})[PR.apiKeyId(a.preset, a.base_url)] || "" : a[kp] || "";
         s.fetchMsg = { text: "正在獲取…" };
         PR.settingsRender();
         try {
@@ -111,6 +112,15 @@
     },
     /* 改動：下拉框選“手填”換成輸入框；換了推薦模型，“能看圖”跟著它勾上或去掉 */
     change(e, s, a, kp, root) {
+      if (e.target.matches("[data-custom-connection]")) {
+        PR.customApis.select(s, a, e.target.value, kp); return true;
+      }
+      if (e.target.dataset.af === "base_url") {
+        const base = e.target.value.trim();
+        a.base_url = base; a[kp] = hasKey(s, a.preset, base) ? "••••" : "";
+        const key = root.querySelector('[data-af="key"]'); if (key) key.value = "";
+        return true;
+      }
       if (e.target.dataset.af !== "model") return false;
       if (e.target.value === "__type") { e.target.value = a.model; read(root, a, kp); s.apiTyping = true; return true; }
       read(root, a, kp);

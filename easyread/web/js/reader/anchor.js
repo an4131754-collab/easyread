@@ -136,6 +136,19 @@
     return { anchor: root.closest(".blk").dataset.id, key, lang, quote, prefix: text.slice(Math.max(0, s - 32), s), suffix: text.slice(e, e + 32), rect: range.getBoundingClientRect() };
   }
   PR.hasPendingSelection = () => !!pendingSel && selbar().classList.contains("open");
+  document.addEventListener("copy", (e) => {
+    if (!e.clipboardData || e.target.closest?.("input, textarea, [contenteditable]")) return;
+    const sel = getSelection(), paper = PR.$("#paper");
+    if (!sel || sel.isCollapsed || !sel.rangeCount) return;
+    const range = sel.getRangeAt(0);
+    if (!paper.contains(range.startContainer) || !paper.contains(range.endContainer) || !PR.$$("#paper .katex").some(m => range.intersectsNode(m))) return;
+    const content = range.cloneContents();
+    content.querySelectorAll(".katex").forEach(m => {
+      const tex = m.querySelector('annotation[encoding="application/x-tex"]');
+      if (tex) m.replaceWith(document.createTextNode("$" + tex.textContent + "$"));
+    });
+    e.clipboardData.setData("text/plain", fullText(content).trim()); e.preventDefault();
+  });
 
   function showSelbar() {
     pendingSel = readSelection();

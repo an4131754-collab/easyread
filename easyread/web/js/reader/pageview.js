@@ -5,12 +5,15 @@
   const body = document.body;
   let pvPage = 1, pvBlock = null;
   const pages = () => (S.paper.meta || {}).pages || [];
-  const boxesOf = (loc) => loc.boxes && loc.boxes.length ? loc.boxes : [loc.box];
+  const boxesOf = (loc, page) => loc.regions && loc.regions.length
+    ? loc.regions.filter(r => r.page === page).map(r => r.box)
+    : loc.page !== page ? [] : loc.boxes && loc.boxes.length ? loc.boxes : [loc.box];
 
   /* 右側面板開關：pages | notes | null */
   /* 面板滑出的同時正文就讓位：重排只要幾十毫秒（fitWide 不再重量公式），不必等面板滑完再跳一下。 */
   PR.side = null;
   PR.openSide = function (name) {
+    if (PR.side === "notes" && name !== "notes") PR.finishPanelNote?.();
     PR.side = name;
     body.classList.toggle("pv-open", name === "pages");
     body.classList.toggle("np-open", name === "notes");
@@ -72,9 +75,9 @@
     if (url) pdf.href = url;
     const hl = PR.$(".pv-hl");
     const loc = blockId && S.layout[blockId];
-    pair(loc && loc.page === pvPage ? blockId : null);
-    if (loc && loc.page === pvPage) {
-      const boxes = boxesOf(loc);
+    const boxes = loc ? boxesOf(loc, pvPage) : [];
+    pair(boxes.length ? blockId : null);
+    if (boxes.length) {
       hl.replaceChildren(...boxes.map(([x0, y0, x1, y1]) => {
         const region = document.createElement("div");
         region.className = "pv-region";
@@ -109,8 +112,8 @@
     let best = null, area = Infinity;
     for (const id in S.layout) {
       const l = S.layout[id];
-      if (l.page !== pvPage || !PR.blockById[id]) continue;
-      for (const [x0, y0, x1, y1] of boxesOf(l)) {
+      if (!PR.blockById[id]) continue;
+      for (const [x0, y0, x1, y1] of boxesOf(l, pvPage)) {
         const a = (x1 - x0) * (y1 - y0);
         if (x >= x0 - 0.01 && x <= x1 + 0.01 && y >= y0 - 0.006 && y <= y1 + 0.006 && a < area) { best = id; area = a; }
       }

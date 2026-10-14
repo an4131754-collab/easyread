@@ -21,7 +21,7 @@
     const notes = PR.myNotes();
     notes.forEach((n) => (noteById[n.id] = n));
     for (const n of notes) {
-      if (n.kind === "highlight" && !(n.body || "").trim() && PR.editingNote !== n.id) continue;
+      if (n.kind === "highlight" && !(n.body || "").trim() && !PR.noteMedia?.has(n) && PR.editingNote !== n.id) continue;
       push(anchorOf(n.anchor), { src: "mine", t: n.created || n.updated || "", data: n });
     }
     for (const e of S.discussion.entries || []) {
@@ -60,7 +60,8 @@
         '<div class="acts"><button data-a="edit">編輯</button><button data-a="kind">' + (d.kind === "question" ? "改成筆記" : "改成問題") + '</button><button data-a="del">刪除</button></div>';
     return '<div class="card mine' + (editing ? " editing" : "") + (d.color ? " c-" + d.color : "") + '" data-note="' + PR.esc(d.id) + '" data-anchor="' + PR.esc(item.anchor) + '">' +
       '<div class="lbl"><span>' + lbl + '</span><span class="meta">' + PR.shortTime(d.updated || d.created) + "</span></div>" +
-      (d.quote ? '<div class="quote' + lost + '">「' + PR.md(d.quote, { cite: false, xref: false }) + "」</div>" : "") + body + "</div>";
+      (d.quote ? '<div class="quote' + lost + '">「' + PR.md(d.quote, { cite: false, xref: false }) + "」</div>" : "") + body +
+      (PR.noteMedia ? PR.noteMedia.html(d, editingId !== undefined ? "panel" : "margin") + (PR.store.mode === "server" ? '<button class="btn sm line" data-note-media="add">關聯圖表</button>' : "") : "") + "</div>";
   }
   PR.cardHtml = cardHtml;
   PR.collectNotes = collect;
@@ -170,8 +171,12 @@
   /* 結束編輯：空筆記有原話就退回成劃線，沒有就刪掉 */
   PR.finishNote = function (n, value) {
     const body = value.trim();
+    if (PR.noteMedia?.has(n)) {
+      if (body !== (n.body || "") || n.kind === "highlight") PR.saveNote(Object.assign({}, n, {body, kind:n.kind === "question" ? "question" : "note"}));
+      return;
+    }
     if (!body && n.kind !== "highlight") {
-      if (n.quote) PR.saveNote(Object.assign({}, n, { kind: "highlight", body: "" }));
+      if (n.quote) PR.saveNote(Object.assign({}, n, { kind: n.unmarked ? "note" : "highlight", body: "" }));
       else PR.commit({ op: "note_del", id: n.id });
     } else if (body !== (n.body || "")) PR.saveNote(Object.assign({}, n, { body, kind: n.kind === "highlight" ? "note" : n.kind }));
   };

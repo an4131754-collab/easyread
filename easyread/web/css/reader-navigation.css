@@ -1,0 +1,13 @@
+.reader-nav { position: fixed; top: calc(var(--bar-h) + 10px); right: 16px; z-index: 65; background: var(--surface); color: var(--ink); border: 1px solid var(--rule); border-radius: 10px; box-shadow: 0 8px 30px #0002; padding: 10px; font: 13px var(--ui); max-width: calc(100vw - 24px); }
+.reader-nav[hidden] { display: none; }
+.find-panel { display: flex; align-items: center; gap: 4px; width: 420px; }
+.find-panel input { min-width: 0; flex: 1; }
+.find-count { white-space: nowrap; color: var(--ink-3); padding: 0 5px; }
+#notespanel .np-list .card[aria-current="true"] { background: var(--accent-soft); box-shadow: inset 2px 0 var(--accent); }
+#notespanel .np-list .card:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+#notespanel .np-list .card [data-a="edit"] { color: var(--accent); opacity: 1; }
+::highlight(reader-find) { background: #ffe28a55; color: #302400; }
+::highlight(reader-find-active) { background: #ffad45; color: #211500; }
+@media print { .reader-nav { display: none; } }
+
+/* Side-panel sizing remains owned by splitter.js and reader-panels.css. */

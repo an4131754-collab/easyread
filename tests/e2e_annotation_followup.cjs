@@ -25,10 +25,11 @@ write('chat', { threads: [{ id: 'seed', title: 'Existing discussion', model: 'fa
   { role: 'user', content: '繼續說明' },
   { role: 'assistant', id: 'a2', anchor: 'p1', content: '第二段回答有另一個觀點。', model: 'Fake' }
 ] }, { id: 'other', title: 'Other discussion', model: 'fake', messages: [] }] });
+fs.writeFileSync(path.join(library,'config.json'),JSON.stringify({engine:'none',check_updates:false}));
 const metadataPath = path.join(root, '.server.json');
 const originalMetadata = fs.existsSync(metadataPath) ? fs.readFileSync(metadataPath) : null;
 const server = spawn(path.join(root, '.venv', 'Scripts', 'python.exe'), ['-m', 'easyread', 'serve', '--port', '0'], {
-  cwd: root, env: { ...process.env, EASYREAD_LIBRARY: library, PYTHONUTF8: '1' }
+  cwd: root, env: { ...process.env, EASYREAD_HOME: library, EASYREAD_LIBRARY: library, PYTHONUTF8: '1' }
 });
 
 async function select(page, selector, length = 7) {

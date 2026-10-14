@@ -13,7 +13,6 @@
     const open = force != null ? force : PR.side !== "notes";
     PR.openSide(open ? "notes" : null);
     if (open) PR.renderNotesPanel();
-    else editing = null;
   };
 
   function sectionOf(id) {
@@ -40,8 +39,10 @@
   }
 
   PR.renderNotesPanel = function (editId) {
+    if (editId !== undefined && editing && editId !== editing) stopEditing(false);
     if (editId !== undefined) { editing = editId; tab = "notes"; }
     const el = panel();
+    if (editing && PR.noteMedia?.isChoosing(editing) && editId === undefined) return;
     if (el.contains(document.activeElement) && document.activeElement.matches("textarea") && editId === undefined) return; // 正在打字，不打斷
     const list = items();
     const count = PR.myNotes().length + (S.discussion.entries || []).length;
@@ -78,15 +79,17 @@
     const n = editing && (S.reader.notes || {})[editing];
     if (ta && n && ta.value.trim() !== (n.body || "")) PR.saveNote(Object.assign({}, n, { body: ta.value.trim(), kind: n.kind === "highlight" && ta.value.trim() ? "note" : n.kind }));
   }, 600);
-  function stopEditing() {
+  function stopEditing(render = true) {
     const ta = editing && panel().querySelector('.card[data-note="' + editing + '"] textarea');
     const n = editing && (S.reader.notes || {})[editing];
     saveEditing.cancel();
-    if (ta && n) PR.finishNote(n, ta.value);
     editing = null;
-    PR.renderNotesPanel();
+    if (n) PR.finishNote(n, ta ? ta.value : n.body || "");
+    if (render) PR.renderNotesPanel();
     PR.applyMarks();
   }
+
+  PR.finishPanelNote = function () { if (editing) stopEditing(false); savePaperNote.flush(); };
 
   panel().addEventListener("input", (e) => {
     PR.autosize(e.target);
@@ -103,13 +106,13 @@
   panel().addEventListener("focusout", (e) => {
     if (e.target.id === "paperNote") savePaperNote.flush();
     if (!e.target.matches(".card textarea")) return;
-    setTimeout(() => { const card = e.target.closest(".card"); if (card && card.isConnected && !card.contains(document.activeElement) && editing === card.dataset.note) stopEditing(); }, 150);
+    setTimeout(() => { const card = e.target.closest(".card"); if (card && card.isConnected && !PR.noteMedia?.isChoosing(card.dataset.note) && !card.contains(document.activeElement) && editing === card.dataset.note) stopEditing(); }, 150);
   });
   panel().addEventListener("click", (e) => {
     const np = e.target.closest("[data-np]");
-    if (np) { tab = np.dataset.np; PR.ls.set("easyread-np-tab", tab); return PR.renderNotesPanel(); }
+    if (np) { PR.finishPanelNote(); tab = np.dataset.np; PR.ls.set("easyread-np-tab", tab); return PR.renderNotesPanel(); }
     const nf = e.target.closest("[data-nf]");
-    if (nf) { filter = nf.dataset.nf; return PR.renderNotesPanel(); }
+    if (nf) { if (editing) stopEditing(false); filter = nf.dataset.nf; return PR.renderNotesPanel(); }
     const act = e.target.closest("[data-np-act]");
     if (act) {
       const a = act.dataset.npAct;
@@ -121,10 +124,13 @@
     }
     const card = e.target.closest(".card");
     if (!card) return;
-    if (card.dataset.note && (e.target.closest(".body") || e.target.closest('[data-a="edit"]')) && !e.target.closest("a")) {
-      editing = card.dataset.note; PR.renderNotesPanel(editing); return;
+    if (e.target.closest("a, textarea, input, select")) return;
+    if (card.dataset.note && e.target.closest('[data-a="edit"]')) {
+      PR.renderNotesPanel(card.dataset.note); return;
     }
-    if (PR.cardClick(e, true)) return;
+    if (e.target.closest("button, [data-k], [data-color]")) { PR.cardClick(e, true); return; }
+    if (!getSelection().isCollapsed) return;
+    if (editing) stopEditing(false);
     if (card.dataset.anchor) { PR.jumpTo("b-" + card.dataset.anchor); if (card.dataset.note) setTimeout(() => PR.$$('mark[data-note="' + card.dataset.note + '"]').forEach((m) => m.classList.add("active")), 400); }
   });
 
@@ -148,6 +154,7 @@
       const q = pick.quote && d.quote ? "「" + d.quote + "」" : "";
       if (it.src === "mine") out.push("- **" + ({ question: "我的問題", highlight: "劃線" }[d.kind] || "我的筆記") + "**" + q + (d.body ? "：" + d.body : ""));
       else out.push("- **AI" + (d.kind === "reply" ? " 回答" : "") + (d.title ? "：" + d.title : "") + "**" + q + (d.q ? "（問：" + d.q + "）" : "") + "\n\n  " + (d.body || "").replace(/\n/g, "\n  "));
+      if (it.src === "mine" && PR.noteMedia?.has(d)) out.push(PR.noteMedia.markdown(d));
     }
     if (pick.chat && chat && chat.length) {
       out.push("", "## 問 AI 的對話", "");

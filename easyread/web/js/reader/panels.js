@@ -22,7 +22,7 @@
     trigger.setAttribute("aria-expanded", "false");
     if (restoreFocus) trigger.focus();
   }
-  PR.applyPrefs = function () {
+  PR.applyPrefs = function (persist = true) {
     const p = PR.prefs, root = document.documentElement;
     if (p.comparePrimary !== "zh") p.comparePrimary = "en";
     root.style.setProperty("--fs", p.fs + "px");
@@ -36,8 +36,14 @@
     if (p.mode !== "bi") closeCompareOrder(false);
     PR.$$("#bar .seg button").forEach((b) => b.classList.toggle("on", b.dataset.mode === p.mode));
     syncCompareOrder();
-    PR.ls.set("easyread-prefs", Object.assign(PR.ls.get("easyread-prefs", {}), p));
-    if (PR.store.mode === "server") PR.savePrefs("reader", p);
+    if (persist) {
+      const saved = Object.assign({}, p, PR.findOriginalMode != null ? { mode: PR.findOriginalMode } : {});
+      PR.ls.set("easyread-prefs", Object.assign(PR.ls.get("easyread-prefs", {}), saved));
+      if (PR.store.mode === "server") PR.savePrefs("reader", saved);
+    }
+  };
+  PR.setTemporaryMode = function (mode) {
+    PR.prefs.mode = mode; PR.applyPrefs(false); PR.fitWide(); PR.renderMargin();
   };
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => PR.applyPrefs());
   const relayout = PR.debounce(() => { PR.fitWide(); PR.renderMargin(); PR.syncPage && PR.syncPage(true); }, 60);
