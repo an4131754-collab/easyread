@@ -21,15 +21,15 @@ Runs locally. Your papers and notes never leave your computer.</p>
 
 > **Who is this for?** EasyRead translates **English → Traditional Chinese**, and its interface is in Traditional Chinese. It's built for Chinese-speaking students and researchers. If you read Chinese (or want to help add other target languages), read on.
 
-## Develop integration preview
+## 1.3.0 Traditional Chinese edition
 
-The `develop` branch adds original/translated paper search, linked figures and tables in notes, endpoint-isolated API credentials and named connections, complete paper backups, manual PDF layout refresh, and parallel-paper settings. The existing divider, bilingual highlights, AI attachments, and quoted follow-ups are preserved.
+Version 1.3.0 adds original/translated paper search, linked figures and tables in notes, endpoint-isolated API credentials and named connections, complete paper backups, manual PDF layout refresh, and parallel-paper settings. The existing divider, bilingual highlights, AI attachments, and quoted follow-ups are preserved.
 
 - Use `Ctrl/Cmd+F` to search the paper. Hidden-language matches temporarily enable bilingual mode; closing search restores the previous mode.
 - Click a note card to jump to its passage; use **Edit** to edit. Link figures/tables with the picker or drag them onto a note; references start collapsed.
 - Select a paper in the library to make a complete backup, restore a backup, or refresh PDF positioning/crops. Existing papers are not recalculated automatically. Close the reader first; refresh creates a complete backup and rolls back on failure.
 - Parallel papers defaults to 1 and is limited to 4; restart after saving. Per-paper segment concurrency remains unchanged and multiplies the number of requests.
-- Desktop updates download first and require an explicit **Update and restart** click. Development artifacts retain the current version and are not a new Release. macOS requires a first manual installation with a fixed signing identity; Linux in-app updates require the AppImage.
+- Desktop updates download first and require an explicit **Update and restart** click. The release tag is `v1.3.0.zh-tw`; installer versions use `1.3.0`. macOS requires a first manual installation with a fixed signing identity; Linux in-app updates require the AppImage.
 
 See [integration validation and platform limitations](docs/integration-validation.md).
 
