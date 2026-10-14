@@ -20,7 +20,7 @@ class ReaderPreparationTest(unittest.TestCase):
     def check_preparation(self, version, recalculate):
         with tempfile.TemporaryDirectory() as temp:
             ws = Workspace(Path(temp))
-            write_json_atomic(ws.root / "paper.json", {"meta": {"pdf_layout_version": version}, "blocks": []})
+            write_json_atomic(ws.root / "paper.json", {"meta": {"pdf_layout_version": version, **({"pdf_layout_policy": "v2"} if recalculate else {})}, "blocks": []})
             write_json_atomic(ws.root / "reader.json", {"notes": {"n": {"body": "保留筆記"}}})
             before = (ws.root / "reader.json").read_bytes()
             threads = []

@@ -22,6 +22,14 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).astimezone().isoformat(timespec="milliseconds")
 
 
+class DataReadError(ValueError):
+    """Unreadable saved data must never be replaced with an empty default."""
+
+    def __init__(self, path: Path):
+        self.path = Path(path)
+        super().__init__(f"無法讀取資料檔：{self.path}；原檔已保留，請從備份恢復")
+
+
 def read_json(path: Path, default=None):
     try:
         with open(path, "r", encoding="utf-8") as f:
@@ -179,7 +187,14 @@ class Workspace:
 
     def load(self, name: str):
         defaults = {"reader": empty_reader(), "discussion": empty_discussion(), "layout": {}, "item": {}, "job": {}, "chat": {"messages": []}}
-        return read_json(self.root / f"{name}.json", defaults.get(name))
+        path = self.root / f"{name}.json"
+        try:
+            data = read_json(path, defaults.get(name))
+        except (UnicodeError, json.JSONDecodeError) as e:
+            raise DataReadError(path) from e
+        if data is not None and not isinstance(data, dict):
+            raise DataReadError(path)
+        return data
 
     def versions(self) -> dict:
         v = {n: file_version(self.root / f"{n}.json") for n in self.PARTS}

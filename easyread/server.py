@@ -15,7 +15,7 @@ from . import __version__, chat, chat_attachments, chat_models, chat_store, cli_
 from .log import log, tail
 from .jobs import Jobs
 from .library import Library
-from .store import now_iso
+from .store import dir_lock, now_iso
 from . import reader_files
 
 WEB = config.WEB
@@ -219,16 +219,21 @@ class Handler(BaseHTTPRequestHandler):
             if not ws:
                 return self._json(404, {"error": "沒有這篇論文"})
             action = parts[4]
+            if action == "backups":
+                from . import backups
+                return self._json(200, {"items": backups.listing(ws)})
             if action == "state":
-                opened = {"last_opened": now_iso()}
-                if (ws.load("item") or {}).get("status", "unread") == "unread":  # 開啟過就算在讀
-                    opened["status"] = "reading"
-                ws.patch_item(opened)
-                versions = ws.versions()  # Capture before reads: a concurrent write must remain visible to polling.
-                self._json(200, {
-                    **{n: ws.load(n) for n in ("paper", "discussion", "reader", "layout", "item", "job")},
-                    "versions": versions, "token": app.token, "id": ws.id,
-                    "engine": config.load().get("engine")})
+                with app.request_lock:
+                    opened = {"last_opened": now_iso()}
+                    if (ws.load("item") or {}).get("status", "unread") == "unread":  # 開啟過就算在讀
+                        opened["status"] = "reading"
+                    ws.patch_item(opened)
+                    versions = ws.versions()  # Capture before reads: a concurrent write must remain visible to polling.
+                    payload = {
+                        **{n: ws.load(n) for n in ("paper", "discussion", "reader", "layout", "item", "job")},
+                        "versions": versions, "token": app.token, "id": ws.id,
+                        "engine": config.load().get("engine")}
+                self._json(200, payload)
                 try:
                     with app.request_lock:
                         if not app.shutting_down:
@@ -362,6 +367,24 @@ class Handler(BaseHTTPRequestHandler):
             if not ws:
                 return self._json(404, {"error": "沒有這篇論文"})
             action = parts[4]
+            if action in ("backup", "restore-backup", "refresh-pdf"):
+                body = json.loads(self._body() or b"{}")
+                from . import backups
+                with app.request_lock:
+                    if app.active_posts > 1 or app.jobs.busy() or reader_files.busy():
+                        raise ValueError("正在翻譯、回答、儲存或準備 PDF，請等工作結束後重試")
+                    with dir_lock(ws.root, name=".maintenance.lock"):
+                        if action == "restore-backup":
+                            return self._json(200, backups.restore(ws, str(body.get("name") or "")))
+                        with dir_lock(ws.root):
+                            name = backups.create(ws)
+                        if action == "refresh-pdf":
+                            try:
+                                reader_files.refresh_now(ws)
+                            except Exception as e:
+                                backups.restore(ws, name)
+                                raise ValueError(f"PDF 更新未完成，已從更新前完整備份還原：{e}") from e
+                        return self._json(200, {"ok": True, "backup": name})
             if action == "chat" and len(parts) > 5 and parts[5] == "attachments":
                 if len(parts) == 6:
                     n = int(self.headers.get("Content-Length", "0"))

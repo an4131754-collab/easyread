@@ -118,7 +118,7 @@ def crop(root: Path, page: int, box: list[float], out_name: str, scale: float = 
 
 _MATH = re.compile(r"\$[^$]*\$")
 _ALNUM = re.compile(r"[a-z0-9]")
-LOCATE_VERSION = "7"  # 圖表按原頁位置重排；舊論文打開時重算一次。
+LOCATE_VERSION = "10.zh-tw"  # 新策略支援跨頁／跨欄，舊文獻由使用者手動啟用。
 
 
 def _norm(s: str) -> str:
@@ -188,6 +188,7 @@ def locate(root: Path) -> dict:
 def _locate(root: Path) -> dict:
     paper = json.loads((root / "paper.json").read_text(encoding="utf-8"))
     extract_dir = root / "extract"
+    modern = paper.get("meta", {}).get("pdf_layout_policy") == "v2"
     # Blocks may arrive out of page order during parallel translation. Keep only
     # the current/next page streams instead of retaining a whole book's chars.
     @lru_cache(maxsize=2)
@@ -202,7 +203,14 @@ def _locate(root: Path) -> dict:
             continue
         if block.get("box"):
             layout[bid] = {"page": page, "box": block["box"], "src": "manual"}
-            continue
+            if not modern or block.get("type") != "figure":
+                continue
+        if modern and block.get("type") in ("para", "list"):
+            from .text_regions import locate_prose
+            prose = locate_prose(block_english(block), page, stream)
+            if prose:
+                layout[bid] = prose
+                continue
         head, tail = _anchors(block_english(block))
         if not head:
             continue
@@ -231,9 +239,9 @@ def _locate(root: Path) -> dict:
                 layout[bid]["boxes"] = boxes
             cursor[pn] = end
             break
-    _extend_captioned(paper.get("blocks", []), layout, root)
+    _extend_captioned(paper.get("blocks", []), layout, root, modern=modern)
     _clamp_overlaps(layout)
-    ids = float_order.order(paper.get("blocks", []), layout)
+    ids = float_order.order(paper.get("blocks", []), layout, column_order=modern)
     if ids:  # 圖表挪回原頁位置；公式的估算框按塊順序算，要在這之後
         paper = Workspace(root).update("paper", lambda p: (float_order.apply(p, ids), p)[1])
     _fill_gaps(paper.get("blocks", []), layout)
@@ -271,22 +279,30 @@ def _column(locs: list[dict], box: list) -> tuple[float, float] | None:
 
 def _page_locs(layout: dict, page: int) -> list[dict]:
     return [{"page": page, "box": box, "src": loc["src"], "_parent": loc}
-            for loc in layout.values() if loc["page"] == page
-            for box in loc.get("boxes") or [loc["box"]]]
+            for loc in layout.values()
+            for box in ([r["box"] for r in loc["regions"] if r["page"] == page] if loc.get("regions") else (loc.get("boxes") or [loc["box"]]) if loc["page"] == page else [])]
 
 
-def _extend_captioned(blocks: list[dict], layout: dict, root: Path | None = None):
+def _extend_captioned(blocks: list[dict], layout: dict, root: Path | None = None, modern=False):
     """圖优先用 PDF 圖形邊界；表格或无法识別的圖按題注所在欄估算。"""
-    from .figure_geometry import locate_figures
+    if modern:
+        from .figure_geometry_v2 import locate_figures
+    else:
+        from .figure_geometry import locate_figures
     visual = locate_figures(root, blocks, layout) if root else {}
     for block in blocks:
         loc = layout.get(block.get("id"))
-        if block.get("type") not in ("table", "figure") or not loc or block.get("box") or loc.get("src") == "manual":
+        if block.get("type") not in ("table", "figure") or not loc:
             continue
         if block["id"] in visual:
-            loc["box"] = visual[block["id"]]
+            v = visual[block["id"]]
+            loc["box"] = v["box"] if modern else v
+            if modern:
+                loc["crop"] = v["crop"]
             loc.pop("boxes", None)
             loc["src"] = "graphic"
+            continue
+        if block.get("box") or loc.get("src") == "manual":
             continue
         x0, y0, x1, y1 = loc["box"]
         others = [l for l in _page_locs(layout, loc["page"]) if l["_parent"] is not loc]
@@ -315,7 +331,7 @@ def _clamp_overlaps(layout: dict):
     for locs in by_page.values():
         locs.sort(key=lambda l: l["box"][1])
         for i, cur in enumerate(locs):
-            if cur["src"] not in ("head", "text"):
+            if cur["src"] not in ("head", "text") or cur["_parent"].get("regions"):
                 continue
             nxt = next((l for l in locs[i + 1:] if l["_parent"] is not cur["_parent"]
                         and _overlap_x(l["box"], cur["box"][0], cur["box"][2])
@@ -335,8 +351,12 @@ def _fill_gaps(blocks: list[dict], layout: dict):
             continue
         page = block["page"]
         locs = _page_locs(layout, page)
-        prev = next((layout[b["id"]] for b in reversed(blocks[:i]) if layout.get(b.get("id"), {}).get("page") == page), None)
-        nxt = next((layout[b["id"]] for b in blocks[i + 1:] if layout.get(b.get("id"), {}).get("page") == page), None)
+        def on_page(b):
+            loc = layout.get(b.get("id"))
+            parts = _page_locs({"block": loc}, page) if loc else []
+            return {**loc, "page": page, "boxes": [p["box"] for p in parts]} if parts else None
+        prev = next((loc for b in reversed(blocks[:i]) if (loc := on_page(b))), None)
+        nxt = next((loc for b in blocks[i + 1:] if (loc := on_page(b))), None)
         if prev and prev.get("boxes"):
             prev = {**prev, "box": prev["boxes"][-1]}
         if nxt and nxt.get("boxes"):

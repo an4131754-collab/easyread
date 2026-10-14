@@ -86,13 +86,14 @@ def prepare_figures(root, blocks: list[dict], total_pages: int) -> None:
 def _pending(ws):
     """沒有截圖或自動裁剪范围已變化的圖塊；保留顯式 box 和自定義 src。"""
     layout = ws.load("layout") or {}
+    modern = (ws.load("paper") or {}).get("meta", {}).get("pdf_layout_policy") == "v2"
     out = []
     for b in (ws.load("paper") or {}).get("blocks", []):
         src = b.get("src", "")
-        if b.get("type") != "figure" or src and (b.get("box") or not src.startswith("figures/crop-")):
+        if b.get("type") != "figure" or src and ((b.get("box") and not modern) or not src.startswith("figures/crop-")):
             continue
         loc = layout.get(b.get("id")) or {}
-        box = figure_box(loc.get("box"))
+        box = figure_box(loc.get("crop") or loc.get("box"))
         page = loc.get("page")
         if not box or not isinstance(page, int) or page < 1:
             continue

@@ -33,7 +33,9 @@ def prepare(ws: Workspace) -> None:
 
     def apply(paper):
         meta = paper.setdefault("meta", {})
-        meta.update({"pages": pages, "page_count": len(pages), "pdf_layout_version": pdfwork.LOCATE_VERSION})
+        meta.update({"pages": pages, "page_count": len(pages)})
+        if meta.get("pdf_layout_policy") == "v2":
+            meta["pdf_layout_version"] = pdfwork.LOCATE_VERSION
         for k, v in extra.items():
             if not meta.get(k) or (k == "title_en" and meta.get(k) == meta.get("source", "").removesuffix(".pdf")):
                 meta[k] = v

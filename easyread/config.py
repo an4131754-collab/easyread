@@ -12,6 +12,7 @@ from pathlib import Path
 from .chat_models import DEFAULT_CHAT
 from .presets import PRESET_GROUPS, PRESETS  # noqa: F401
 from .store import read_json, write_json_atomic
+from .api_keys import key_id, saved_keys
 
 PACKAGE = Path(__file__).resolve().parent
 WEB = PACKAGE / "web"
@@ -31,6 +32,7 @@ DEFAULTS = {
     "batch_pages": 2,            # 每次交給模型的頁數
     "concurrency": 0,            # 同時翻譯幾段；0 自動（最多四段），手動最多八段
     "concurrency_v": 2,        # 分段並行設定版本；0 是自動，最多四段
+    "paper_concurrency": 1,    # 同時處理 1–4 篇，重啟生效；與每篇分段並行相乘
     "claude": {"command": "claude", "model": "", "extra_args": [], "timeout": 1200},
     "codex": {"command": "codex", "model": "", "extra_args": [], "timeout": 1200},
     # api：chat（/chat/completions）| responses（/responses），見 openai_api.py
@@ -75,19 +77,19 @@ def with_key(o: dict) -> dict:
     o = dict(o)
     key = o.pop("api_key", None)
     preset = o.get("preset", cur.get("preset")) or ""
-    keys = dict(cur.get("keys") or {})
-    if cur.get("api_key") and not keys:  # 舊配置只有一個 Key
-        keys[cur.get("preset") or ""] = cur["api_key"]
+    keys = saved_keys(cur)
+    slot = key_id(preset, o.get("base_url", cur.get("base_url", "")))
     if key and not key.startswith("••••"):
-        keys[preset] = key.strip()
+        keys[slot] = key.strip()
     o["keys"] = keys
-    o["api_key"] = keys.get(preset, "")
+    o["api_key"] = keys.get(slot, "")
     return o
 
 
 def public(cfg: dict) -> dict:
     """給頁面看的配置：金鑰只露後四位。"""
     out = copy.deepcopy(cfg)
+    out["openai"]["keys"] = saved_keys(cfg["openai"])
     key = out["openai"].get("api_key") or ""
     out["openai"]["api_key"] = ("••••" + key[-4:]) if key else ""
     out["openai"]["has_key"] = bool(key)

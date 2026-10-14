@@ -2,10 +2,13 @@
 from __future__ import annotations
 
 from . import chat_models, config, engines, openai_api
+from .api_keys import resolve, saved_keys
 
 
 def save_config(patch: dict) -> dict:
     patch.pop("library_dir", None)
+    if "paper_concurrency" in patch and (type(patch["paper_concurrency"]) is not int or not 1 <= patch["paper_concurrency"] <= 4):
+        raise ValueError("同時翻譯篇數必須是 1 到 4 的整數")
     if isinstance(patch.get("openai"), dict):
         patch["openai"] = config.with_key(patch["openai"])
     return {"config": config.public(config.save(patch))}
@@ -20,7 +23,7 @@ def save_chat_models(body: dict) -> dict:
         patch["default"] = str(body["default"])
     full = {"chat": patch}
     if isinstance(body.get("keys"), dict):  # 設定裡給某家 API 填的 Key，和翻譯那邊共用
-        keys = dict(config.load()["openai"].get("keys") or {})
+        keys = saved_keys(config.load()["openai"])
         keys.update({str(k): str(v).strip() for k, v in body["keys"].items() if v and not str(v).startswith("••••")})
         full["openai"] = {"keys": keys}
     config.save(full)
@@ -38,7 +41,7 @@ def list_models(body: dict) -> dict:
     """設定頁“獲取模型列表”：{base_url, preset, api_key}；Key 留空或打碼時用這家已存的。"""
     key = str(body.get("api_key") or "").strip()
     if not key or key.startswith("••••"):
-        key = (config.load()["openai"].get("keys") or {}).get(str(body.get("preset") or ""), "")
+        key = resolve(config.load()["openai"], str(body.get("preset") or ""), str(body.get("base_url") or ""))
     try:
         return {"ok": True, "models": openai_api.models({"base_url": body.get("base_url"), "api_key": key})}
     except engines.EngineError as e:

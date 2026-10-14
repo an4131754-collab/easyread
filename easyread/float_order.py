@@ -14,7 +14,7 @@ def _overlap_x(a: list, x0: float, x1: float) -> bool:
     return max(a[0], x0) < min(a[2], x1) - 0.01
 
 
-def _after(loc: dict, page: int, box: list) -> bool:
+def _after(loc: dict, page: int, box: list, column_order: bool = False) -> bool:
     """這塊是否排在圖表 (page, box) 後面：頁更靠後，或同一頁、同一欄、上沿不比圖表高。"""
     if loc["page"] != page:
         return loc["page"] > page
@@ -22,6 +22,8 @@ def _after(loc: dict, page: int, box: list) -> bool:
         return False
     top = (loc.get("boxes") or [loc["box"]])[0]
     wide = box[2] - box[0] > 0.5  # 横跨兩欄的圖表：任何一欄裡在它下面的塊都算後面
+    if column_order and not wide and top[2] - top[0] <= .5 and not _overlap_x(top, box[0], box[2]):
+        return top[0] >= .45 and box[2] <= .55
     return top[1] >= box[1] - 0.005 and (wide or _overlap_x(top, box[0], box[2]))
 
 
@@ -41,7 +43,7 @@ def _before_unplaced(rest: list[dict], pos: int, loc: dict, layout: dict) -> int
     return start if bottom - box[3] > box[1] - top else pos
 
 
-def order(blocks: list[dict], layout: dict) -> list[str] | None:
+def order(blocks: list[dict], layout: dict, *, column_order: bool = False) -> list[str] | None:
     """返回按原頁位置排好的塊 id 順序；不用動時返回 None。"""
     moving = [b for b in blocks if b.get("type") in FLOATS and b.get("id") in layout]
     if not moving:
@@ -58,7 +60,7 @@ def order(blocks: list[dict], layout: dict) -> list[str] | None:
                     pos = i
                     break
                 continue
-            if _after(other, loc["page"], loc["box"]):
+            if _after(other, loc["page"], loc["box"], column_order):
                 pos = i
                 break
         rest.insert(_before_unplaced(rest, pos, loc, layout), f)

@@ -11,7 +11,7 @@ from . import chat_models, config, translate, usage
 from .engines import Cancelled, EngineError
 from .library import Library
 from .log import log
-from .store import Workspace, now_iso
+from .store import DataReadError, Workspace, now_iso
 
 
 def engine_for(cfg: dict, model: str | None) -> dict:
@@ -35,8 +35,11 @@ class Jobs:
         self.recent: list[dict] = []  # 小任務的狀態，給頁面輪詢
         self.lock = threading.Lock()
         self._resume()
-        for target in (self._bulk_loop, self._small_loop):
-            threading.Thread(target=target, daemon=True).start()
+        threading.Thread(target=self._small_loop, daemon=True).start()
+        count = config.load().get("paper_concurrency", 1)
+        count = max(1, min(4, count)) if type(count) is int else 1
+        for _ in range(count):
+            threading.Thread(target=self._bulk_loop, daemon=True).start()
 
     # ---------- 整篇 ----------
     def _write(self, ws: Workspace, **fields):
@@ -71,7 +74,11 @@ class Jobs:
 
     def _resume(self):
         for ws in self.lib.all():
-            job = ws.load("job") or {}
+            try:
+                job = ws.load("job") or {}
+            except DataReadError:
+                log.exception("略過損壞的任務狀態 %s", ws.root)
+                continue
             if job.get("state") in ("queued", "running"):
                 self._write(ws, state="queued", message="排隊中（服務重啟後繼續）")
                 self.bulk.put(ws.id)
@@ -79,29 +86,40 @@ class Jobs:
     def _bulk_loop(self):
         while True:
             pid = self.bulk.get()
-            with self.lock:
-                ws = self.lib.ws(pid)
-                if not ws:
-                    continue
-                job = ws.load("job") or {}
-                if job.get("state") != "queued":
-                    continue
-                cancel = self.cancels[pid] = threading.Event()
-                self._write(ws, state="running", message="正在開始任務")
             try:
-                self._run_bulk(ws, job, cancel)
-            except Cancelled:
-                self._write(ws, state="cancelled", message="已取消，已譯的部分保留")
-            except Exception as e:  # noqa: BLE001
-                msg = str(e) if isinstance(e, (EngineError, KeyError, ValueError)) else f"{type(e).__name__}: {e}"
-                self._write(ws, state="error", message="出錯了", error=msg[:800])
-                log.exception("背景任務出錯 %s", pid)
-                try:
-                    translate.journal(ws, f"出錯停止：{msg[:500]}")
-                except OSError:
-                    pass
-            finally:
-                with self.lock:
+                self._process_bulk(pid)
+            except Exception:
+                log.exception("背景任務無法啟動或收尾 %s，繼續下一篇", pid)
+
+    def _process_bulk(self, pid):
+        with self.lock:
+            ws = self.lib.ws(pid)
+            if not ws:
+                return
+            job = ws.load("job") or {}
+            if job.get("state") != "queued":
+                return
+            cancel = self.cancels[pid] = threading.Event()
+            try:
+                self._write(ws, state="running", message="正在開始任務")
+            except Exception:
+                self.cancels.pop(pid, None)
+                raise
+        try:
+            self._run_bulk(ws, job, cancel)
+        except Cancelled:
+            self._write(ws, state="cancelled", message="已取消，已譯的部分保留")
+        except Exception as e:
+            msg = str(e) if isinstance(e, (EngineError, KeyError, ValueError)) else f"{type(e).__name__}: {e}"
+            self._write(ws, state="error", message="出錯了", error=msg[:800])
+            log.exception("背景任務出錯 %s", pid)
+            try:
+                translate.journal(ws, f"出錯停止：{msg[:500]}")
+            except OSError:
+                pass
+        finally:
+            with self.lock:
+                if self.cancels.get(pid) is cancel:
                     self.cancels.pop(pid, None)
 
     def _run_bulk(self, ws: Workspace, job: dict, cancel: threading.Event):

@@ -194,29 +194,14 @@ def run_openai(c: dict, prompt: str, images: list[Path], cancel=None, meter=None
 
 
 def parse_json(text: str):
-    """從模型輸出裡取出 JSON（容忍 ```json 圍欄和前後廢話）。"""
-    t = re.sub(r"<think>[\s\S]*?</think>", "", text).strip()  # 推理模型（deepseek-r1、qwen3）先輸出的思考過程
-    # 先取最外層的 { … }：譯文裡可能本身帶程式碼塊（論文附錄的 PyTorch 程式碼），按 ``` 圍欄切會切到半截
-    bodies = []
-    for s in (t, *(m.group(1).strip() for m in re.finditer(r"```(?:json)?\s*([\s\S]*?)```", t))):
-        start = min([i for i in (s.find("{"), s.find("[")) if i >= 0], default=-1)
-        if start >= 0:
-            bodies.append(s[start:max(s.rfind("}"), s.rfind("]")) + 1])
-    if not bodies:
+    """讀完整物件／區塊陣列，不把數字引用或損壞外層的子物件當成果。"""
+    from .model_json import extract
+    result, error = extract(text)
+    if result is not None:
+        return result
+    if error is None:
         raise EngineError("模型輸出裡沒有 JSON：" + text[:200])
-    first = None
-    for body in bodies:
-        try:
-            return json.loads(body)
-        except json.JSONDecodeError as e:
-            first = first or e
-    body = bodies[0]
-    # 常見毛病：TeX 反斜槓沒寫成兩個（\alpha、\sum）、字串裡有原樣換行
-    fixed = re.sub(r'\\(?!["\\/bfnrtu])', r"\\\\", body)
-    try:
-        return json.loads(fixed, strict=False)
-    except json.JSONDecodeError:
-        raise EngineError(f"模型輸出的 JSON 格式有錯（{first}），會自動重試")
+    raise EngineError(f"模型輸出的 JSON 格式有錯（{error}），會自動重試")
 
 
 def _version(exe: str) -> str:

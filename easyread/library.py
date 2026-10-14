@@ -11,7 +11,7 @@ from pathlib import Path
 
 from . import sources
 from .log import log
-from .store import SCHEMA, Workspace, empty_discussion, empty_reader, now_iso, read_json, write_json_atomic
+from .store import SCHEMA, DataReadError, Workspace, empty_discussion, empty_reader, now_iso, read_json, write_json_atomic
 
 
 
@@ -68,7 +68,15 @@ class Library:
         }
 
     def list(self) -> list[dict]:
-        return [self.summary(ws) for ws in self.all()]
+        items = []
+        for ws in self.all():
+            try:
+                items.append(self.summary(ws))
+            except (DataReadError, TypeError, AttributeError, KeyError) as e:
+                items.append({"id": ws.id, "title_en": ws.id, "title_zh": "資料讀取異常", "tags": [],
+                              "status": "unread", "pages": 0, "done_pages": 0, "notes": 0, "highlights": 0,
+                              "open_questions": 0, "progress": 0, "added": "", "load_error": str(e)})
+        return items
 
     # ---------- 匯入 ----------
     def create_from_pdf(self, data: bytes, filename: str, meta: dict | None = None) -> tuple[Workspace, bool]:
@@ -84,6 +92,7 @@ class Library:
         (ws.root / "source.pdf").write_bytes(data)
         base_meta = {"title_zh": "", "title_en": "", "authors": "", "source": filename, "source_sha256": digest, "pdf": "source.pdf"}
         base_meta.update(meta or {})
+        base_meta["pdf_layout_policy"] = "v2"  # Only genuinely fresh imports opt into new positioning/crops.
         if not base_meta.get("title_en"):
             base_meta["title_en"] = _pdf_title(ws.root / "source.pdf") or Path(filename).stem
         write_json_atomic(ws.paper_path, {

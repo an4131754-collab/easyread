@@ -10,7 +10,6 @@ import copy
 import re
 from pathlib import Path
 
-from . import engines
 from .presets import PRESETS
 
 # opus / sonnet 是 Claude Code 的別名：它會用自己支援的最新版（升級 Claude Code 後自動變成 Opus 5.5 等），
@@ -73,12 +72,9 @@ def find(cfg: dict, mid: str | None) -> dict:
     return next((m for m in ms if m.get("id") == want), ms[0] if ms else DEFAULT_MODELS[0])
 
 
-def _key(cfg: dict, preset: str) -> str:
-    o = cfg["openai"]
-    keys = dict(o.get("keys") or {})
-    if o.get("api_key"):
-        keys.setdefault(o.get("preset") or "", o["api_key"])
-    return keys.get(preset or "", "")
+def _key(cfg: dict, preset: str, base_url: str = "") -> str:
+    from .api_keys import resolve
+    return resolve(cfg["openai"], preset, base_url)
 
 
 def engine_cfg(cfg: dict, mid: str | None) -> tuple[dict, dict]:
@@ -92,10 +88,11 @@ def engine_cfg(cfg: dict, mid: str | None) -> tuple[dict, dict]:
         p = next((x for x in PRESETS if x["id"] == m.get("preset")), None)
         out["openai"] = {**out["openai"], "preset": m.get("preset") or "", "vision": supports_images(m),
                          "base_url": m.get("base_url") or (p["base_url"] if p else out["openai"].get("base_url", "")),
-                         "model": m.get("model") or (p["model"] if p else ""), "api_key": _key(cfg, m.get("preset") or ""),
+                         "model": m.get("model") or (p["model"] if p else ""), "api_key": _key(cfg, m.get("preset") or "", m.get("base_url") or ""),
                          "api": m.get("api") or (p or {}).get("api") or "chat"}
     else:
-        raise engines.EngineError(f"不認識的模型來源：{m.get('engine')}")
+        from .engines import EngineError
+        raise EngineError(f"不認識的模型來源：{m.get('engine')}")
     return out, m
 
 
@@ -151,8 +148,9 @@ def listing(cfg: dict) -> dict:
             hint = "" if ready else f"本機沒找到 {source}"
         else:
             p = next((x for x in PRESETS if x["id"] == m.get("preset")), None)
-            ready = bool(_key(cfg, m.get("preset") or "")) or not needs_key({"preset": m.get("preset"), "base_url": m.get("base_url", "")})
-            source = p["name"] if p else "自定義地址"
+            ready = bool(_key(cfg, m.get("preset") or "", m.get("base_url") or "")) or not needs_key({"preset": m.get("preset"), "base_url": m.get("base_url", "")})
+            profile = next((x for x in cfg["openai"].get("custom_apis", []) if x.get("base_url", "").rstrip("/") == m.get("base_url", "").rstrip("/")), {})
+            source = p["name"] if p else profile.get("name") or "自訂地址"
             hint = "" if ready else f"還沒填 {source} 的 Key（設定 → 模型 → 點這張卡片 → 修改）"
         out.append({**m, "label": label(m), "source": source, "ready": ready, "hint": hint,
                     "supports_images": supports_images(m),

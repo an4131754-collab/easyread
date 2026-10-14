@@ -60,3 +60,10 @@ class FloatOrderTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class ModernColumnOrderTest(unittest.TestCase):
+    def test_left_column_figure_precedes_right_column_text_only_when_opted_in(self):
+        blocks=[blk('right',1),blk('fig',1,'figure')]
+        layout={'right':at(1,[.56,.1,.9,.2]),'fig':at(1,[.1,.6,.45,.8],'graphic')}
+        self.assertIsNone(float_order.order(blocks,layout))
+        self.assertEqual(float_order.order(blocks,layout,column_order=True),['fig','right'])

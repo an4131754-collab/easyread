@@ -32,7 +32,7 @@ def prepare_later(ws) -> None:
                 if (ws.load("job") or {}).get("state") in ("queued", "running"):
                     return
                 # Do not silently recalculate older papers when opening them.
-                if ws.load("paper").get("meta", {}).get("pdf_layout_version") == pdfwork.LOCATE_VERSION:
+                if ws.load("paper").get("meta", {}).get("pdf_layout_policy") == "v2":
                     pdfwork.refresh_layout(ws.root)
                     figures.fill(ws)
                 pdfwork.warm_variants(ws.root)
@@ -48,3 +48,14 @@ def prepare_later(ws) -> None:
         with _guard:
             _preparing.discard(key)
         raise
+
+
+def refresh_now(ws):
+    """使用者手動更新；呼叫方已備份並確認閒置，不呼叫模型。"""
+    with _serial:
+        ws.update("paper", lambda p: p.setdefault("meta", {}).update(pdf_layout_policy="v2", pdf_layout_version=pdfwork.LOCATE_VERSION))
+        if not any((ws.root / "extract").glob("page-*.chars.json")):
+            pdfwork.prepare(ws.root)
+        pdfwork.locate(ws.root)
+        figures.fill(ws)
+        pdfwork.warm_variants(ws.root)
