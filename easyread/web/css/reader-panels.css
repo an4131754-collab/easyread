@@ -27,12 +27,21 @@ body.drawer-open #scrim { opacity: 1; pointer-events: auto; }
 .about .row { display: flex; gap: 6px; flex-wrap: wrap; }
 
 /* 右側面板（原頁 / 筆記，一次一個） */
-.side-panel { position: fixed; top: var(--bar-h); right: 0; bottom: 0; z-index: 40; width: var(--side-w); background: var(--surface); border-left: 1px solid var(--rule); transform: translateX(102%); transition: transform .22s cubic-bezier(.2, .8, .2, 1); display: flex; flex-direction: column; }
+.side-panel { position: fixed; top: var(--bar-h); right: 0; bottom: 0; z-index: 40; width: var(--side-w); min-width: 0; background: var(--surface); border-left: 1px solid var(--rule); transform: translateX(102%); transition: transform .22s cubic-bezier(.2, .8, .2, 1); display: flex; flex-direction: column; container: reader-side / inline-size; }
 body.pv-open #pageview, body.np-open #notespanel { transform: none; }
+#sideResize { display: none; position: fixed; top: var(--bar-h); bottom: 0; right: calc(var(--side-w) - 4px); width: 9px; z-index: 44; cursor: col-resize; touch-action: none; }
+#sideResize[hidden] { display: none !important; }
+#sideResize::before { content: ""; position: absolute; top: 0; bottom: 0; left: 4px; width: 1px; background: color-mix(in srgb, var(--ink) 28%, var(--bg)); transition: background .12s, width .12s; }
+#sideResize:hover::before, #sideResize:focus-visible::before, body.side-resizing #sideResize::before { left: 3px; width: 3px; background: var(--ink-3); }
+#sideResize:focus-visible { outline: none; }
+body.side-resizing, body.side-resizing * { cursor: col-resize !important; user-select: none !important; }
+body.side-resizing #stage { overflow-anchor: none; }
 @media (min-width: 1180px) {
+  body.side-open #sideResize { display: block; }
+  body.side-open :is(#pageview, #notespanel, #chatpanel) { border-left-color: transparent; }
   /* 右側開著面板：邊注收進正文（頁邊的小數字），版心在剩下的地方居中，放不下就變窄 */
-  body.side-open #stage { grid-template-columns: var(--gutter) minmax(0, var(--measure)) var(--gutter); width: min(calc(var(--measure) + 2 * var(--gutter)), calc(100vw - var(--side-w) - 24px));
-    margin-right: calc(var(--side-w) + 8px); margin-left: max(12px, calc((100vw - var(--side-w) - var(--measure) - 2 * var(--gutter)) / 2)); }
+  body.side-open #stage { --split-gutter: clamp(24px, calc((100vw - var(--side-w)) * .075), var(--gutter)); grid-template-columns: var(--split-gutter) minmax(0, var(--measure)) var(--split-gutter); width: min(calc(var(--measure) + 2 * var(--split-gutter)), calc(100% - var(--side-w) - 24px));
+    margin-right: calc(var(--side-w) + 12px); margin-left: max(12px, calc((100% - var(--side-w) - var(--measure) - 2 * var(--split-gutter)) / 2)); }
 }
 .pv-head { display: flex; align-items: center; gap: 4px; height: 46px; padding: 0 8px; border-bottom: 1px solid var(--rule); font-size: 13px; color: var(--ink-2); flex: none; }
 .pv-head .grow { flex: 1; }
@@ -49,6 +58,13 @@ body.pv-zoom .pv-page { width: 165%; max-width: none; }
 .pv-region { position: absolute; border-radius: 3px; background: rgba(236, 196, 92, .22); box-shadow: 0 0 0 2px rgba(214, 160, 40, .55); }
 .pv-hl.on { opacity: 1; }
 .pv-page.pickable { cursor: pointer; }
+@container reader-side (max-width: 460px) {
+  .pv-head { gap: 2px; padding: 0 4px; }
+  .pv-label { min-width: 0; white-space: nowrap; font-size: 12px; }
+  .pv-head .btn { padding-left: 6px; padding-right: 6px; }
+  .pv-head .btn.icon { width: 26px; padding: 0; }
+  .pv-follow { font-size: 12px; white-space: nowrap; margin-right: 0; }
+}
 /* 正文裡和原頁框對應的段：同一個琥珀色，左邊一道豎條 + 很淡的底色，不搶正文 */
 body.pv-open .blk.pv-pair { background: rgba(236, 196, 92, .09); box-shadow: 0 0 0 6px rgba(236, 196, 92, .09); }
 body.pv-open .blk.pv-pair::before { background: rgba(214, 160, 40, .8); opacity: 1; }
@@ -89,6 +105,10 @@ body.pv-open .blk.pv-pair::before { background: rgba(214, 160, 40, .8); opacity:
 .np-tools .nh-btns { display: inline-flex; gap: 6px; }
 .np-preview { flex: 1; overflow-y: auto; font: 15px/1.9 var(--serif-zh); color: var(--ink); padding: 4px 4px 30px; }
 .np-preview p { margin: 0 0 .9em; }
+.np-list, .np-paper, .np-ai, .np-preview { min-width: 0; overflow-wrap: anywhere; }
+.np-tools, .np-ai-acts { flex-wrap: wrap; }
+.np-preview pre, .np-ai-body pre { max-width: 100%; overflow-x: auto; white-space: pre; }
+@media print { #sideResize { display: none !important; } }
 
 /* 閱讀設定 */
 #settings { top: calc(var(--bar-h) + 6px); right: 12px; width: 300px; padding: 14px 16px; font-size: 13px; }

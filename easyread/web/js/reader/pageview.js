@@ -18,6 +18,7 @@
     PR.$('[data-act="chat"]').classList.toggle("on", name === "chat");
     PR.$('[data-act="pages"]').classList.toggle("on", name === "pages");
     PR.$('[data-act="notes"]').classList.toggle("on", name === "notes");
+    if (PR.refreshSideResize) PR.refreshSideResize();
     if (name) { const t = PR.$("#toast"); if (t) t.classList.remove("open"); }  // 提示條別擋住面板底部的輸入框
     if (body.classList.contains("side-open") === !!name) return;  // 面板之間切換：正文寬度不變
     const anchor = PR.readingBlock && PR.readingBlock();
@@ -53,7 +54,7 @@
     const s = srcOf(n);
     if (s && !preloaded.has(s)) { preloaded.add(s); const im = new Image(); im.decoding = "async"; im.src = s; }
   }
-  PR.preloadPage = () => { const b = PR.blockById[PR.readingBlock()]; if (b && b.page) preload(b.page); };
+  PR.preloadPage = () => { const id = PR.readingBlock && PR.readingBlock(); const b = PR.blockById[id]; if (b && b.page) preload(b.page); };
 
   function showPage(page, blockId) {
     const list = pages();
@@ -157,4 +158,6 @@
     if (act === "zoom") { body.classList.toggle("pv-zoom"); b.textContent = body.classList.contains("pv-zoom") ? "適寬" : "放大"; showPage(pvPage, pvBlock); }
   });
   PR.pageStep = (d) => showPage(pvPage + d, pvBlock);
+  // 調整側欄後更新圖片清晰度，保留手動選的頁碼與跟隨設定。
+  PR.refreshPageSize = () => { if (PR.side === "pages") showPage(pvPage, pvBlock); };
 })(window.PR);

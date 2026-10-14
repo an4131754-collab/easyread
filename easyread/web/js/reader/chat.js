@@ -212,7 +212,7 @@
       '<textarea id="chatInput" rows="1" placeholder="問點什麼…"' + (st.uploading ? " disabled" : "") + ">" + PR.esc(st.draft) + "</textarea>" +
       '<div class="ch-bar"><input id="chatImageInput" type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp" multiple hidden><input id="chatFileInput" type="file" accept="application/pdf,.pdf,text/plain,.txt,text/markdown,.md,.markdown" multiple hidden>' +
       '<button class="ch-attach" data-c="attach" title="附加照片或檔案" aria-label="附加照片或檔案"' + (st.uploading ? " disabled" : "") + ">" + PR.icon("plus", "sm") + "</button>" + attachMenu +
-      '<button class="ch-model" data-c="menu" title="換模型">' + PR.esc(m.label) + PR.icon("chevron", "sm") + "</button>" + menu +
+      '<button class="ch-model" data-c="menu" title="換模型"><span>' + PR.esc(m.label) + "</span>" + PR.icon("chevron", "sm") + "</button>" + menu +
       '<span class="grow"></span>' + PR.usageChip(st.limits, thread() && thread().messages, st.usageOpen) +
       (st.usageOpen ? PR.usagePop(st.limits, thread() && thread().messages) : "") + (st.streaming ? '<button class="ch-send stop" data-c="stop" title="停止">' + PR.icon("stop", "sm") + "</button>"
         : '<button class="ch-send" data-c="send" title="傳送（Enter）；換行用 Shift+Enter"' + (st.uploading ? " disabled" : "") + '>' + PR.icon(st.uploading ? "upload" : "arrowUp", "sm") + "</button>") + "</div></div>";
