@@ -57,6 +57,8 @@ jobs:
           MAC_SIGN_P12: ${{ secrets.MAC_SIGN_P12 }}
           MAC_SIGN_P12_PASSWORD: ${{ secrets.MAC_SIGN_P12_PASSWORD }}
           EASYREAD_VALIDATE_UNSIGNED: ${{ github.event_name == 'workflow_dispatch' && inputs.validate_unsigned_mac && '1' || '0' }}
+      - name: Verify installer version, manifest sizes and SHA512
+        run: node scripts/verify_release_assets.cjs dist/electron "${{ matrix.name }}"
       - name: Smoke test the frozen backend
         run: python scripts/smoke_backend.py
       - name: Check glibc floor of the bundled libpython
