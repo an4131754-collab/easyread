@@ -88,5 +88,11 @@ let log='';server.stderr.on('data',d=>log+=d);
  await page.evaluate(name=>PR.api('/api/p/fixture/restore-backup',{method:'POST',body:{name}}),backup.backup);
  assert.deepEqual(fs.readFileSync(readerPath),original);
  console.log('PASS endpoint profile/key separation, authenticated complete backup, visible corrupt paper and full restore');
+ await page.goto(url+'/read/fixture');await page.waitForSelector('#b-p1');
+ await page.evaluate(()=>{PR.token='expired-token';PR.saveNote({...PR.state.reader.notes.n2,body:'重連後保存成功'});});
+ await page.waitForFunction(()=>PR.store.status==='saved'&&PR.store.pending===0);
+ assert.equal(JSON.parse(fs.readFileSync(readerPath)).notes.n2.body,'重連後保存成功');
+ console.log('PASS expired token reconnects and pending note is saved without reload');
+
  assert.deepEqual(errors,[]);console.log('PASS integration real-browser acceptance');
 }finally{if(browser)await browser.close();server.kill();}})().catch(e=>{console.error(e);console.error(log);process.exitCode=1;});

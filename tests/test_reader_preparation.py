@@ -76,3 +76,14 @@ class ShutdownTest(unittest.TestCase):
             with self.assertRaises(BrokenPipeError):
                 h._shutdown()
         thread.return_value.start.assert_called_once()
+
+class RejectedRequestTest(unittest.TestCase):
+    def test_bad_token_closes_unread_body_connection(self):
+        h=object.__new__(Handler)
+        h.headers={'X-Token':'old-token'}
+        h.app=types.SimpleNamespace(token='new-token')
+        h.close_connection=False
+        h._json=Mock()
+        h.do_POST()
+        self.assertTrue(h.close_connection)
+        self.assertEqual(h._json.call_args.args[0],403)

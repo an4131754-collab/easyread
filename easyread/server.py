@@ -55,6 +55,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "max-age=86400" if cache else "no-store")
+        if self.close_connection:
+            self.send_header("Connection", "close")
         self.end_headers()
         if self.command != "HEAD":
             self.wfile.write(body)
@@ -276,18 +278,23 @@ class Handler(BaseHTTPRequestHandler):
     # ---------- POST ----------
     def do_POST(self):
         if self.headers.get("X-Token") != self.app.token:  # 擋住別的網頁跨站寫
+            self.close_connection = True  # Unread body must not become the next HTTP request.
             return self._json(403, {"error": "bad token"})
         if urlparse(self.path).path == "/api/shutdown":
+            self.close_connection = True
             return self._shutdown()
         with self.app.request_lock:
             if self.app.shutting_down:
+                self.close_connection = True
                 return self._json(503, {"error": "正在關閉服務以安裝更新，請稍後重試。"})
             self.app.active_posts += 1
         try:
             self._post()
         except (ValueError, KeyError) as e:
+            self.close_connection = True
             self._json(400, {"error": str(e)})
         except Exception as e:  # noqa: BLE001
+            self.close_connection = True
             log.exception("請求出錯 %s", self.path)
             self._json(500, {"error": f"{type(e).__name__}: {e}"})
         finally:
