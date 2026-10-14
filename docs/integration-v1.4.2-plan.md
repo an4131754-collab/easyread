@@ -80,17 +80,17 @@
 
 - [x] 更新查詢明確区分成功／失敗／快取結果，失敗後手動重試及 3 小時背景再查，不誤報最新。
 - [x] 下载可在背景繼續，下載完等待「更新並重啟」；不自動安裝。確認後端翻譯、AI、待存與 PDF 準備已安全結束。
-- [x] Windows NSIS、macOS ZIP＋固定簽章、Linux AppImage eligibility；不改 feed、appId 或資料位置。
+- [ ] Windows NSIS、macOS ZIP＋固定簽章、Linux AppImage eligibility（Win/Linux與mac臨時簽章包已驗證；mac固定簽章待設定）；不改 feed、appId 或資料位置。
 - [x] OneDrive 刪除針對使用者已確認範圍，處理只讀／短暫占用後有限重試。
 - [x] macOS 憑證缺失時明確標為尚未完成簽章驗證；不能把未簽包當成已可更新的正式包。
 - 門檻：假更新事件驗證下載／關閉／重開／手動安裝／忙碌阻止／失敗恢复；真實 GitHub fetch failure 測試不呼叫模型。
 
 ### M6：整體驗證與 develop 交付
 
-- [ ] Python 和 Node 測試、真實本機浏览器，完整快取／重新整理／模式切換／資料持久化回歸。
-- [ ] Windows 本機打包與 frozen backend smoke；推送後以 develop workflow_dispatch 產出 CI 測試安裝包，不建立正式 tag 或 Release。
-- [ ] 清單區分 Windows 本機實測、macOS/Linux CI 建置、真實跨版本更新及 OneDrive 尚未實測的項目。
-- [ ] 依功能拆提交；確認只含本次修改，遠端 develop SHA 與本機一致；main 未變。
+- [x] Python 和 Node 測試、真實本機浏览器，完整快取／重新整理／模式切換／資料持久化回歸。
+- [x] Windows 本機打包與 frozen backend smoke；推送後以 develop workflow_dispatch 產出 CI 測試安裝包，不建立正式 tag 或 Release。
+- [x] 清單區分 Windows 本機實測、macOS/Linux CI 建置、真實跨版本更新及 OneDrive 尚未實測的項目。
+- [x] 依功能拆提交；確認只含本次修改，遠端 develop SHA 與本機一致；main 未變。
 
 ## 進度回報格式
 
@@ -104,4 +104,4 @@
 
 ## 2026-10-14 本機驗證進度
 
-M0–M5 的本機功能驗收已完成；macOS固定憑證未設定，真實跨版本更新尚未驗證。260項Python、26項Node及三份真實Chrome回歸已通過。Windows NSIS包與frozen backend smoke已通過。M6待develop推送與三平台CI建置；完整界線見 integration-validation.md。
+M0–M5 的本機功能驗收已完成；macOS固定憑證未設定，真實跨版本更新尚未驗證。261項Python、26項Node及三份真實Chrome回歸已通過。Windows NSIS包與frozen backend smoke已通過。M6已推送develop；最後一輪三平台CI建置與測試成功，Release job略過；完整界線見 integration-validation.md。

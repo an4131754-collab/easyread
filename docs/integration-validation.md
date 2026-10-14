@@ -14,6 +14,7 @@
 | 資料容錯及備份 | Python＋真實 HTTP：損壞論文不擋其他文獻、原檔不改寫；完整備份／恢復 notes/chat/images；手動 PDF 更新失敗可回滾。 |
 | PDF | 合成真實 PDF：跨頁定位、裁圖與題注分離；雙欄圖表順序只對 v2 啟用；既有 25 項裁圖測試仍通過，重匯舊 PDF 不偷偷啟用新策略。 |
 | 接口與任務 | Python／前端：接口 A/B 金鑰分離、旧空槽遷移、公開設定無明文金鑰；同時兩篇確實重疊、1–4 worker 配置、取消所有權、刪除／損壞任務不阻塞下一篇。 |
+| 重啟重連 | 真實 Chrome：過期token收到403後重取token並成功重送待存筆記，不需重新整理；未讀HTTP body不污染下一請求。 |
 | 桌面更新 | Node／真實 Chrome替身：fork feed、Win/mac/AppImage資格、下載後不自動安裝、關閉重開面板、忙碌阻止／重試、下載不重複；GitHub失敗狀態與三小時重試。 |
 
 執行方式（Windows，專案目錄）：
@@ -43,6 +44,12 @@ npm run dist
 
 ## 本機與 CI 建置結果
 
-Windows本機建置與frozen backend smoke均成功；260項Python、26項Node，以及三份Chrome回歸已通過。三平台CI結果於完成後補入，macOS固定簽章與跨版本更新不由CI建置成功推定完成。
+Windows本機建置與frozen backend smoke均成功；261項Python、26項Node，以及三份Chrome回歸已通過。含重連修正的最後一輪三平台CI建置及8個跨系統測試job均成功（程式提交3884b2e）；Release job明確略過，macOS固定簽章與跨版本更新不由CI建置成功推定完成。
 
-Windows驗證安裝包：`dist\electron\EasyRead-Setup-1.2.9.exe`，146249349 bytes，SHA-256 `dc4f53d74cfe2b040a4916ae03e09d52b5e40131a65f325f8a639750faf12e9f`。
+Windows驗證安裝包：`dist/electron/EasyRead-Setup-1.2.9.exe`，146248426 bytes，SHA-256 `bc0512b98716ed962b2761905f39dda762559dfd0b5253986f39c11844373ea8`。
+
+CI程式基準：`3884b2e440dcd0e09330e2b8820ef2bc5cca58a7`。
+
+- [三平台測試安裝包](https://github.com/an4131754-collab/easyread/actions/runs/38519555223)：Windows NSIS、macOS臨時簽章DMG/ZIP、Linux AppImage建置及frozen backend smoke全部成功。
+- [跨系統測試](https://github.com/an4131754-collab/easyread/actions/runs/38519554272)：Windows/macOS/Linux Python3.10/3.12，以及macOS/Linux啟動腳本均成功。
+- macOS固定簽章、實機跨版本更新與OneDrive同步事故仍未驗證，限制依前節所列。
